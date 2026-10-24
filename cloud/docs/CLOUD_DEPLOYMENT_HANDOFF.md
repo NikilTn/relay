@@ -4,6 +4,9 @@
 
 The existing data/auth/model services are ready and the earlier real local API flow remains documented separately. The execution role, scoped PassRole grant and hosted backend are still missing. No IAM permissions, MFA settings, backend implementation or native files were changed in this audit. No new model/audio request was run, and no artifact was packaged or deployed.
 
+
+**Latest follow-up:** independent native-test readback at 2026-10-24T07:02:28.963938+00:00 confirms **15/30 accepted requests and 2/5 transcription records**. A new hosting check at 2026-10-24T07:03:57.850041+00:00 still found the dedicated role absent and zero HTTP APIs. The full stack/Lambda/permission inventory below retains its original timestamps. Native Swift live-flow details and the interrupted-attempt correction are appended below.
+
 ## Current deployment state and source
 
 | Item | Timestamped result | Evidence |
@@ -66,7 +69,7 @@ These are requested configurations, not installed policies. This audit did not b
 
 A separate read of `http://127.0.0.1:8787/v1/health` still reports mode `aws`, storage `dynamodb`. That is **Mac-only liveness**, not the requested hosted verification. Its current OpenAPI does not expose `/v1/me`, `/v1/requests/{request_id}/history` or `/v1/requests/{request_id}/events`; the native task's new endpoints must be included in the future package. Earlier local real-AWS inference/transcription successes are historical evidence in BACKEND_TEST_RESULTS.md and are not counted as hosted tests here.
 
-Fresh durable usage counters remain **12/30 request records and 1/5 transcription records**. This audit added zero accepted requests, zero Bedrock calls and zero Transcribe jobs. At this counter snapshot, the one-request HTTPS smoke remains within the earlier limits once a hosted URL exists; 18 request slots and four audio slots remained. The native task is subsequently running its own approved local Swift-client flow, so reread these shared durable counters before any additional test. Billing is not reconciled by these record counts.
+The initial 06:41 UTC durable counter snapshot was **12/30 request records and 1/5 transcription records**; it is superseded by the native follow-up count of **15/30 and 2/5** below. This audit added zero accepted requests, zero Bedrock calls and zero Transcribe jobs. At this counter snapshot, the one-request HTTPS smoke remains within the earlier limits once a hosted URL exists; 18 request slots and four audio slots remained. The native task is subsequently running its own approved local Swift-client flow, so reread these shared durable counters before any additional test. Billing is not reconciled by these record counts.
 
 ## Confirmed native Cognito configuration
 
@@ -147,3 +150,27 @@ The immediate infrastructure blocker is organizer role/PassRole provisioning; th
 At 2026-10-24T06:51:50.548526+00:00, the existing requester-A and dispatcher-A both completed fresh SOFTWARE_TOKEN_MFA sign-in. Only the existing owner-only token file was updated atomically; no credential values were sent to the native task or written here. Safe authentication request IDs: requester-A `d2e9f511-8af6-4144-be1f-e16b81d06e08`; dispatcher-A `93a0a5c4-9e84-4d08-a3e5-b0fcb5a0284d`. Evidence: `cloud/docs/evidence/cloud-deployment-session-refresh-20261024.json`.
 
 The native task reports a new-source API on **http://127.0.0.1:8788** for its Swift-client test, preserving the earlier localhost:8787 server/worker. This is a local integration test, not a deployed HTTPS endpoint. It reports 43 Swift and 35 fixture backend tests passing; those were not independently rerun by this audit. Its one-text/one-synthetic-WAV live test will consume the shared approved limits. The hosting findings and no-packaging gate remain unchanged.
+
+## Verified native integration follow-up
+
+The native task reports that its Swift client passed requester profile/directory, stable-ID replay, dispatcher history progression with duplicate operations, real Transcribe upload, explicit transcript correction/submission, and Bedrock proposal retrieval using the new-source **loopback API**. This is not public HTTPS, physical-iPhone PKCE or carrier-to-cloud verification. It reports no additional paid tests planned and will send the tested build-8 commit when committed. At the independent source check, HEAD was still `c19b4358b4fd1d24a25b7ff2becccd0620e110cf` with integration changes uncommitted; package-ready commit confirmation remains pending.
+
+**Correction:** the first expired-token attempt was **not a zero-write failure**. Request `a9622506-46c2-4870-ac10-ee6d90525129` was accepted and processed before a later operation encountered expired authentication. This was independently confirmed with a strongly consistent DynamoDB read, not merely inferred from the native task's message.
+
+At 2026-10-24T07:02:28.963938+00:00, the AWS task independently read these known records:
+
+| Flow | Request UUID | Persisted state | Bedrock request ID |
+|---|---|---|---|
+| Initial attempt interrupted later by expired auth | `a9622506-46c2-4870-ac10-ee6d90525129` | accepted / ready_for_review | `d246ed10-cba6-4d52-983b-1938ef210746` |
+| Completed Swift text flow | `2774002c-8238-4311-871c-cf820d3a2c92` | accepted / ready_for_review | `234dcd94-a24d-4f8f-a579-f3f4afa93126` |
+| Completed Swift reviewed-audio flow | `16764f77-3780-48b6-bd11-8f2a58eb9835` | accepted / ready_for_review | `9a68d225-c592-4e72-9155-5c5b5d431520` |
+
+Transcription `99599e0d-df75-4712-b28c-522bb4be669b` is persisted as completed; the actual Transcribe job `relay-mvp-99599e0d-df75-4712-b28c-522bb4be669b` reports COMPLETED (read request `83ae4819-ac2b-4cc9-93e6-2bc7425eebd6`). The reviewed-audio request references that exact transcription UUID.
+
+Both completed Swift text/audio flows have persisted history revision 3: dispatcher-reported accepted → in_progress → completed, with three events and three unique event IDs each. `resource_allocation_verified` remains false. These are reported workflow states, not proof of physical resource delivery or automatic allocation. Duplicate HTTP behavior is reported by the native client's test; this audit independently confirms the stored event counts/IDs and progress state.
+
+Shared counters are **15 accepted requests of 30** and **2 transcription records of 5**: 15 request slots and three recording slots remained at this readback. This AWS follow-up performed only read operations and created no new request, model invocation or transcription job. Recheck shared counters before further tests. The original 12-request manifest describes the earlier run; the native task owns the new synthetic test evidence.
+
+Hosting recheck at 2026-10-24T07:03:57.850041+00:00: dedicated role still NoSuchEntity (IAM request `2deae4ba-c04a-4f77-84f8-c26cd48a18b9`); HTTP API inventory count 0 with no additional page (request `456c6bce-ff86-4a66-adec-c01bb7d7cf26`). No packaging or deployment occurred.
+
+Sanitized evidence: `cloud/docs/evidence/native-integration-readback-20261024.json` and `native-followup-hosting-20261024.json`.
