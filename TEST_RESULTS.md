@@ -2,7 +2,7 @@
 
 **Verdict: implemented and tested as a software prototype; the requested physical offline demonstration remains blocked and unverified.** No physical wireless acceptance test is reported as a pass. Software evidence below does not establish disaster resilience.
 
-**Latest setup status:** build **0.1.0 (7)** adds reversible shelter removal and a visible import flow with receiver preview. Both original physical phone apps are installed and launched on build 7. **35 automated tests**, TCP loopback controls, iOS/macOS builds and native Mac Remove/Restore/import UI checks pass. All original phone messages, receipts, shelters and device IDs were preserved. Controlled physical offline/no-router acceptance remains unverified. The initial environment table below is historical; later dated sections record successful signing and connected phones.
+**Latest setup status:** build **0.1.0 (8)** installed and launched on both original phone apps, preserving every prior message/shelter/receipt/identity. **43 Swift tests + 35 backend tests pass.** The shared Swift HTTP client passed real Cognito/DynamoDB/Bedrock/S3/Transcribe and reviewed-text tests through the Mac-hosted API. Public HTTPS deployment, native browser PKCE/microphone/cloud UI, and controlled physical no-router acceptance remain unverified. Detailed build-8 evidence is below; older environment sections are historical.
 
 ## Environment and access
 
@@ -404,3 +404,68 @@ no TestFlight build-7 phone installation was checked. External build 2 remains
 Waiting for Review. [Archive](evidence/archive-testflight-build-7.txt),
 [upload log](evidence/testflight-upload-build-7.txt),
 [release record](evidence/testflight-upload-build-7.json).
+
+
+## 2026-10-24 — Build 8 native cloud and request threads
+
+Implemented native PKCE/Keychain code, authenticated profile/directory, local/cloud
+shelter mapping, atomic local-message/cloud-intent persistence, scoped retry queue,
+cloud result/history UI, dispatcher/requester replies/progress/cancellation, nearby
+request threads and short recording → reviewed transcription input. Added backend
+profile/history/event routes with ownership, roles, transitions, revision conflict
+and command idempotency. No stock allocation or verified fulfillment is claimed.
+
+| Check | Actual outcome |
+|---|---|
+| Swift automated suite | **PASS: 43 tests**, including legacy draft decode, atomic outbox rollback/restart, account isolation, exact retry content, PKCE state checks, HTTPS validation and reply dedup/chat exclusion |
+| Backend automated suite | **PASS: 35 tests**, including profile, unauthorized history, command replay, transitions/cancellation/restart and concurrent revision conflict |
+| Three-process TCP control | **PASS**, interruption/retry/restart/duplicate/return receipt; loopback only |
+| iOS Simulator / native Mac / signed iOS builds | **PASS**, Xcode 26.1.1 / SDKs 26.1 |
+| Swift → fixture HTTP API | **PASS**, text, WAV, explicit state, duplicate requests/events |
+| Swift → real AWS through localhost API | **PASS**, Cognito access token, directory, durable request, Bedrock result, S3 WAV/Transcribe and corrected reviewed text |
+| Independent DynamoDB readback | **PASS**, both successful requests, proposals and 3-event histories persisted |
+| Mac UI | **PASS**, HTTPS rejection with readable error, request reply/progress queued, reusable composer, Done and screenshot layout inspection; 22 prior envelopes preserved, one new synthetic reply |
+| Phone installs / launches / preservation | **PASS**, original bundle; A 28→28 messages and 5 final receipt links, B 27→27 and 4 links; identities and shelters retained |
+| Native browser PKCE / refresh / microphone / cloud phone UI | **NOT TESTED**, public HTTPS API absent; CLI tokens are not native sign-in evidence |
+| Public API deployment | **BLOCKED**, missing organizer execution role/scoped PassRole; no API URL or deployment |
+| Physical A–E / router-independent link / range / repeated failures | **NOT TESTED** in this update |
+
+Actual successful AWS IDs: typed `2774002c-8238-4311-871c-cf820d3a2c92`;
+transcription `99599e0d-df75-4712-b28c-522bb4be669b`; explicitly reviewed request
+`16764f77-3780-48b6-bd11-8f2a58eb9835`. Transcribe returned “Sheltering needs 2
+water packs.” The separate reviewed submission used “Shelter A needs 2 water
+packs.” Both validated model proposals reported water_packs, quantity 2, unit pack;
+allocation_authorized remained false. This synthetic sample is not noisy-speech
+accuracy evidence.
+
+The first live attempt failed with an expired token after already accepting request
+`a9622506-46c2-4870-ac10-ee6d90525129`; the Swift journal proves it was not a
+zero-write failure. Requester and dispatcher tokens were refreshed privately and
+subsequent runs passed. Shared durable counters now read **15 requests / 30** and
+**2 transcriptions / 5** (three new request records and one audio job this session).
+These are usage bounds, not reconciled dollar charges. No secrets were logged.
+
+Phone A is iPhone 15 Pro Max/iOS 27.0.1 (24A446), B iPhone 16/iOS 26.2 (23C55).
+Initial A launch timed out and B was explicitly locked; both passed after the
+operator unlocked them. No cellular/router/radio isolation was performed. Saved
+phone stores remain outside Git; evidence contains preservation counts only.
+Mac synthetic queued reply ID: `e04ac15b-58b4-4e48-bc3c-7f5f0cae7dc6`.
+
+The paid-team build-8 archive/upload succeeded at 23:58:54 PDT on Oct 23. Apple
+processing/internal availability is recorded separately; external review is not
+implied. Carrier→cloud authentication and trustworthy offline cloud-result return
+are still pending; the app refuses to submit another device's request as its own.
+
+Evidence: [Swift tests](evidence/automated-tests-build-8.txt),
+[backend tests](evidence/backend-tests-build-8.txt), [TCP control](evidence/tcp-control-build-8.txt),
+[fixture HTTP](evidence/swift-http-fixture-build-8.json),
+[real AWS HTTP](evidence/swift-http-aws-build-8.json),
+[reviewed audio](evidence/swift-http-reviewed-aws-build-8.json),
+[DynamoDB readback](evidence/aws-readback-build-8.json),
+[Mac UI](evidence/ui-build8-request-thread.json),
+[phone preservation](evidence/physical-build8-install.json),
+[release](evidence/testflight-upload-build-8.json).
+
+Follow-up: Apple processed build 8; RELAY Development explicitly shows **Testing**.
+What to Test notes were saved and confirmed. External build 2 remains Waiting for
+Review. No public beta approval or TestFlight build-8 phone installation is inferred.

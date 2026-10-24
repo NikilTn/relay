@@ -150,3 +150,33 @@ Run at least 30 independent **physical** interrupted encounters per link directi
 
 Run on both physical phones in addition to automated/native Mac UI controls.
 Record per-platform results; installation alone is not a physical UI test.
+
+
+## Build 8: conversations, cloud and reviewed voice
+
+1. With nearby connections paused, receive/open a synthetic help request. Reply
+   and choose a reported progress value. Require locally queued state, an empty
+   reusable composer and Done. Restart and require the same reply ID/thread.
+2. Connect the recipient in a separate encounter. Require exactly one reply in
+   that request thread and its independent delivery receipt. Personal chat must
+   exclude request-update envelopes. Repeat with duplicates and a relay restart.
+3. After the HTTPS API is deployed, sign into the native app with an enrolled
+   Cognito account/MFA. Verify state validation, cancel/retry, Keychain restart,
+   token refresh, sign-out and different-account isolation. Refuse HTTP URLs.
+4. Link a local shelter to an authorized cloud inbox. Review a request with Also
+   queue for cloud selected; kill/restart after local save before upload. Require
+   the same request ID/body to sync once. Interrupt after server commit before the
+   reply; retry must return the same request. Cloud failure must preserve P2P.
+5. Dispatcher loads only its allowed inbox, replies and updates progress. Reuse
+   command ID; require one event. Race two expected revisions; require a conflict.
+   Requester cannot assign staff progress and unrelated users cannot read history.
+6. Record synthetic speech on a physical phone. Check denied microphone permission,
+   60-second cutoff, WAV format, interrupted upload and app restart. Resume the same
+   transcription job. Correct words/quantities, explicitly apply to Help and review
+   before submitting. Require reviewed_transcript reference and same request ID.
+7. Verify signed-out and offline behavior. Cloud/AI failures must never fabricate a
+   proposal, delivery receipt, allocation or fulfillment. A carried request is not
+   uploaded under the carrier's account; signed gateway ingestion is still pending.
+
+Separate CLI/fixture/AWS-loopback evidence from native device UI and physical radio
+tests. No public HTTPS or native cloud-flow PASS until those exact tests run.

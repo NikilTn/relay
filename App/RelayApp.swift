@@ -213,13 +213,31 @@ final class RelayModel: ObservableObject {
                 self.refresh()
                 DispatchQueue.main.async {
                     self.sending = false
-                    if self.helpDraft == draft { self.helpDraft = HelpRequestDraft() }
+                    if self.helpDraft.requestID == draft.requestID { self.helpDraft = HelpRequestDraft() }
                     done(request.id)
                 }
             } catch {
                 self.report(error); DispatchQueue.main.async { self.sending = false }
             }
         }
+    }
+    func withStore<T>(_ action: @escaping (RelayStore) throws -> T) async throws -> T {
+        let workQueue = queue
+        return try await withCheckedThrowingContinuation { continuation in
+            workQueue.async {
+                do {
+                    guard let engine = self.engine else { throw RelayError.database("Store not ready") }
+                    continuation.resume(returning: try action(engine.store))
+                } catch { continuation.resume(throwing: error) }
+            }
+        }
+    }
+    func sendRequestUpdate(_ request: RelayMessage, text: String, progress: String?, done: @escaping () -> Void) {
+        guard request.originID == deviceID || request.destinationID == deviceID else { return }
+        do {
+            let update = LocalRequestUpdate(requestID: request.id, text: text, progress: progress)
+            try send(text: update.encode(), destination: request.originID == deviceID ? request.destinationID : request.originID, onSaved: done)
+        } catch { self.error = String(describing: error) }
     }
     func armInterrupt() {
         queue.async { [weak self] in
@@ -307,6 +325,7 @@ private struct StatusPill: View {
 
 struct ContentView: View {
     @ObservedObject var model: RelayModel
+    @StateObject private var cloud = CloudModel()
     @State private var selectedTab = 3
     @State private var requestPath: [String] = []
     @State private var chatPath: [String] = []
@@ -372,8 +391,11 @@ struct ContentView: View {
                         ConversationView(model: model, peerID: peerID) { choosingPeer = true }
                     }
             }.tabItem { Label("Messages", systemImage: "bubble.left.and.bubble.right.fill") }.tag(0)
+            NavigationStack { CloudView(model: model) }.tabItem { Label("Cloud", systemImage: "cloud.fill") }.tag(6)
         }.tint(RelayTheme.accent)
-            .sheet(isPresented: $choosingPeer, onDismiss: {
+            .environmentObject(cloud)
+        .task(id: model.ready) { if model.ready { await cloud.attach(model) } }
+        .sheet(isPresented: $choosingPeer, onDismiss: {
                 if let id = pendingPeer { pendingPeer = nil; openChat(id) }
             }) {
                 RecipientPicker(model: model) { id in pendingPeer = id; choosingPeer = false }

@@ -1,5 +1,7 @@
 # RELAY cloud integration handoff — contract v1
 
+**Build-8 integration update:** the native client is implemented and builds on iOS/macOS; 43 Swift + 35 backend tests pass. `/v1/me`, request `/history` and `/events` are now part of the contract. The Swift HTTP client passed real AWS text/audio/reviewed-text/history tests through `http://127.0.0.1:8788`. Public HTTPS, native PKCE/microphone/phone UI and signed carrier ingestion remain unverified or pending. See ../../CLOUD_INTEGRATION.md and ../../TEST_RESULTS.md. Sections below describe the original backend handoff; the public Cognito configuration remains unchanged.
+
 ## Current endpoint and verified scope
 
 Actual local endpoint: **http://127.0.0.1:8787**, `/v1/health` and `/docs`. The base address redirects to `/docs`. Hosting: this Mac, loopback only, with **real Cognito authentication, DynamoDB storage, private S3, Amazon Transcribe and Amazon Bedrock Nova Lite**. Health now reports mode `aws` and storage `dynamodb`.
@@ -79,7 +81,7 @@ Live tests found that Nova Lite can still emit malformed JSON or invent an unsta
 
 ## Swift URLSession documentation examples
 
-These are integration examples only; no Swift/Xcode sources have been modified or built.
+These original examples are now supplemented by the built native implementation in App/Cloud*.swift and Sources/RelayCore/Cloud*.swift. Native browser/device flow still needs hosted verification.
 
 ```swift
 // body comes from the persisted original message; never regenerate its IDs on retry.

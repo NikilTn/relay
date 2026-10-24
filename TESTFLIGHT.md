@@ -1,6 +1,8 @@
 # RELAY teammate beta deployment
 
-**Latest upload: 0.1.0 (7)** adds reversible shelter removal/restoration and a visible import flow with receiver preview. Apple accepted the signed upload at **23:12:02 PDT on 2026-10-23**. Processing completed; **RELAY Development shows Testing** for build 7. What to Test notes are saved. The external group still has build 2 Waiting for Review, so this internal update is not public-link approval. Both original development phone apps are installed and launched on build 7 with all 24/23 stored envelopes, receipts, shelters and identities preserved. The separate paid-bundle copy on the first phone was left intact. [Release evidence](evidence/testflight-upload-build-7.json), [installation checks](evidence/physical-build7-install.json).
+**Latest upload: 0.1.0 (8)** adds request-specific nearby replies/progress and the optional cloud/sign-in/outbox/voice interface. Both original phone apps installed and launched build 8 with all data preserved. Archive/upload passed at 23:58:54 PDT on Oct 23; processing completed and RELAY Development shows **Testing**. Build-specific test notes are saved. External build 2 remains Waiting for Review. Cloud backend hosting remains blocked, so mobile cloud login/voice is not yet an end-to-end verified feature. [Integration guide](CLOUD_INTEGRATION.md), [release evidence](evidence/testflight-upload-build-8.json).
+
+**Previous upload: 0.1.0 (7)** adds reversible shelter removal/restoration and a visible import flow with receiver preview. Apple accepted the signed upload at **23:12:02 PDT on 2026-10-23**. Processing completed; **RELAY Development shows Testing** for build 7. What to Test notes are saved. The external group still has build 2 Waiting for Review, so this internal update is not public-link approval. Both original development phone apps are installed and launched on build 7 with all 24/23 stored envelopes, receipts, shelters and identities preserved. The separate paid-bundle copy on the first phone was left intact. [Release evidence](evidence/testflight-upload-build-7.json), [installation checks](evidence/physical-build7-install.json).
 
 **Previous upload: 0.1.0 (6)** adds Help, Requests, Shelters and Messages; saved shelter codes, durable help drafts, review before submission, a local device inbox and separate delivery receipts. Signed archive and signature verification passed; Apple accepted the upload at **22:36:23 PDT on 2026-10-23**. Apple processing completed; **RELAY Development shows Testing** for build 6, and its What to Test notes are saved. At the release check, the internal group had one tester listed as Invited. Build 2 remains the external submission, Waiting for Review. Both original development phone apps were subsequently updated/launched as build 6 at approximately 22:57 PDT, retaining their identities and messages. The first phone also has a separate paid-bundle build 6 installed. [Build 6 release evidence](evidence/testflight-upload-build-6.json), [direct installation evidence](evidence/physical-build6-install.json).
 
@@ -43,8 +45,8 @@ Use the enrolled account already signed into Xcode; agreement acceptance, bundle
 # Set to the identifier actually registered under the enrolled team.
 export RELAY_TEAM_ID=U4G9LV39GM
 export RELAY_BUNDLE_ID=com.nikilthalapaneni.relay
-bash scripts/testflight.sh 8          # next unused build: signed archive only
-bash scripts/testflight.sh 8 --upload # next unused build: archive and upload
+bash scripts/testflight.sh 9          # next unused build: signed archive only
+bash scripts/testflight.sh 9 --upload # next unused build: archive and upload
 ```
 
 The script stores logs/archives in a fresh `/tmp/RELAY-testflight.*` directory, outside the file-provider-backed source directory. It uses automatic signing and never accepts a password/token. The script's signed archive path passed; its export/upload command was executed separately against that archive and passed. Use the next unused build number after each upload; the script does not silently change it. Check Apple's processing/review state after upload.

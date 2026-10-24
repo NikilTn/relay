@@ -1,6 +1,7 @@
 import Foundation
 
-public enum RelayError: Error, CustomStringConvertible {
+public enum RelayError: Error, CustomStringConvertible, LocalizedError {
+    public var errorDescription: String? { switch self { case .invalid(let text), .database(let text): return text } }
     case invalid(String), database(String)
     public var description: String {
         switch self { case .invalid(let s): return "Protocol: \(s)"; case .database(let s): return "SQLite: \(s)" }

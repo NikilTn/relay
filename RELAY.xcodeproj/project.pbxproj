@@ -11,6 +11,30 @@
 			"path" = "App/RelayApp.swift";
 			"sourceTree" = "<group>";
 		};
+		"A0D5A5DF523C0E5A4FD75195" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "App/CloudAuth.swift";
+			"sourceTree" = "<group>";
+		};
+		"ACD30E880C7745DA55AB6B28" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "App/CloudModel.swift";
+			"sourceTree" = "<group>";
+		};
+		"C5C70B7DD757CC92571C5D4F" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "App/CloudViews.swift";
+			"sourceTree" = "<group>";
+		};
+		"8BCAB04BBC36251CECC77C5D" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "App/VoiceRecorder.swift";
+			"sourceTree" = "<group>";
+		};
 		"ACA121621EE9060EF33BCD98" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -51,12 +75,32 @@
 			"isa" = "PBXBuildFile";
 			"productRef" = "22398C40D049A2328866A1EA";
 		};
+		"9CE81BBB2DB9D2FC3E75BF28" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "A0D5A5DF523C0E5A4FD75195";
+		};
+		"9FC349E6DF4C6D4AD40B69F1" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "ACD30E880C7745DA55AB6B28";
+		};
+		"FF577D22285ACD9A089F1CA2" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "C5C70B7DD757CC92571C5D4F";
+		};
+		"6A198068D89ADF4BFB5946E6" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "8BCAB04BBC36251CECC77C5D";
+		};
 		"B8C81F1F071D969438268940" = {
 			"isa" = "PBXSourcesBuildPhase";
 			"buildActionMask" = "2147483647";
 			"files" = (
 				"F10DC058B7E60D294CAFF873",
 				"FE92AEBBBDDB0062762FDC91",
+				"9CE81BBB2DB9D2FC3E75BF28",
+				"9FC349E6DF4C6D4AD40B69F1",
+				"FF577D22285ACD9A089F1CA2",
+				"6A198068D89ADF4BFB5946E6",
 			);
 			"runOnlyForDeploymentPostprocessing" = "0";
 		};
@@ -91,7 +135,7 @@
 				"SWIFT_VERSION" = "5.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"DEVELOPMENT_TEAM" = "U4G9LV39GM";
-				"CURRENT_PROJECT_VERSION" = "7";
+				"CURRENT_PROJECT_VERSION" = "8";
 				"MARKETING_VERSION" = "0.1.0";
 				"LD_RUNPATH_SEARCH_PATHS" = "$(inherited) @executable_path/Frameworks";
 				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
@@ -117,7 +161,7 @@
 				"SWIFT_VERSION" = "5.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"DEVELOPMENT_TEAM" = "U4G9LV39GM";
-				"CURRENT_PROJECT_VERSION" = "7";
+				"CURRENT_PROJECT_VERSION" = "8";
 				"MARKETING_VERSION" = "0.1.0";
 				"LD_RUNPATH_SEARCH_PATHS" = "$(inherited) @executable_path/Frameworks";
 				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
@@ -183,12 +227,32 @@
 			"isa" = "PBXBuildFile";
 			"productRef" = "D4EA55F50AF854A1499554EF";
 		};
+		"0BD1120F32D2C34723C57298" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "A0D5A5DF523C0E5A4FD75195";
+		};
+		"923A6D3D4AF8D556481AB08F" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "ACD30E880C7745DA55AB6B28";
+		};
+		"58E968B6E5C60337E5E30EE4" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "C5C70B7DD757CC92571C5D4F";
+		};
+		"33336656048EF208A0DCFC84" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "8BCAB04BBC36251CECC77C5D";
+		};
 		"BBACA48F40A6612BCD556FCA" = {
 			"isa" = "PBXSourcesBuildPhase";
 			"buildActionMask" = "2147483647";
 			"files" = (
 				"550A6842FF943A6365333A4D",
 				"5EBDD26D84B2010AEB00F705",
+				"0BD1120F32D2C34723C57298",
+				"923A6D3D4AF8D556481AB08F",
+				"58E968B6E5C60337E5E30EE4",
+				"33336656048EF208A0DCFC84",
 			);
 			"runOnlyForDeploymentPostprocessing" = "0";
 		};
@@ -223,7 +287,7 @@
 				"SWIFT_VERSION" = "5.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"DEVELOPMENT_TEAM" = "";
-				"CURRENT_PROJECT_VERSION" = "7";
+				"CURRENT_PROJECT_VERSION" = "8";
 				"MARKETING_VERSION" = "0.1.0";
 				"LD_RUNPATH_SEARCH_PATHS" = "$(inherited) @executable_path/../Frameworks";
 				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
@@ -250,7 +314,7 @@
 				"SWIFT_VERSION" = "5.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"DEVELOPMENT_TEAM" = "";
-				"CURRENT_PROJECT_VERSION" = "7";
+				"CURRENT_PROJECT_VERSION" = "8";
 				"MARKETING_VERSION" = "0.1.0";
 				"LD_RUNPATH_SEARCH_PATHS" = "$(inherited) @executable_path/../Frameworks";
 				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
@@ -309,6 +373,10 @@
 				"ACA121621EE9060EF33BCD98",
 				"8BF729FFE074CAEE622C0292",
 				"0A3E27B8CA818264D75C8D81",
+				"A0D5A5DF523C0E5A4FD75195",
+				"ACD30E880C7745DA55AB6B28",
+				"C5C70B7DD757CC92571C5D4F",
+				"8BCAB04BBC36251CECC77C5D",
 			);
 			"sourceTree" = "<group>";
 		};

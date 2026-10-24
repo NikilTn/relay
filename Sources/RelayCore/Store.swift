@@ -185,6 +185,15 @@ public final class RelayStore {
                 destinationID: shelter.receivingDeviceID, payload: Payload(text: text), createdAt: WireCodec.second(now))
             try message.validate(now: now)
             try insert(message)
+            if let scope = draft.cloudScope, let binding = draft.cloudBinding {
+                let submission = try CloudSubmission(message: message, binding: binding, localDeviceID: deviceID,
+                    transcriptionID: draft.transcriptionID)
+                try saveCloudRecord(CloudQueueRecord(scope: scope, submission: submission))
+            }
+            if let id = draft.transcriptionID, let subject = draft.transcriptionSubject, let incident = draft.transcriptionIncident {
+                let reference = try JSONSerialization.data(withJSONObject: ["id": id, "subject": subject, "incident": incident])
+                try setSetting("request_audio:" + message.id, String(decoding: reference, as: UTF8.self))
+            }
             if try helpDraft()?.requestID == draft.requestID { try execute("DELETE FROM metadata WHERE key='help_draft'") }
             return message
         }
@@ -276,5 +285,24 @@ public final class RelayStore {
     }
     public func logs(limit: Int = 500) throws -> [String] {
         try rows("SELECT line FROM (SELECT seq,line FROM events ORDER BY seq DESC LIMIT ?) ORDER BY seq", [String(limit)]).compactMap { $0[0] }
+    }
+}
+
+extension RelayStore {
+    public func cloudRecords(scope: String) throws -> [CloudQueueRecord] {
+        try rows("SELECT value FROM metadata WHERE key LIKE ? ORDER BY key", ["cloud_record:" + scope + ":%"]).map {
+            try CloudCodec.decode(CloudQueueRecord.self, Data($0[0]!.utf8))
+        }
+    }
+    public func saveCloudRecord(_ record: CloudQueueRecord) throws {
+        guard record.scope.count == 64, record.scope.allSatisfy({ $0.isHexDigit }), UUID(uuidString: record.id) != nil else { throw RelayError.invalid("Invalid cloud queue key") }
+        let key = "cloud_record:" + record.scope + ":" + record.id
+        if let old = try setting(key) {
+            let existing = try CloudCodec.decode(CloudQueueRecord.self, Data(old.utf8))
+            guard existing.submission == record.submission else { throw RelayError.invalid("Cloud request ID content conflict") }
+        } else if try cloudRecords(scope: record.scope).count >= 1000 { throw RelayError.invalid("Cloud queue limit reached") }
+        let data = try CloudCodec.encode(record)
+        guard data.count <= 512_000 else { throw RelayError.invalid("Cloud record exceeds local limit") }
+        try setSetting(key, String(decoding: data, as: UTF8.self))
     }
 }

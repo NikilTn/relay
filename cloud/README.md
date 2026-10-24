@@ -1,6 +1,6 @@
 # RELAY cloud MVP
 
-A runnable, separately authenticated backend for immutable resource requests and reviewed short recordings. The Apple checkout and sources are unchanged. **Current verification: real Cognito MFA, S3 upload, Amazon Transcribe, Nova Lite and DynamoDB pass through the running local API. Thirty automated tests and real AWS restart recovery pass. Public hosting remains blocked by the missing dedicated Lambda role.** See `docs/BACKEND_TEST_RESULTS.md` for evidence.
+A runnable, separately authenticated backend for immutable resource requests and reviewed short recordings. On the integration branch, build 8 adds the native client and request conversations; see [native integration](../CLOUD_INTEGRATION.md). **Current verification: real Cognito MFA, S3 upload, Amazon Transcribe, Nova Lite and DynamoDB pass through the running local API. Thirty-five automated tests and real AWS restart recovery pass. Public hosting remains blocked by the missing dedicated Lambda role.** See `docs/BACKEND_TEST_RESULTS.md` for evidence.
 
 The API durably commits a request and its work record before acknowledging acceptance. A separate worker proposes structured fields through Bedrock and validates them in code. Nothing allocates inventory or marks fulfillment. Recorded speech is a separate owned upload/job; its transcript must be reviewed and submitted explicitly through the same request endpoint.
 

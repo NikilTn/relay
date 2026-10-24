@@ -157,3 +157,42 @@ class Health(StrictModel):
     storage: Literal["sqlite", "dynamodb"]
     performs_ai_check: Literal[False] = False
     note: str
+
+
+class Profile(StrictModel):
+    subject: str
+    role: Literal['requester', 'dispatcher']
+    incident_id: str
+    shelter_ids: list[str]
+
+
+class RequestEventCommand(StrictModel):
+    operation_id: UUID
+    expected_revision: int = Field(ge=0)
+    text: str = Field(default='', max_length=2000)
+    status: Literal['accepted', 'in_progress', 'completed', 'rejected', 'cancelled'] | None = None
+
+    @model_validator(mode='after')
+    def has_content(self):
+        self.text = self.text.strip()
+        if (not self.text and self.status is None) or any(ord(c) < 32 and c not in '\n\r\t' for c in self.text):
+            raise ValueError('Add a reply or status')
+        return self
+
+
+class RequestEvent(StrictModel):
+    event_id: UUID
+    revision: int
+    author_role: Literal['requester', 'dispatcher']
+    text: str
+    status: str | None
+    created_at: datetime
+
+
+class RequestHistory(StrictModel):
+    request_id: UUID
+    revision: int
+    status: str
+    events: list[RequestEvent]
+    # Reported progress only: does not reserve stock or verify fulfillment.
+    resource_allocation_verified: Literal[False] = False

@@ -12,7 +12,8 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from .auth import Authenticator, AuthError
 from .config import Settings
 from .models import (ErrorResponse, RequestSubmission, StartTranscription, TranscriptionAllocation,
-                     Health, RequestResult, RequestPage, TranscriptionResult, ShelterDirectory)
+                     Health, RequestResult, RequestPage, TranscriptionResult, ShelterDirectory,
+                     Profile, RequestEventCommand, RequestHistory)
 from .providers import AWSProviders, FixtureProviders, ProviderError
 from .service import APIError, Service
 from .store import DynamoStore, SQLiteStore
@@ -101,6 +102,18 @@ def create_app(settings: Settings, service=None):
                 "mode": settings.mode, "storage": settings.storage,
                 "performs_ai_check": False,
                 "note": "Liveness only; this route never invokes AI and does not certify AWS runtime."}
+
+    @app.get("/v1/me", response_model=Profile, tags=["Account"])
+    def me(user=Depends(principal)):
+        return {"subject": user.subject, **user.membership.model_dump()}
+
+    @app.get("/v1/requests/{request_id}/history", response_model=RequestHistory, tags=["Requests"])
+    def history(request_id: UUID, user=Depends(principal)):
+        return service.request_history(user, request_id)
+
+    @app.post("/v1/requests/{request_id}/events", response_model=RequestHistory, tags=["Requests"])
+    def request_event(request_id: UUID, body: RequestEventCommand, user=Depends(principal)):
+        return service.append_request_event(user, request_id, body)
 
     @app.get("/v1/shelters", operation_id="listShelters", tags=["Directory"], response_model=ShelterDirectory)
     def shelters(user=Depends(principal)):

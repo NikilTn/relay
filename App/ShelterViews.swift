@@ -78,7 +78,7 @@ struct HelpHomeView: View {
                     } label: { Label("Review request", systemImage: "arrow.right") }
                         .buttonStyle(PrimaryButton()).disabled(validation != nil || !model.ready || model.sending)
                         .accessibilityIdentifier("reviewRequest")
-                    Text("Synthetic data only. Cloud services and verified staff identities are not connected in this build.")
+                    Text("Synthetic data only. Cloud sign-in and voice input are available in the Cloud tab; nearby device identities remain unverified.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }.padding(20).frame(maxWidth: 680).frame(maxWidth: .infinity)
@@ -124,6 +124,8 @@ private struct RequestFacts: View {
 }
 
 private struct RequestReviewView: View {
+    @EnvironmentObject private var cloud: CloudModel
+    @State private var sendToCloud = false
     @ObservedObject var model: RelayModel
     let draft: HelpRequestDraft
     let sent: (String) -> Void
@@ -140,7 +142,19 @@ private struct RequestReviewView: View {
                         RequestFacts(request: request)
                         Text("This saves the request on your device and queues it for delivery. A delivery receipt means the receiving device saved it; it does not mean staff have acted.")
                             .font(.subheadline).foregroundStyle(.secondary)
-                        Button { model.submitHelp(draft, done: sent) } label: {
+                        if cloud.canUseCloud && cloud.bindings.contains(where: { $0.localID == draft.shelterID }) {
+                            Toggle("Also queue for cloud", isOn: $sendToCloud)
+                            Text("Uses the same request ID. Cloud acceptance stays separate from nearby delivery.").font(.caption).foregroundStyle(.secondary)
+                        }
+                        Button {
+                            do {
+                                let submission = try sendToCloud ? cloud.prepared(draft) : draft
+                                model.submitHelp(submission) { id in
+                                    // The cloud intent was committed atomically with the local message.
+                                    Task { await cloud.sync() }; sent(id)
+                                }
+                            } catch { model.error = error.localizedDescription }
+                        } label: {
                             Label(model.sending ? "Saving…" : "Save and send request", systemImage: "paperplane.fill")
                         }.buttonStyle(PrimaryButton()).disabled(model.sending)
                             .accessibilityIdentifier("submitRequest")
@@ -213,9 +227,10 @@ struct HelpRequestDetail: View {
                         if let receipt = item.stored.finalReceiptID {
                             Text("Return receipt: \(receipt)").font(.system(.caption, design: .monospaced)).textSelection(.enabled)
                         }
-                        Text("Staff progress").font(.headline)
-                        Text("No staff update recorded. Delivery does not confirm assignment or fulfillment.").font(.subheadline).foregroundStyle(.secondary)
+                        Text("Delivery does not confirm assignment or fulfillment.").font(.subheadline).foregroundStyle(.secondary)
                     }
+                    LocalRequestThread(model: model, request: item.stored.message)
+                    if item.stored.message.originID == model.deviceID { CloudRequestPanel(message: item.stored.message) }
                     RelayCard {
                         Text("Request identity").font(.headline)
                         Text(item.id).font(.system(.caption, design: .monospaced)).textSelection(.enabled)

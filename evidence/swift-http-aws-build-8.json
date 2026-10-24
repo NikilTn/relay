@@ -1,0 +1,19 @@
+{
+  "analysis_state" : "ready_for_review",
+  "audio_did_not_auto_submit_request" : true,
+  "audio_status" : "completed",
+  "directory" : "PASS",
+  "dispatcher_progress" : "completed",
+  "durable_cloud_intent" : "PASS",
+  "event_replay_count" : 3,
+  "lost_response_replay" : "PASS",
+  "mode" : "aws",
+  "native_PKCE" : "NOT TESTED by this CLI",
+  "physical_wireless" : "NOT TESTED",
+  "profile" : "PASS",
+  "proposal_allocation_authorized" : false,
+  "request_id" : "2774002c-8238-4311-871c-cf820d3a2c92",
+  "synthetic_transcript" : "Sheltering needs 2 water packs.",
+  "test" : "Swift URLSession to Python API",
+  "transcription_id" : "99599e0d-df75-4712-b28c-522bb4be669b"
+}

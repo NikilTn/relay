@@ -2,6 +2,7 @@
 """Dependency-free deterministic Xcode project generator. Run after editing project settings."""
 import hashlib
 import json
+import os
 import pathlib
 import plistlib
 import xml.etree.ElementTree as ET
@@ -24,6 +25,7 @@ def configs(key, settings):
         ids.append(obj(f'{key}-{name}','XCBuildConfiguration',name=name,buildSettings=bs))
     return obj(f'{key}-configs','XCConfigurationList',buildConfigurations=ids,defaultConfigurationIsVisible=0,defaultConfigurationName='Release')
 source=obj('source','PBXFileReference',lastKnownFileType='sourcecode.swift',path='App/RelayApp.swift',sourceTree='<group>')
+extraSources=[obj('extra-'+name,'PBXFileReference',lastKnownFileType='sourcecode.swift',path='App/'+name+'.swift',sourceTree='<group>') for name in ['CloudAuth','CloudModel','CloudViews','VoiceRecorder']]
 shelterSource=obj('shelter-source','PBXFileReference',lastKnownFileType='sourcecode.swift',path='App/ShelterViews.swift',sourceTree='<group>')
 assets=obj('assets','PBXFileReference',lastKnownFileType='folder.assetcatalog',path='App/Assets.xcassets',sourceTree='<group>')
 package=obj('package','XCLocalSwiftPackageReference',relativePath='.')
@@ -35,13 +37,13 @@ for platform in ['iOS','macOS']:
     sourceBuild=obj(name+'-source','PBXBuildFile',fileRef=source)
     shelterBuild=obj(name+'-shelter-source','PBXBuildFile',fileRef=shelterSource)
     libBuild=obj(name+'-lib','PBXBuildFile',productRef=dep)
-    srcPhase=obj(name+'-sources','PBXSourcesBuildPhase',buildActionMask=2147483647,files=[sourceBuild,shelterBuild],runOnlyForDeploymentPostprocessing=0)
+    srcPhase=obj(name+'-sources','PBXSourcesBuildPhase',buildActionMask=2147483647,files=[sourceBuild,shelterBuild]+[obj(name+'-extra-'+str(i),'PBXBuildFile',fileRef=ref) for i,ref in enumerate(extraSources)],runOnlyForDeploymentPostprocessing=0)
     libPhase=obj(name+'-frameworks','PBXFrameworksBuildPhase',buildActionMask=2147483647,files=[libBuild],runOnlyForDeploymentPostprocessing=0)
     assetBuild=obj(name+'-assets','PBXBuildFile',fileRef=assets)
     resPhase=obj(name+'-resources','PBXResourcesBuildPhase',buildActionMask=2147483647,files=[assetBuild],runOnlyForDeploymentPostprocessing=0)
     settings=dict(PRODUCT_NAME='$(TARGET_NAME)', PRODUCT_BUNDLE_IDENTIFIER=f'org.relay.prototype.{platform.lower()}',
                   INFOPLIST_FILE=f'Config/{platform}-Info.plist',GENERATE_INFOPLIST_FILE='NO',SWIFT_VERSION='5.0',
-                  CODE_SIGN_STYLE='Automatic',DEVELOPMENT_TEAM='',CURRENT_PROJECT_VERSION=7,MARKETING_VERSION='0.1.0',
+                  CODE_SIGN_STYLE='Automatic',DEVELOPMENT_TEAM='',CURRENT_PROJECT_VERSION=8,MARKETING_VERSION='0.1.0',
                   LD_RUNPATH_SEARCH_PATHS='$(inherited) @executable_path/Frameworks', ASSETCATALOG_COMPILER_APPICON_NAME='AppIcon')
     if platform=='iOS': settings.update(PRODUCT_BUNDLE_IDENTIFIER='com.nikilthalapaneni.relay',DEVELOPMENT_TEAM='U4G9LV39GM',SDKROOT='iphoneos',SUPPORTED_PLATFORMS='iphoneos iphonesimulator',IPHONEOS_DEPLOYMENT_TARGET='17.0',TARGETED_DEVICE_FAMILY='1,2',SUPPORTS_MACCATALYST='NO')
     else: settings.update(SDKROOT='macosx',SUPPORTED_PLATFORMS='macosx',MACOSX_DEPLOYMENT_TARGET='14.0',CODE_SIGN_IDENTITY='-',CODE_SIGN_ENTITLEMENTS='Config/macOS.entitlements',ENABLE_HARDENED_RUNTIME='YES',LD_RUNPATH_SEARCH_PATHS='$(inherited) @executable_path/../Frameworks')
@@ -59,14 +61,14 @@ for platform in ['iOS','macOS']:
     out=ROOT/'RELAY.xcodeproj/xcshareddata/xcschemes'/f'{name}.xcscheme'; out.parent.mkdir(parents=True,exist_ok=True)
     ET.indent(scheme); ET.ElementTree(scheme).write(out,encoding='UTF-8',xml_declaration=True)
 productGroup=obj('products','PBXGroup',children=products,name='Products',sourceTree='<group>')
-main=obj('main','PBXGroup',children=[source,shelterSource,assets,productGroup],sourceTree='<group>')
+main=obj('main','PBXGroup',children=[source,shelterSource,assets,productGroup]+extraSources,sourceTree='<group>')
 project=obj('project','PBXProject',attributes=dict(BuildIndependentTargetsInParallel='YES',LastUpgradeCheck=2610),buildConfigurationList=configs('project',dict(CLANG_ENABLE_MODULES='YES',SWIFT_VERSION='5.0',SWIFT_STRICT_CONCURRENCY='minimal')),compatibilityVersion='Xcode 14.0',developmentRegion='en',hasScannedForEncodings=0,knownRegions=['en','Base'],mainGroup=main,productRefGroup=productGroup,projectDirPath='',projectRoot='',targets=targets,packageReferences=[package])
 (ROOT/'RELAY.xcodeproj/project.pbxproj').write_text('// !$*UTF8*$!\n'+dump(dict(archiveVersion=1,classes={},objectVersion=56,objects=objects,rootObject=project))+'\n')
 for platform in ['iOS','macOS']:
-    info=dict(CFBundleDevelopmentRegion='en',CFBundleDisplayName='RELAY',CFBundleExecutable='$(EXECUTABLE_NAME)',CFBundleIdentifier='$(PRODUCT_BUNDLE_IDENTIFIER)',CFBundleInfoDictionaryVersion='6.0',CFBundleName='$(PRODUCT_NAME)',CFBundlePackageType='APPL',CFBundleShortVersionString='$(MARKETING_VERSION)',CFBundleVersion='$(CURRENT_PROJECT_VERSION)',NSLocalNetworkUsageDescription='RELAY discovers nearby Apple devices and carries synthetic messages between them without a server.',NSBonjourServices=['_relay-poc._tcp'])
+    info=dict(RELAYCloudAPIURL=os.environ.get('RELAY_CLOUD_API_URL',''),CFBundleDevelopmentRegion='en',CFBundleDisplayName='RELAY',CFBundleExecutable='$(EXECUTABLE_NAME)',CFBundleIdentifier='$(PRODUCT_BUNDLE_IDENTIFIER)',CFBundleInfoDictionaryVersion='6.0',CFBundleName='$(PRODUCT_NAME)',CFBundlePackageType='APPL',CFBundleShortVersionString='$(MARKETING_VERSION)',CFBundleVersion='$(CURRENT_PROJECT_VERSION)',NSLocalNetworkUsageDescription='RELAY discovers nearby Apple devices and carries synthetic messages between them without a server.',NSBonjourServices=['_relay-poc._tcp'],NSMicrophoneUsageDescription='Record a short request, then review its cloud transcript before sending.',CFBundleURLTypes=[{'CFBundleURLName':'RELAY Sign In','CFBundleURLSchemes':['relay']}])
     if platform=='iOS': info.update(ITSAppUsesNonExemptEncryption=False,UILaunchScreen={},UIApplicationSceneManifest={'UIApplicationSupportsMultipleScenes':False},UISupportedInterfaceOrientations=['UIInterfaceOrientationPortrait','UIInterfaceOrientationPortraitUpsideDown','UIInterfaceOrientationLandscapeLeft','UIInterfaceOrientationLandscapeRight'])
     else: info.update(LSMinimumSystemVersion='$(MACOSX_DEPLOYMENT_TARGET)',NSHighResolutionCapable=True,NSPrincipalClass='NSApplication')
     with (ROOT/f'Config/{platform}-Info.plist').open('wb') as f: plistlib.dump(info,f)
 with (ROOT/'Config/macOS.entitlements').open('wb') as f:
-    plistlib.dump({'com.apple.security.app-sandbox':True,'com.apple.security.network.client':True,'com.apple.security.network.server':True},f)
+    plistlib.dump({'com.apple.security.app-sandbox':True,'com.apple.security.network.client':True,'com.apple.security.network.server':True,'com.apple.security.device.audio-input':True},f)
 print('Generated RELAY.xcodeproj (iOS + macOS, local RelayCore package; no downloads)')

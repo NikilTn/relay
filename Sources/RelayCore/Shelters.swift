@@ -59,6 +59,11 @@ public struct HelpRequestDraft: Codable, Equatable, Identifiable {
     public var unit = ""
     public var people = ""
     public var location = ""
+    public var cloudScope: String?
+    public var cloudBinding: CloudBinding?
+    public var transcriptionID: String?
+    public var transcriptionSubject: String?
+    public var transcriptionIncident: String?
     public init() {}
     public func request(to shelter: ShelterContact) throws -> ShelterRequest {
         guard shelterID == shelter.id else { throw RelayError.invalid("Choose a saved shelter.") }

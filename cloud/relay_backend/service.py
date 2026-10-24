@@ -88,6 +88,57 @@ class Service:
             raise APIError(404, "request_not_found", "Request not found")
         return self.public_request(row[0])
 
+    def request_history(self, principal, identifier):
+        self.get_request(principal, identifier)  # Enforce ownership/membership before disclosing events.
+        row = self.store.get(*key("history", identifier))
+        return row[0] if row else {"request_id": str(identifier), "revision": 0,
+                                  "status": "new", "events": [], "resource_allocation_verified": False}
+
+    def append_request_event(self, principal, identifier, command):
+        self.writable()
+        record = self.get_request(principal, identifier)
+        payload = command.model_dump(mode="json")
+        operation_key = (PREFIX + "OP#" + principal.subject, str(command.operation_id))
+        operation = {"event_request_id": str(identifier), "hash": digest(payload)}
+        existing = self.store.get(*operation_key)
+        if existing:
+            if existing[0] != operation:
+                raise APIError(409, "idempotency_conflict", "Operation ID was used with different content")
+            return self.request_history(principal, identifier)
+        row = self.store.get(*key("history", identifier))
+        history = row[0] if row else self.request_history(principal, identifier)
+        if command.expected_revision != history["revision"]:
+            raise APIError(409, "revision_conflict", "Refresh request history before submitting this update")
+        if len(history["events"]) >= 100:
+            raise APIError(429, "history_limit", "Demo request history limit reached")
+        status = command.status
+        if status:
+            is_dispatcher = principal.membership.role == "dispatcher"
+            if is_dispatcher:
+                self.authorize_shelter(principal, record["submission"]["incident_id"], record["submission"]["destination_shelter_id"])
+            if (is_dispatcher and status == "cancelled") or (not is_dispatcher and status != "cancelled"):
+                raise APIError(403, "status_forbidden", "This role cannot make that status update")
+            transitions = {"new": {"accepted", "rejected", "cancelled"},
+                           "accepted": {"in_progress", "rejected", "cancelled"},
+                           "in_progress": {"completed", "cancelled"},
+                           "completed": set(), "rejected": set(), "cancelled": set()}
+            if status not in transitions.get(history["status"], set()):
+                raise APIError(409, "invalid_transition", "That status transition is not allowed")
+        event = {"event_id": str(command.operation_id), "revision": history["revision"] + 1,
+                 "author_role": principal.membership.role, "text": command.text, "status": status,
+                 "created_at": datetime.fromtimestamp(self.clock(), timezone.utc).isoformat()}
+        updated = {**history, "revision": event["revision"], "status": status or history["status"],
+                   "events": [*history["events"], event]}
+        try:
+            self.store.transact(puts=[Put(*key("history", identifier), updated, row[1] if row else None),
+                                      Put(*operation_key, operation)])
+        except Conflict:
+            existing = self.store.get(*operation_key)
+            if existing and existing[0] == operation:
+                return self.request_history(principal, identifier)
+            raise APIError(409, "revision_conflict", "Refresh history; another update was saved") from None
+        return updated
+
     def _duplicate_request(self, principal, payload, hash_value):
         row = self.store.get(*key("request", payload["request_id"]))
         if row and row[0]["owner_subject"] == principal.subject and row[0]["payload_hash"] == hash_value:

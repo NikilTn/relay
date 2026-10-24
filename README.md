@@ -1,8 +1,23 @@
 # RELAY — offline store-carry-forward prototype
 
-Buildable SwiftUI iOS and macOS apps sharing a Swift/Network.framework/SQLite engine. No AWS, cloud, AI, third-party runtime dependencies, or external radio hardware.
+Buildable SwiftUI iOS and macOS apps sharing a Swift/Network.framework/SQLite engine. The relay remains local and uses no third-party runtime dependencies or external radio hardware. Build 8 also includes an optional authenticated AWS cloud client; its backend is currently hosted on this Mac only.
 
 **Current verdict:** automated protocol tests, separate-process TCP loopback experiments, and native Mac ↔ iOS Simulator Bonjour control exchanges pass. **Physical iPhone A → iPhone B → Mac C and infrastructure-independent wireless delivery have NOT been verified.** See [TEST_RESULTS.md](TEST_RESULTS.md) for evidence and blockers. A simulator is not a radio test.
+
+## Build 8: request conversations and optional cloud
+
+Both phones now have build 8. Request details support nearby replies and reported
+progress. The Cloud tab adds secure sign-in, explicit shelter mapping, durable
+outbox, authorized dispatcher inbox, validated Bedrock proposals, reply history,
+and reviewed voice input. Help review can atomically queue the same request for
+cloud; nearby delivery continues independently.
+
+**Hosting is blocked:** the organizer execution role/PassRole grant and public
+HTTPS API are absent. The real Swift-client-to-AWS flow passed through the Mac
+loopback API, including Transcribe and reviewed text. Phone cloud login, microphone
+capture and end-to-end cloud UI are not yet verified. Carrier-to-cloud ingestion,
+signed origin proof, inventory allocation and automated dispatch are not implemented.
+Read [CLOUD_INTEGRATION.md](CLOUD_INTEGRATION.md) for setup and precise boundaries.
 
 ## Build and install
 
