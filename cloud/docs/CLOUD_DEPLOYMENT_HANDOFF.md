@@ -1,6 +1,6 @@
-# CLOUD_DEPLOYMENT_HANDOFF — RELAY build 10
+# CLOUD_DEPLOYMENT_HANDOFF — RELAY cloud and native UI
 
-Updated **2026-10-24T08:12:06.162379Z**. **The temporary HTTPS API has passed a real pre-send AI preview → explicit Send → coordinator inventory reservation → fulfillment flow. Managed Lambda/API Gateway hosting remains blocked.** These are separate facts.
+Updated **2026-10-24T08:30:45.185576Z**. **The temporary HTTPS API has passed a real pre-send AI preview → explicit Send → coordinator inventory reservation → fulfillment flow. Managed Lambda/API Gateway hosting remains blocked.** These are separate facts.
 
 ## Endpoint, account and source
 
@@ -45,6 +45,23 @@ Stock was explicitly seeded with 20 **synthetic demo** water packs, reserved/ful
 The last build-9 public flow separately tested real S3 upload → Transcribe → review → Bedrock. Reusing its completed recording here avoids another ASR charge. The remaining two recording slots were preserved. A preview consumes one shared analysis slot; matched Send binds it to one request without another slot. Abandoned/failed previews also count. These are usage bounds, not a reconciled dollar charge.
 
 Native Mac UI login with password/MFA was subsequently reported successful by the native task. Its full UI preview/send/coordinator test and physical-phone workflow were **pending at this handoff timestamp** and are separate from the CLI evidence above. Do not infer UI, microphone/picker, Keychain recovery or physical wireless success from these HTTP checks.
+
+## Native Mac UI acceptance — independent AWS confirmation
+
+The native task reports an actual app-form Cognito password/MFA sign-in, a pre-send preview visible in the app, and explicit Review and Send after its build-12 fixes. This task independently verified the resulting AWS records at **2026-10-24T08:30:43–08:30:45 UTC**; it did not operate or visually inspect the native UI.
+
+| Check | Result / safe correlation |
+|---|---|
+| Native UI request stored | PASS — `c24d0173-8d0a-41bf-81f4-63a887d243bc`, accepted / ready_for_review, text input, shelter-a |
+| Linked pre-send interpretation | PASS — `c725d1b2-efd8-4385-85cc-e11de4c2767d`, one analysis attempt, bound to that request |
+| Real model result reused on Send | PASS — identical preview/request result and provider evidence; Bedrock request `65811fa7-8095-404d-85e6-2ca50638eaff`, 491 input / 48 output tokens |
+| Confirmed structured fields | PASS — water_packs, quantity2, unitpack; landmark present |
+| GPS/location attachment | NONE — matches the native task's report; no physical GPS success claimed |
+| Coordinator action on this UI request | PENDING at this snapshot — no history or reservation yet |
+| Inventory at acceptance | 20 on hand, 0 reserved, 20 available, revision4 |
+| Shared counters at 08:30 UTC | 19/30 analysis slots, 3/5 recordings; 11 analysis slots and two recordings remain |
+
+This is a separate UI-originated request from the earlier CLI inventory test. Its pending coordinator action must not be inferred from the CLI request's completed reservation. The native task owns the forthcoming coordinator UI, phone, microphone and GPS checks. This readback added no AI/audio call, stock mutation or runtime change. Evidence: `evidence/native-mac-ui-request-readback.json`.
 
 ## Implemented app-facing API
 
@@ -111,6 +128,7 @@ Open only the needed actor privately and use its enrolled account and software a
 
 ## Sanitized evidence
 
+- evidence/native-mac-ui-request-readback.json: independent acceptance/preview/fields/counter confirmation for the native task's Mac UI request.
 - evidence/preview-inventory-live-readback.json: independent AWS result, reservation, history, inventory and ledger reads.
 - evidence/preview-inventory-native-cli.json: native Swift public-URL workflow assertions.
 - evidence/preview-inventory-runtime-readonly.json: public health/new routes and process roles.
