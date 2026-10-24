@@ -1,15 +1,15 @@
 # RELAY — offline store-carry-forward prototype
 
-Buildable SwiftUI iOS and macOS apps sharing a Swift/Network.framework/SQLite engine. The relay remains local and uses no third-party runtime dependencies or external radio hardware. Build19 includes live speech and encrypted shelter delivery to the requester/coordinator workflow, with a custom HTTPS hostname for the API on this Mac.
+Buildable SwiftUI iOS and macOS apps sharing a Swift/Network.framework/SQLite engine. The relay remains local and uses no third-party runtime dependencies or external radio hardware. Build20 adds incident alerts, on-device read-aloud, shelter information and distance to the existing live-speech/encrypted-shelter workflow. The HTTPS API still runs on this Mac.
 
 **Current verdict:** automated protocol tests, separate-process TCP loopback experiments, and native Mac ↔ iOS Simulator Bonjour control exchanges pass. **Physical iPhone A → iPhone B → Mac C and infrastructure-independent wireless delivery have NOT been verified.** See [TEST_RESULTS.md](TEST_RESULTS.md) for evidence and blockers. A simulator is not a radio test.
 
-## Current workflow — build 19
+## Current workflow — build 20
 
 The interface follows the plain reference: white backgrounds, bold system text,
 large outlined controls, a brown active accent, and functional text-size / contrast
-settings. Public tabs are **Ask for help / Requests / Settings**. Coordinator tabs
-are **Inbox / Inventory / Settings**. Nearby chat and engineering tools are inside
+settings. Public tabs are **Ask for help / Requests / Alerts / Settings**. Coordinator tabs
+are **Inbox / Inventory / Alerts / Settings**. Nearby chat and engineering tools are inside
 Settings. [Design notes](DESIGN.md).
 
 - **Speak or type:** live AWS Transcribe displays partial words. Review the final
@@ -21,9 +21,20 @@ Settings. [Design notes](DESIGN.md).
   Medicines requests retain the medicine name/details for staff review; they do
   not allocate generic medicine stock or generate dosing/prescribing advice.
   [Extraction and refresh behavior](cloud/docs/EXTRACTION.md).
-- **Location:** permission is requested only when attaching a location snapshot.
+- **Alerts:** dispatchers review/publish incident-wide announcements with priority,
+  expiry and withdrawal. Residents see unread notices and can listen using the
+  installed system voice. Downloaded alerts/read state survive restart. New alerts
+  and withdrawals need cloud refresh; they are not P2P broadcasts or push notifications.
+  [Contract, identity and testing](cloud/docs/ANNOUNCEMENTS.md).
+- **Shelter information:** authorized staff publish address, optional coordinates
+  and arrival instructions from Settings. Residents can view cached instructions,
+  calculate straight-line distance from a location snapshot and open the point in
+  Maps. No safe route or travel-time assertion is made.
+- **Location:** new requests require a snapshot OR a typed address/landmark/room.
+  Permission is requested only after tapping a location button.
   Coordinates, accuracy and capture time are included in the reviewed request.
-  No continuous tracking. A landmark can be used instead.
+  No continuous tracking. GPS permission itself is not mandatory. Historical
+  queued messages retain their original bytes and remain retryable.
 - **One request, two routes:** the main form durably saves one immutable request ID.
   Cloud delivery and an encrypted nearby copy can reach the same enrolled shelter
   receiver. Carriers store ciphertext; only the addressed receiver decrypts it.
@@ -39,6 +50,11 @@ Settings. [Design notes](DESIGN.md).
 - **Preparation:** accounts and shelter receiving keys must be enrolled/cached
   while online before the offline demonstration. Every participating app must stay
   open during encounters. Background/terminated forwarding is not promised.
+- **Identity:** Cognito account subject + configured incident membership authorize
+  data access. A separate persistent device UUID/key pair handles nearby routing.
+  Each resident needs a separate organizer-provisioned account; sharing one login
+  shares the account's permissions/history. There is no public self-registration
+  or user-selectable dispatcher role in this demo.
 
 Use [MORNING_DEMO.md](MORNING_DEMO.md) for the two-phone/Mac rehearsal and
 [TEST_RESULTS.md](TEST_RESULTS.md) for the boundary between tested software and

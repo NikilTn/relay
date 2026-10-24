@@ -1,0 +1,40 @@
+{
+  "iPhone 15": {
+    "device_id_preserved": true,
+    "device_id": "d8024643-427c-43dd-a991-7db89543bf19",
+    "sqlite_integrity": "ok",
+    "before_messages": 51,
+    "after_messages": 51,
+    "all_message_ids_retained": true,
+    "message_bodies_preserved": true,
+    "prior_receipts_preserved": true,
+    "before_cloud_records": 51,
+    "after_cloud_records": 51,
+    "all_cloud_records_retained": true,
+    "immutable_cloud_submissions_preserved": true,
+    "device_keys_preserved": true,
+    "cached_announcement_ids": [
+      "127bc9e4-f247-4437-94f4-a075a7ed5fca",
+      "7d7fd4fb-f2d5-4e8a-abd4-4a90cfaac38c"
+    ]
+  },
+  "iPhone 16": {
+    "device_id_preserved": true,
+    "device_id": "4e328dc5-51a9-4e37-92d6-833a81c32078",
+    "sqlite_integrity": "ok",
+    "before_messages": 51,
+    "after_messages": 51,
+    "all_message_ids_retained": true,
+    "message_bodies_preserved": true,
+    "prior_receipts_preserved": true,
+    "before_cloud_records": 46,
+    "after_cloud_records": 46,
+    "all_cloud_records_retained": true,
+    "immutable_cloud_submissions_preserved": true,
+    "device_keys_preserved": true,
+    "cached_announcement_ids": [
+      "127bc9e4-f247-4437-94f4-a075a7ed5fca",
+      "7d7fd4fb-f2d5-4e8a-abd4-4a90cfaac38c"
+    ]
+  }
+}

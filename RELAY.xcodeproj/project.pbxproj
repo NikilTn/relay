@@ -59,6 +59,12 @@
 			"path" = "App/LiveSpeechRecorder.swift";
 			"sourceTree" = "<group>";
 		};
+		"FE07D12B3A01B69FDBFEFBC6" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "App/AnnouncementViews.swift";
+			"sourceTree" = "<group>";
+		};
 		"ACA121621EE9060EF33BCD98" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -131,6 +137,10 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "754C750223089577CE845391";
 		};
+		"7EC913E8EC24EA76C8E78525" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "FE07D12B3A01B69FDBFEFBC6";
+		};
 		"B8C81F1F071D969438268940" = {
 			"isa" = "PBXSourcesBuildPhase";
 			"buildActionMask" = "2147483647";
@@ -145,6 +155,7 @@
 				"F6EBAC5DEC1D003D8778E601",
 				"C07B2E7C52241F45A8EEB32A",
 				"B8ED29886A79785C42D1C999",
+				"7EC913E8EC24EA76C8E78525",
 			);
 			"runOnlyForDeploymentPostprocessing" = "0";
 		};
@@ -179,7 +190,7 @@
 				"SWIFT_VERSION" = "5.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"DEVELOPMENT_TEAM" = "U4G9LV39GM";
-				"CURRENT_PROJECT_VERSION" = "19";
+				"CURRENT_PROJECT_VERSION" = "20";
 				"MARKETING_VERSION" = "0.1.0";
 				"LD_RUNPATH_SEARCH_PATHS" = "$(inherited) @executable_path/Frameworks";
 				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
@@ -205,7 +216,7 @@
 				"SWIFT_VERSION" = "5.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"DEVELOPMENT_TEAM" = "U4G9LV39GM";
-				"CURRENT_PROJECT_VERSION" = "19";
+				"CURRENT_PROJECT_VERSION" = "20";
 				"MARKETING_VERSION" = "0.1.0";
 				"LD_RUNPATH_SEARCH_PATHS" = "$(inherited) @executable_path/Frameworks";
 				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
@@ -303,6 +314,10 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "754C750223089577CE845391";
 		};
+		"F09941ADAA16D6291C6001DD" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "FE07D12B3A01B69FDBFEFBC6";
+		};
 		"BBACA48F40A6612BCD556FCA" = {
 			"isa" = "PBXSourcesBuildPhase";
 			"buildActionMask" = "2147483647";
@@ -317,6 +332,7 @@
 				"82903793384DDAF3B7EB0393",
 				"2C0D209B07FB49EDB9C24198",
 				"BDC8A217EC40CA7A98792628",
+				"F09941ADAA16D6291C6001DD",
 			);
 			"runOnlyForDeploymentPostprocessing" = "0";
 		};
@@ -351,7 +367,7 @@
 				"SWIFT_VERSION" = "5.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"DEVELOPMENT_TEAM" = "";
-				"CURRENT_PROJECT_VERSION" = "19";
+				"CURRENT_PROJECT_VERSION" = "20";
 				"MARKETING_VERSION" = "0.1.0";
 				"LD_RUNPATH_SEARCH_PATHS" = "$(inherited) @executable_path/../Frameworks";
 				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
@@ -378,7 +394,7 @@
 				"SWIFT_VERSION" = "5.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"DEVELOPMENT_TEAM" = "";
-				"CURRENT_PROJECT_VERSION" = "19";
+				"CURRENT_PROJECT_VERSION" = "20";
 				"MARKETING_VERSION" = "0.1.0";
 				"LD_RUNPATH_SEARCH_PATHS" = "$(inherited) @executable_path/../Frameworks";
 				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
@@ -445,6 +461,7 @@
 				"835D7A3A070A9308049CE5B6",
 				"A8F539CC4AF5A2B38794598B",
 				"754C750223089577CE845391",
+				"FE07D12B3A01B69FDBFEFBC6",
 			);
 			"sourceTree" = "<group>";
 		};

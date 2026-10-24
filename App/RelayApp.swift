@@ -361,6 +361,7 @@ struct ContentView: View {
                 HStack(spacing: 0) {
                     tabButton(cloud.isDispatcher ? "Inbox" : "Ask for help", symbol: cloud.isDispatcher ? "tray.fill" : "lifepreserver", tag: 3)
                     tabButton(cloud.isDispatcher ? "Inventory" : "Requests", symbol: cloud.isDispatcher ? "shippingbox.fill" : "tray.fill", tag: 4)
+                    tabButton(cloud.unreadAnnouncementCount > 0 ? "Alerts (\(cloud.unreadAnnouncementCount))" : "Alerts", symbol: "megaphone", tag: 6)
                     tabButton("Settings", symbol: "gearshape.fill", tag: 5)
                 }.padding(.top, 12).padding(.bottom, 4).background(.white)
                     .overlay(alignment: .top) { Rectangle().fill(.black).frame(height: 1.5) }
@@ -404,6 +405,8 @@ struct ContentView: View {
                         .navigationDestination(for: String.self) { id in WorkflowRequestDetail(id: id) }
                 }.tabItem { Label("Requests", systemImage: "tray.fill") }.tag(4).modifier(HideNativeTabBar())
             }
+            NavigationStack { AnnouncementsView() }
+                .tabItem { Label("Alerts", systemImage: "megaphone") }.tag(6).modifier(HideNativeTabBar())
             NavigationStack { WorkflowSettings(model: model) }
                 .tabItem { Label("Settings", systemImage: "gearshape.fill") }.tag(5).modifier(HideNativeTabBar())
         }

@@ -81,6 +81,9 @@ struct PublicHelpView: View {
                             ForEach(cloud.directory) { Text($0.display_name).tag($0.shelter_id) }
                         }.labelsHidden().accessibilityLabel("Destination shelter").accessibilityIdentifier("destinationShelter")
                     }.padding(.vertical, 4)
+                    if !cloud.draft.shelterID.isEmpty {
+                        NavigationLink("Shelter location & arrival instructions") { CloudShelterDetail(shelterID: cloud.draft.shelterID) }.font(.subheadline)
+                    }
                     Text(cloud.cloudPaused ? "Nearby delivery · cloud paused for demo" : cloud.selectedReceiver == nil ? "Cloud delivery · nearby destination not set up yet" : "Cloud + nearby delivery")
                         .font(.subheadline).foregroundStyle(RelayTheme.secondary)
                     Divider()
@@ -153,7 +156,8 @@ struct PublicHelpView: View {
                                 editing = false; locator.capture { cloud.draft.location = $0; cloud.persistDraft() }
                             }.font(.subheadline).frame(minHeight: 44).disabled(locator.busy)
                         }
-                        TextField("Landmark, entrance or room (optional)", text: $cloud.draft.landmark, axis: .vertical)
+                        Text("Add a location snapshot or type where you are. GPS permission is optional.").font(.subheadline).foregroundStyle(RelayTheme.secondary)
+                        TextField("Address, landmark, entrance or room", text: $cloud.draft.landmark, axis: .vertical)
                             .lineLimit(1...3).textFieldStyle(WorkflowInput()).focused($editing)
                         if let location = cloud.draft.location {
                             LocationFacts(location: location)
@@ -222,7 +226,7 @@ struct WorkflowReview: View {
             .frame(minWidth: 550, minHeight: 600)
             #endif
     }
-    private var validation: String? { do { _ = try cloud.draft.fields(); return nil } catch { return error.localizedDescription } }
+    private var validation: String? { do { _ = try cloud.draft.fields(); try cloud.draft.validateLocationForNewRequest(); return nil } catch { return error.localizedDescription } }
 }
 struct WorkflowRequestsView: View {
     @ObservedObject var model: RelayModel
@@ -505,6 +509,12 @@ struct WorkflowSettings: View {
                     Text("Your workspace").font(.title2.bold())
                     if let profile = cloud.profile {
                         Text(profile.role == "dispatcher" ? "Shelter coordinator" : "Public requester").font(.headline)
+                        Text("Account: " + String(profile.subject.prefix(8)) + "…").font(.caption.monospaced())
+                        Text("Device: " + String(model.deviceID.prefix(8)) + "…").font(.caption.monospaced())
+                        Text("Your account controls access to requests. This device has its own nearby delivery ID. Use a separate account for each resident.").font(.caption).foregroundStyle(RelayTheme.secondary)
+                        ForEach(cloud.directory) { shelter in
+                            NavigationLink(shelter.display_name + " · information") { CloudShelterDetail(shelterID: shelter.shelter_id) }
+                        }
                         if cloud.isDispatcher {
                             Text(cloud.receivesHere ? "This device receives nearby shelter requests." : "Nearby requests go to the shelter's selected receiving device.").font(.subheadline)
                             if !cloud.receivesHere {

@@ -1,9 +1,59 @@
 # RELAY test results — updated 24 October 2026
 
-**Current verdict:** build19 is ready for a controlled phone rehearsal. Native
+**Current verdict:** build20 is installed and launched on both owned phones and the
+Mac. Incident alerts downloaded and persisted on both physical phones. Native
 software, real AWS services and separate-encounter relay controls pass. Physical
 router-free wireless acceptance is still **NOT TESTED**. The older dated sections
 below are historical; this checkpoint supersedes their feature/release status.
+
+## Build20 — alerts, shelter instructions/distance and location requirement
+
+24 October2026, approximately09:10–09:18PDT. Mac: M3 Pro, macOS26.6.2(25G83),
+Xcode26.1.1(17B100), iOS/macOS26.1 SDKs. Phones: iPhone15ProMax/iOS27.0.1(24A446)
+and iPhone16/iOS26.2(23C55). Simulator: iPhone17Pro/iOS26.1. Internet was available;
+no physical router exclusion, cellular-off, range or isolated-radio test was run.
+
+| Check | Result | Actual evidence / boundary |
+|---|---|---|
+| Swift core | PASS | 71 tests, zero failures |
+| Backend | PASS | 106 tests, one testclient dependency deprecation warning |
+| Native builds | PASS | macOS, signed original-bundle iOS and iOS Simulator; source hashes retained |
+| Real incident publication | PASS | Mac UI published `7d7fd4fb-f2d5-4e8a-abd4-4a90cfaac38c`, title `DEMO ONLY · Shelter A update`; resident simulator displayed it and cleared NEW on opening |
+| Both physical phone caches | PASS | Both post-install SQLite stores contain that same announcement ID and withdrawn API-test ID |
+| Live retry/auth/withdrawal | PASS | `127bc9e4-f247-4437-94f4-a075a7ed5fca`; one logical notice after retry, both separate requester accounts saw it, resident publishing403, both saw revision2 withdrawal |
+| Cache without cloud | PASS (simulated isolation) | Paused cloud in Simulator, restarted app; notice and read state remained, Refresh disabled. Restored normal cloud mode afterward |
+| Shelter editing and distance | PASS (synthetic location) | Mac UI published fictional address/instructions and1.23456,2.35567. Simulator at1.23456,2.34567 displayed `About 1.1 km away` with straight-line/accuracy/time label. Cleared synthetic metadata afterward, revision2 |
+| Location required in current composer | PASS | Empty snapshot + empty landmark disabled Send with a clear error. Typed `Fictional Demo Hall, room12` enabled Send without GPS. Test draft not submitted, then cleared |
+| Read-aloud controls | PASS (Simulator UI) | Final build's Listen→Stop reading→Listen transitions; start/stop exercised. Human-audible physical output and installed voices in airplane mode remain NOT TESTED |
+| Upgrade preservation | PASS |15ProMax51→51 messages,51→51 cloud records;16:51→51 messages,46→46 cloud records. Original IDs/bodies/receipt state/cloud submissions/device keys retained; both SQLite quick_check=ok |
+| Phone install/launch | PASS | Both original `org.relay.prototype.ios` apps updated and launched with devicectl; build20 confirmed. Separate resident accounts retained |
+| Mac coordinator | PASS | Same store/receiver identity, existing coordinator test session restored via DEBUG one-use importer; latest build launched |
+| TCP controls | PASS | Interrupted frame/no false ACK, retries, duplicate suppression, separate A→B→C encounters and C→B→A receipt across carrier SIGKILL/restarts; loopback only |
+| TestFlight upload | PASS | Paid `com.nikilthalapaneni.relay` build20 upload succeeded09:15:52PDT; Apple said processing. External availability/review NOT VERIFIED |
+| Physical acceptance A–E | NOT TESTED | No new evidence of infrastructure-independent radios, physical out-of-range relay, or measured repeated-failure reliability |
+
+Live publish + identical retry took1.270s combined in one synthetic API sample.
+This is not a latency guarantee or a wireless measurement. Alert fetch is a
+foreground periodic HTTPS pull (about12s, delayed by other async work), not push.
+Expiry and withdrawals are distinct; an offline phone cannot learn a later
+withdrawal until it refreshes. New announcements are not carried by P2P in build20.
+
+Hosting recovery: the prior Quick Tunnel process had exited; public health
+returned Cloudflare1033. Restarted the tunnel detached and updated only the existing
+CloudFront origin to `computation-disc-copies-improvement.trycloudflare.com`.
+The app URL remains `https://relay.stepcheck.app`. API12406/worker12407 use the
+existing approved AWS demo18 config; tunnel12053. Final preflight verifies HTTPS
+health, correct dispatcher identity, authorized directory, anonymous401 and AWS
+account/budgets. The Mac, temporary tunnel and workshop session remain dependencies.
+No IAM expansion, managed-compute deployment or new Namecheap domain was performed.
+
+Evidence: [build20 artifacts](docs/evidence/build20), including actual test logs,
+live IDs/timing, source manifest, phone-preservation counts and build status.
+Raw credential/session files and device databases remain private outside the repo.
+See [feature contract and identity explanation](cloud/docs/ANNOUNCEMENTS.md).
+Public self-registration/invitations are still absent; each demo person must be
+provisioned a distinct enrolled Cognito account. Location requirements apply to
+the new native composer, while old persisted submissions remain byte-compatible.
 
 ## Build19 — extraction, urgency, medicine requests and faster replies
 

@@ -1,5 +1,12 @@
 # RELAY physical acceptance plan
 
+**Build20 alerts/location extension:** follow the reproducible steps in
+[Announcements and shelter information](cloud/docs/ANNOUNCEMENTS.md#reproduce).
+Record cloud incident publication, each phone's downloaded cache, read-aloud audio,
+withdrawal, cache across restart, manual-location alternative and distance separately.
+New alerts use HTTPS; cached alerts are not evidence of P2P announcement delivery.
+Real GPS accuracy and audible TTS on both physical phones still require observation.
+
 **Current cloud/voice/location/coordinator-inventory procedure:** [MOBILE_TEST.md](MOBILE_TEST.md).
 Use the current role-specific interface. The older Cloud tab references below are
 historical; engineering controls now live in Settings → Demo tools.

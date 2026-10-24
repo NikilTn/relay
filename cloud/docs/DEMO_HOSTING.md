@@ -6,6 +6,14 @@ Namecheap DNS → AWS CloudFront → HTTPS Cloudflare Quick Tunnel → this Mac'
 on loopback port8788 → Cognito, DynamoDB, S3, Transcribe and Bedrock as needed.
 The worker on the same Mac processes queued batch speech and AI requests.
 
+During build20 work on24October: the old Quick Tunnel exited and the
+public domain returned Cloudflare1033. Started a detached replacement and updated
+only the existing CloudFront origin to
+`computation-disc-copies-improvement.trycloudflare.com`. API/worker restarted with
+the same demo18 private config; `relay.stepcheck.app` is unchanged. Final preflight
+and live announcement tests passed after recovery. This incident demonstrates why
+the Mac/temporary-tunnel deployment is a supervised demo dependency.
+
 CloudFront distribution `E35672O7SGUTD2` uses CachingDisabled and
 AllViewerExceptHostHeader. Authorization and WebSocket headers reach the API;
 the origin Host remains the Quick Tunnel hostname. API responses are no-store.

@@ -12,11 +12,12 @@ from .common import APIError, PREFIX, WORK, canonical, digest, key, work_key
 from .interpretations import InterpretationMixin
 from .inventory import InventoryMixin
 from .nearby import NearbyMixin
+from .announcements import AnnouncementsMixin
 
 _UNLOADED = object()
 
 
-class Service(InterpretationMixin, InventoryMixin, NearbyMixin):
+class Service(InterpretationMixin, InventoryMixin, NearbyMixin, AnnouncementsMixin):
     def __init__(self, settings, store, providers, clock=time.time):
         self.settings, self.store, self.providers, self.clock = settings, store, providers, clock
 
@@ -28,10 +29,12 @@ class Service(InterpretationMixin, InventoryMixin, NearbyMixin):
         m = principal.membership
         shelters = [s.model_dump() for s in self.settings.shelters
                     if s.incident_id == m.incident_id and s.shelter_id in m.shelter_ids]
-        receivers = self.store.get_many([key("receiver", s["incident_id"] + ":" + s["shelter_id"]) for s in shelters])
+        receivers = self.store.get_many([key(kind, s["incident_id"] + ":" + s["shelter_id"]) for s in shelters for kind in ("receiver", "shelter-details")])
         for shelter in shelters:
             row = receivers.get(key("receiver", shelter["incident_id"] + ":" + shelter["shelter_id"]))
             shelter["receiver"] = row[0] if row else None
+            details = receivers.get(key("shelter-details", shelter["incident_id"] + ":" + shelter["shelter_id"]))
+            shelter["details"] = details[0] if details else None
         return shelters
 
     def budget_put(self, kind):

@@ -24,6 +24,12 @@ import RelayCore
     @Published var staffShelterID = ""
     @Published var pendingAdjustment = false
     @Published var nearbyProblem = ""
+    @Published var announcementFeed: AnnouncementFeed?
+    @Published var announcementReads: [String: Int] = [:]
+    @Published var pendingAnnouncement: AnnouncementCommand?
+    @Published var announcementsBusy = false
+    @Published var announcementsProblem = ""
+    private var lastAlertsRefresh = Date.distantPast
     @Published var cloudPaused = UserDefaults.standard.bool(forKey: "relay.demo.cloudPaused") {
         didSet { UserDefaults.standard.set(cloudPaused, forKey: "relay.demo.cloudPaused") }
     }
@@ -57,6 +63,7 @@ import RelayCore
                     if let value = cachedData.1 { directory = try CloudCodec.decode([CloudShelter].self, Data(value.utf8)) }
                     draft = try await model.withStore { try $0.requestDraft(scope: scope) }
                     await reload(); status = "Saved account · connecting…"
+                    await loadAnnouncementCache()
                 } catch { problem = error.localizedDescription }
             }
             staffShelterID = directory.first?.shelter_id ?? ""
@@ -72,6 +79,7 @@ import RelayCore
                 await self?.reconcileNearby()
                 await self?.sync()
                 await self?.refreshFocusedRequest()
+                if let self, Date().timeIntervalSince(self.lastAlertsRefresh) > 12 { await self.refreshAnnouncements() }
                 if let self, self.canUseCloud, self.focusedRequestID == nil, Date().timeIntervalSince(self.lastInboxRefresh) > 8 {
                     self.lastInboxRefresh = Date()
                     if Date().timeIntervalSince(self.lastDirectoryRefresh) > 60 { self.lastDirectoryRefresh = Date(); await self.refreshDirectory() }
@@ -130,12 +138,15 @@ import RelayCore
             endpoint = url.absoluteString
             UserDefaults.standard.set(url.absoluteString, forKey: "relay.cloud.endpoint")
             status = "Signed in · \(verified.role.capitalized)"
+            await loadAnnouncementCache()
+            await refreshAnnouncements()
         } catch { problem = error.localizedDescription; status = "Cloud unavailable; nearby delivery still works" }
     }
     func signOut() {
         cloudPaused = false; nearbyProblem = ""
         epoch = UUID(); auth.signOut(); profile = nil; api = nil; scope = nil
         records = []; directory = []; bindings = []; audioJob = nil; transcript = ""; draft = RequestDraft(); interpretation = nil; inventory = nil; signInNeedsCode = false; status = "Signed out"
+        announcementFeed = nil; announcementReads = [:]; pendingAnnouncement = nil; announcementsProblem = ""
     }
     func bind(localID: String, cloudID: String) async {
         guard let destination = directory.first(where: { $0.id == cloudID }), let scope, let model else { return }
@@ -355,6 +366,7 @@ import RelayCore
         guard !submitting, let scope, let model, let shelter = directory.first(where: { $0.shelter_id == draft.shelterID }) else { return nil }
         submitting = true; defer { submitting = false }; problem = ""
         do {
+            try draft.validateLocationForNewRequest()
             let snapshot = draft
             let subject = profile?.subject
             let record = try await model.withStore { store -> CloudQueueRecord in
@@ -559,6 +571,100 @@ import RelayCore
         job.transcript = text; try await persistAudio(job)
         audioJob = job; transcript = text ?? ""
         audioStatus = text == nil ? "Recording retained. Retry checks the original live session first." : "Live transcript saved. Review names and quantities before sending."
+    }
+
+    var unreadAnnouncementCount: Int {
+        (announcementFeed?.items ?? []).filter { $0.active() && (announcementReads[$0.id] ?? 0) < $0.revision }.count
+    }
+    private func loadAnnouncementCache() async {
+        guard let scope, let model else { return }; let generation = epoch
+        do {
+            let saved = try await model.withStore { store in
+                (try store.announcementFeed(scope: scope),
+                 try store.setting("announcement_reads:" + scope),
+                 try store.setting("announcement_pending:" + scope))
+            }
+            guard generation == epoch else { return }
+            announcementFeed = saved.0
+            announcementReads = try saved.1.map { try CloudCodec.decode([String: Int].self, Data($0.utf8)) } ?? [:]
+            pendingAnnouncement = try saved.2.flatMap { try CloudCodec.decode(AnnouncementCommand?.self, Data($0.utf8)) }
+        } catch { announcementsProblem = error.localizedDescription }
+    }
+    func refreshAnnouncements() async {
+        guard canUseCloud, !announcementsBusy, let api, let model, let scope, let incident = profile?.incident_id else { return }
+        announcementsBusy = true; lastAlertsRefresh = Date(); defer { announcementsBusy = false }
+        let generation = epoch
+        do {
+            let token = try await auth.accessToken()
+            let feed: AnnouncementFeed = try await api.call("v1/announcements", token: token)
+            guard generation == epoch else { return }
+            guard feed.items.allSatisfy({ $0.incident_id == incident }) else { throw RelayError.invalid("Announcement incident does not match this account") }
+            try await model.withStore { try $0.saveAnnouncementFeed(feed, scope: scope) }
+            guard generation == epoch else { return }
+            announcementFeed = feed; announcementsProblem = ""
+        } catch { if generation == epoch { announcementsProblem = "Could not refresh. Showing saved announcements. " + error.localizedDescription } }
+    }
+    func markAnnouncementRead(_ value: CloudAnnouncement) async {
+        guard let scope, let model else { return }; let generation = epoch
+        var reads = announcementReads; reads[value.id] = value.revision
+        do {
+            try await model.withStore { try $0.setSetting("announcement_reads:" + scope, String(decoding: CloudCodec.encode(reads), as: UTF8.self)) }
+            if generation == epoch { announcementReads = reads }
+        } catch { announcementsProblem = error.localizedDescription }
+    }
+    /// Save the immutable publishing command before HTTP. A lost-response retry uses the same ID and text.
+    func publishAnnouncement(_ command: AnnouncementCommand? = nil) async -> Bool {
+        guard !announcementsBusy, isDispatcher, let api, let scope, let model else { return false }
+        guard !cloudPaused else { announcementsProblem = "Resume cloud delivery to publish announcements."; return false }
+        announcementsBusy = true; announcementsProblem = ""; let generation = epoch
+        do {
+            guard let value = pendingAnnouncement ?? command else { throw RelayError.invalid("Create an announcement first") }
+            if pendingAnnouncement == nil {
+                try await model.withStore { try $0.setSetting("announcement_pending:" + scope, String(decoding: CloudCodec.encode(value), as: UTF8.self)) }
+                guard generation == epoch else { announcementsBusy = false; return false }
+                pendingAnnouncement = value
+            }
+            let token = try await auth.accessToken()
+            let _: CloudAnnouncement = try await api.call("v1/announcements", token: token, method: "POST", body: CloudCodec.encode(value))
+            try await model.withStore { try $0.setSetting("announcement_pending:" + scope, "null") }
+            guard generation == epoch else { announcementsBusy = false; return false }
+            pendingAnnouncement = nil; announcementsBusy = false
+            await refreshAnnouncements(); return true
+        } catch {
+            if generation == epoch { announcementsProblem = "Publishing not confirmed. Retry the saved announcement: " + error.localizedDescription }
+            announcementsBusy = false; return false
+        }
+    }
+    /// Used only after the server has definitively rejected an expired, never-published draft.
+    func discardExpiredAnnouncement() async {
+        guard let value = pendingAnnouncement, value.expires_at < Date(), !announcementsBusy, let api, let model, let scope, canUseCloud else { return }
+        announcementsBusy = true; defer { announcementsBusy = false }; let generation = epoch
+        do {
+            let token = try await auth.accessToken()
+            let feed: AnnouncementFeed = try await api.call("v1/announcements", token: token)
+            // An expired publication is inactive regardless of whether its previous response was lost.
+            try await model.withStore { try $0.saveAnnouncementFeed(feed, scope: scope); try $0.setSetting("announcement_pending:" + scope, "null") }
+            guard generation == epoch else { return }; pendingAnnouncement = nil; announcementFeed = feed; announcementsProblem = ""
+        } catch { announcementsProblem = error.localizedDescription }
+    }
+    func withdrawAnnouncement(_ value: CloudAnnouncement) async {
+        guard canUseCloud, isDispatcher, !announcementsBusy, let api else { return }
+        announcementsBusy = true; let generation = epoch
+        do {
+            let token = try await auth.accessToken()
+            let _: CloudAnnouncement = try await api.call("v1/announcements/\(value.id)/withdraw", token: token, method: "POST", body: CloudCodec.encode(["expected_revision": value.revision]))
+            announcementsBusy = false
+            if generation == epoch { await refreshAnnouncements() }
+        } catch { announcementsBusy = false; if generation == epoch { announcementsProblem = error.localizedDescription } }
+    }
+    func updateShelterDetails(shelterID: String, command: ShelterDetailsCommand) async throws {
+        guard canUseCloud, isDispatcher, let api, let scope, let model else { throw RelayError.invalid("Connect to the cloud as a dispatcher to update shelter information") }
+        let generation = epoch, token = try await auth.accessToken()
+        let _: ShelterDetails = try await api.call("v1/shelters/\(shelterID)/details", token: token, method: "PUT", body: CloudCodec.encode(command))
+        let updated: CloudDirectory = try await api.call("v1/shelters", token: token)
+        guard generation == epoch else { return }
+        try await model.withStore { try $0.setSetting("cloud_directory:" + scope, String(decoding: CloudCodec.encode(updated.items), as: UTF8.self)) }
+        if generation == epoch { directory = updated.items }
     }
 
 }

@@ -12,6 +12,7 @@ public struct CloudShelter: Codable, Identifiable, Equatable {
     public let incident_id: String
     public let display_name: String
     public var receiver: ShelterReceiver? = nil
+    public var details: ShelterDetails? = nil
     public init(shelter_id: String, incident_id: String, display_name: String, receiver: ShelterReceiver? = nil) {
         self.shelter_id = shelter_id; self.incident_id = incident_id; self.display_name = display_name; self.receiver = receiver
     }

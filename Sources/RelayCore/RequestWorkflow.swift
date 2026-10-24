@@ -50,6 +50,13 @@ public struct RequestDraft: Codable, Equatable {
     public var interpretationTranscription: String?
     public init() {}
     public static let units = ["pack", "piece", "bottle", "item", "tablet", "vial", "box"]
+    /// Enforced by the current composer, without invalidating historical queued messages.
+    public func validateLocationForNewRequest() throws {
+        if let location { try location.validate() }
+        else if landmark.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            throw RelayError.invalid("Add your location or type an address, landmark or room so shelter staff know where you are.")
+        }
+    }
     public var unit: String { requestedUnit ?? (item == "blankets" ? "piece" : item == "medicines" ? "item" : "pack") }
     public func fields() throws -> RequestFields {
         func count(_ s: String, limit: Int) throws -> Int? {

@@ -186,11 +186,21 @@ class ShelterReceiver(StrictModel):
     revision: int
 
 
+class ShelterDetails(StrictModel):
+    address: str
+    instructions: str
+    latitude: float | None
+    longitude: float | None
+    revision: int
+    updated_at: datetime
+
+
 class DirectoryEntry(StrictModel):
     shelter_id: str
     incident_id: str
     display_name: str
     receiver: ShelterReceiver | None = None
+    details: ShelterDetails | None = None
 
 
 class ShelterDirectory(StrictModel):

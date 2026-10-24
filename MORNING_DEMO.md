@@ -1,4 +1,4 @@
-# RELAY morning demo — build19
+# RELAY morning demo — build20
 
 The smallest clear demo is **two requester iPhones and this Mac as Shelter A**.
 Use the native apps. There is no separate dispatcher website to configure.
@@ -10,9 +10,9 @@ cloud features. See [hosting](cloud/docs/DEMO_HOSTING.md).
 
 ## Before presenting
 
-1. Check Settings → Demo tools → Build19 on each app. The new TestFlight package
+1. Check Settings → Demo tools → Build20 on each app. The new TestFlight package
    was uploaded, but check its availability before assuming your friends have it.
-   At approximately08:00PDT both original development phone apps were updated to19 and launched.
+   At approximately09:15PDT both original development phone apps were updated to20 and launched.
    Existing identities, messages and receipts were preserved. Physical wireless
    acceptance is still a separate test.
 2. Use **Requester A** on the15 Pro Max, **Requester B** on the iPhone16, and
@@ -33,6 +33,12 @@ cloud features. See [hosting](cloud/docs/DEMO_HOSTING.md).
    install/update the same app on each phone for a consistent demonstration.
 
 ## Demo1 — voice → structured request → supplies
+
+Optional opening: Mac → Alerts → New announcement → prefix `DEMO ONLY` → review
+and publish. Both phones → Alerts. Open and Listen; then withdraw on the Mac and
+refresh the phones. These notices reach all enrolled accounts in the incident via
+cloud refresh; downloaded notices remain available offline. They are not new P2P
+broadcasts. [Full alert/location test](cloud/docs/ANNOUNCEMENTS.md#reproduce).
 
 Keep internet available on all devices.
 

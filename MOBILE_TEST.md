@@ -1,8 +1,12 @@
-# Mobile testing — build19
+# Mobile testing — build20
+
+New in20: [alerts, shelter instructions/distance and location checks](cloud/docs/ANNOUNCEMENTS.md#reproduce).
+Each resident needs a separate organizer-issued account; public self-registration
+is not implemented. Both owned phones already have separate resident test accounts.
 
 Use [MORNING_DEMO.md](MORNING_DEMO.md) as the current procedure: two requester
 iPhones and the native Mac as Shelter A. It covers live speech, transcript review,
-Bedrock fields, optional location, sending, coordinator reservation/handover,
+Bedrock fields, required location snapshot OR typed landmark, sending, coordinator reservation/handover,
 nearby delivery, carrier restart and the returning signed receipt.
 
 The older build15 setup with one requester phone and one coordinator phone is

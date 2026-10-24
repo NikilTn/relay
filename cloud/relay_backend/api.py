@@ -23,6 +23,8 @@ from .service import APIError, Service, Worker
 from .store import DynamoStore, SQLiteStore
 from .speech import install_speech_routes
 from .nearby import DeviceRegistration, ReceiverAssignment, SignedRequest
+from .announcements import AnnouncementCommand, RevisionCommand, ShelterDetailsCommand
+from .models import ShelterDetails
 
 
 def build_service(settings):
@@ -177,6 +179,22 @@ def create_app(settings: Settings, service=None):
     @app.get("/v1/shelters", operation_id="listShelters", tags=["Directory"], response_model=ShelterDirectory)
     def shelters(user=Depends(principal)):
         return {"schema_version": 1, "items": service.directory(user)}
+
+    @app.put("/v1/shelters/{shelter_id}/details", tags=["Directory"], response_model=ShelterDetails)
+    def shelter_details(shelter_id: str, body: ShelterDetailsCommand, user=Depends(principal)):
+        return service.update_shelter_details(user, shelter_id, body)
+
+    @app.get("/v1/announcements", tags=["Announcements"])
+    def announcements(user=Depends(principal)):
+        return service.announcement_feed(user)
+
+    @app.post("/v1/announcements", status_code=201, tags=["Announcements"])
+    def publish_announcement(body: AnnouncementCommand, user=Depends(principal)):
+        return service.publish_announcement(user, body)
+
+    @app.post("/v1/announcements/{announcement_id}/withdraw", tags=["Announcements"])
+    def withdraw_announcement(announcement_id: UUID, body: RevisionCommand, user=Depends(principal)):
+        return service.withdraw_announcement(user, announcement_id, body.expected_revision)
 
     @app.post("/v1/devices", tags=["Nearby delivery"])
     def register_device(body: DeviceRegistration, user=Depends(principal)):
