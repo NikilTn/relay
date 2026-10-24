@@ -8,6 +8,12 @@ Use the same `serve` and `worker` commands as `cloud/README.md`, with the privat
 
 Typed request state and work leases live in DynamoDB; recording data lives in private S3. A stopped worker leaves accepted requests pending. Restarting a worker resumes durable work; a claimed task may wait up to the 120-second lease. A crash after a Bedrock response but before persistence may cause another bounded model invocation; exactly-once inference billing is not promised. Logical request identity is exactly preserved by conditional transactions. Transcribe uses deterministic names to avoid duplicate jobs.
 
+## Approved build-8 package
+
+The native task approved `cfcaade434114ca584de406c9104de21e0b64008` on `feature/cloud-integration` for packaging. Its prepared artifact, hashes and validations are recorded in `DEPLOYMENT_PACKAGE.md`. **Do not package the cloud-mvp baseline branch as a replacement for that integration.** Use the prepared artifact or export the exact agreed integration commit into a separate build directory. The generic commands below must be run from that agreed source, not an unrelated or dirty checkout.
+
+The ZIP has not been uploaded. Treat its future S3 object as immutable; if a later rebuild changes its hash, select a new object key and update the manifest/parameters instead of silently overwriting the prior object.
+
 ## Before hosting
 
 Obtain the dedicated organizer role and PassRole permission described in `ORGANIZER_REQUEST.md`. Obtain a separate hosting/cost approval covering two Lambda functions (512 MiB, reserved concurrency 2 each), an HTTP API, a one-minute recovery schedule and two log groups retained for three days. The local-test approval does not include this deployment. Verify account, region, existing resource ownership and remaining workshop lifetime again. Check that the deployment names do not belong to another stack; do not overwrite unexplained existing resources.

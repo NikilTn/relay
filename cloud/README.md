@@ -44,6 +44,10 @@ The API checks STS account identity at startup. The server holds the AWS session
 
 ## Hosted deployment — prepared, not deployed
 
+The approved native integration package is now built from `feature/cloud-integration` commit `cfcaade434114ca584de406c9104de21e0b64008`, including profile, request history and progress endpoints. See `docs/DEPLOYMENT_PACKAGE.md` and `docs/CLOUD_DEPLOYMENT_HANDOFF.md` for the artifact hash and current hosting gate. Do not replace that package with an artifact built from this baseline cloud-mvp branch.
+
+
+
 `infra/template.yaml` uses the existing data resources and an organizer-created dedicated execution role. Read `docs/ORGANIZER_REQUEST.md` and `docs/DEPLOYMENT.md`. Never reuse WSParticipantRole as a Lambda execution role. The template contains no IAM resources and does not modify existing table streams, bucket policies or pool settings.
 
 Contract and examples: `openapi/relay-v1.yaml`, `fixtures/`, `docs/INTEGRATION_HANDOFF.md`. Re-export after API changes with:

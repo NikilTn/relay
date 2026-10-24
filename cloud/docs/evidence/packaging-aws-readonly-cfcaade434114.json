@@ -1,0 +1,39 @@
+{
+  "observed_at": "2026-10-24T07:16:42.341203+00:00",
+  "account": "928489693154",
+  "region": "us-east-1",
+  "sts_request_id": "c1e76e9e-112e-4ce8-86d1-284de9c3bef5",
+  "template_validation": {
+    "status": "PASS",
+    "request_id": "0e2a37c9-3c40-4fee-b413-69378c405a8a",
+    "parameters": [
+      "ExecutionRoleArn",
+      "CognitoClientId",
+      "BackendSettingsJson",
+      "CodeBucket",
+      "CodeKey"
+    ],
+    "capabilities": []
+  },
+  "infrastructure_writes": 0,
+  "model_invocations": 0,
+  "transcription_jobs": 0,
+  "execution_role": {
+    "status": "ABSENT",
+    "code": "NoSuchEntity",
+    "request_id": "088b483c-decb-4aab-b5cf-9fec890a98e0"
+  },
+  "http_api_inventory": {
+    "count": 0,
+    "has_more": false,
+    "request_id": "3ebadcfe-5067-426c-94b3-5df8e027389f"
+  },
+  "requests_counter": {
+    "count": 15,
+    "request_id": "BQQL6QSO5GIL9BL7ABK1R7K5EFVV4KQNSO5AEMVJF66Q9ASUAAJG"
+  },
+  "transcriptions_counter": {
+    "count": 2,
+    "request_id": "F3N4ET10VN050VK1MGBMJ692HJVV4KQNSO5AEMVJF66Q9ASUAAJG"
+  }
+}
