@@ -6,7 +6,7 @@ from botocore.config import Config
 from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import Depends, FastAPI, Header, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from .auth import Authenticator, AuthError
@@ -90,6 +90,10 @@ def create_app(settings: Settings, service=None):
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"
         return response
+
+    @app.get("/", include_in_schema=False)
+    def index():
+        return RedirectResponse(url="/docs", status_code=307)
 
     @app.get("/v1/health", operation_id="getHealth", tags=["Health"], response_model=Health)
     def health():

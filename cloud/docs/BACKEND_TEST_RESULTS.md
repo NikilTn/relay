@@ -53,3 +53,7 @@ These resolved failures are not evidence of an AWS provider failure. No live pro
 ## Reproduction and remaining gates
 
 Run `cloud/README.md` commands for pytest, independent smoke and restart tests. Approve the bounded test proposal; provision/verify real Cognito users and run the real AWS HTTP pipeline with safe usage evidence. Resolve organizer role and hosting approval, deploy, repeat external endpoint tests, then integrate the native client. The original untracked audit/plan reports and mobile checkout were preserved; only cloud/** is committed.
+
+## Local-link follow-up
+
+The base path originally returned 404 even though the API routes worked. Added a base-path redirect to `/docs`, restarted the API and verified both the HTTP redirect/result and the visible RELAY Cloud API page in Safari. This navigation-only fix does not change the API contract or enable AWS activity.

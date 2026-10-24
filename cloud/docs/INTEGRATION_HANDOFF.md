@@ -2,7 +2,7 @@
 
 ## Current endpoint and verified scope
 
-Actual local endpoint: **http://127.0.0.1:8787**, `/v1/health` and `/docs`. Hosting: this Mac, loopback only, `local-test` fixtures with SQLite. Separate HTTP-client text/audio workflow and process-restart tests pass. This endpoint is not reachable from an iPhone; an iPhone's localhost refers to the phone itself. No public endpoint or tunnel has been created.
+Actual local endpoint: **http://127.0.0.1:8787**, `/v1/health` and `/docs`. The base address now redirects to `/docs`; the page was opened and visibly verified in Safari. Hosting: this Mac, loopback only, `local-test` fixtures with SQLite. Separate HTTP-client text/audio workflow and process-restart tests pass. This endpoint is not reachable from an iPhone; an iPhone's localhost refers to the phone itself. No public endpoint or tunnel has been created.
 
 Real AWS session/account reads pass in `us-east-1`, account `928489693154`. Real Cognito login, Bedrock inference, Transcribe execution and DynamoDB writes are **NOT TESTED** while the bounded live-test proposal is pending. The Lambda role constraint remains unresolved. The app engineer can review/freeze this contract now, but must wait for live verification and a reachable authenticated HTTPS endpoint before claiming cloud integration.
 

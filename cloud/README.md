@@ -21,7 +21,7 @@ In a second terminal:
 PYTHONPATH=cloud cloud/.venv/bin/python -m relay_backend worker --config /tmp/relay-local-demo/local-config.json
 ```
 
-API: `http://127.0.0.1:8787`, interactive contract: `/docs`. Fixture mode deliberately refuses non-loopback binding. Tokens are generated privately for four synthetic actors and expire in one hour. Re-run bootstrap to refresh them; it preserves the database/key. Use a new runtime directory for a clean demo. Do not put runtime directories in Git.
+API: `http://127.0.0.1:8787`, interactive contract: `/docs`. Opening the local base address redirects to `/docs`. Fixture mode deliberately refuses non-loopback binding. Tokens are generated privately for four synthetic actors and expire in one hour. Re-run bootstrap to refresh them; it preserves the database/key. Use a new runtime directory for a clean demo. Do not put runtime directories in Git.
 
 ```sh
 cloud/.venv/bin/python -m pytest cloud/tests -q
