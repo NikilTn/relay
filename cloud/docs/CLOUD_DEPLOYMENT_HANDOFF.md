@@ -1,6 +1,6 @@
 # CLOUD_DEPLOYMENT_HANDOFF — RELAY cloud and native UI
 
-Updated **2026-10-24T08:30:45.185576Z**. **The temporary HTTPS API has passed a real pre-send AI preview → explicit Send → coordinator inventory reservation → fulfillment flow. Managed Lambda/API Gateway hosting remains blocked.** These are separate facts.
+Updated **2026-10-24T08:52:42.767395Z**. **The temporary HTTPS API has passed a real pre-send AI preview → explicit Send → coordinator inventory reservation → fulfillment flow. Managed Lambda/API Gateway hosting remains blocked.** These are separate facts.
 
 ## Endpoint, account and source
 
@@ -62,6 +62,24 @@ The native task reports an actual app-form Cognito password/MFA sign-in, a pre-s
 | Shared counters at 08:30 UTC | 19/30 analysis slots, 3/5 recordings; 11 analysis slots and two recordings remain |
 
 This is a separate UI-originated request from the earlier CLI inventory test. Its pending coordinator action must not be inferred from the CLI request's completed reservation. The native task owns the forthcoming coordinator UI, phone, microphone and GPS checks. This readback added no AI/audio call, stock mutation or runtime change. Evidence: `evidence/native-mac-ui-request-readback.json`.
+
+## Native Mac coordinator approve/release — PASS
+
+The native task reported visible approval and then Release reservation in the Mac app for request `c24d0173-8d0a-41bf-81f4-63a887d243bc`. Independent strongly consistent AWS reads at **2026-10-24T08:52:41–08:52:42 UTC** confirmed:
+
+| Action/state | Durable result |
+|---|---|
+| Reserve at 08:51:10 UTC | Operation `2115b0f0-4e5a-4275-95f8-daf4480e4804`; on_hand20, reserved2, available18, inventory revision5 |
+| Release at 08:52:04 UTC | Operation `e151dd25-933e-48d5-97ab-2d9655d39e5f`; on_hand20, reserved0, available20, inventory revision6 |
+| Reservation | released, water_packs quantity2 |
+| History | revision2; exactly one accepted event and one rejected event (the documented release status) |
+| Verification flags | resource_allocation_verified:false after release; physical_delivery_verified:false |
+| Preview/model | Same bound preview and saved Bedrock result; no new model call for coordinator actions |
+| Current budget counters | **19/30 analysis slots and 4/5 audio allocations**; 11 analysis slots and one audio allocation remain |
+
+The audio allocation counter rose from 3 at 08:30 to 4 at this snapshot. This read-only audit did not create audio work, identify the new recording or confirm a new Transcribe job. An allocation count alone does not establish successful ASR or a billed job. Preserve the remaining slot and recheck before further audio tests; no budget reset or cap change was made.
+
+This confirms the Mac UI-originated request's reserve/release records independently of the earlier CLI fulfill/restore test. It does not establish microphone, GPS or physical-phone results. Evidence: `evidence/native-mac-ui-release-readback.json`; the earlier acceptance snapshot is retained separately. Runtime, tokens, configuration and stock were unchanged by the audit.
 
 ## Implemented app-facing API
 
@@ -128,6 +146,7 @@ Open only the needed actor privately and use its enrolled account and software a
 
 ## Sanitized evidence
 
+- evidence/native-mac-ui-release-readback.json: independent Mac coordinator reserve/release ledger and updated counter confirmation.
 - evidence/native-mac-ui-request-readback.json: independent acceptance/preview/fields/counter confirmation for the native task's Mac UI request.
 - evidence/preview-inventory-live-readback.json: independent AWS result, reservation, history, inventory and ledger reads.
 - evidence/preview-inventory-native-cli.json: native Swift public-URL workflow assertions.
