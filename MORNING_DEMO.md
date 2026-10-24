@@ -1,4 +1,4 @@
-# RELAY morning demo — build17
+# RELAY morning demo — build19
 
 The smallest clear demo is **two requester iPhones and this Mac as Shelter A**.
 Use the native apps. There is no separate dispatcher website to configure.
@@ -10,9 +10,9 @@ cloud features. See [hosting](cloud/docs/DEMO_HOSTING.md).
 
 ## Before presenting
 
-1. Check Settings → Demo tools → Build17 on each app. The new TestFlight package
+1. Check Settings → Demo tools → Build19 on each app. The new TestFlight package
    was uploaded, but check its availability before assuming your friends have it.
-   At07:10PDT both original development phone apps were updated to17 and launched.
+   At approximately08:00PDT both original development phone apps were updated to19 and launched.
    Existing identities, messages and receipts were preserved. Physical wireless
    acceptance is still a separate test.
 2. Use **Requester A** on the15 Pro Max, **Requester B** on the iPhone16, and
@@ -53,6 +53,23 @@ The overnight UI rehearsal performed this flow with synthetic typed text/Bedrock
 reservation and handover. Actual AWS live streaming was tested with a native Swift
 client sending synthetic WAV chunks. **Your physical phone microphone and GPS
 still need this morning check.** Correct transcription errors before sending.
+
+## Check the new extraction and tags
+
+Try: “We have no internet. We need two water packs for four people in room12,
+urgently.” With cloud available, Extract details should fill Water packs /2 /4 /
+room12 /Urgent. Change Urgent to Soon manually and verify Review keeps your choice.
+The phrase “no internet” is test narrative here, not evidence of radio isolation.
+
+Try a synthetic medicine request: “We need two inhalers for three people at the
+north entrance, right now.” Review the medicine/details and Immediate tag. Staff
+see it in Inbox and can reply; generic medicine reservation is deliberately absent.
+No medicine is recommended by the model. Use only synthetic medical test data.
+
+Keep a request detail open on the phone and send a reply from the Mac. It checks
+for updates about every3seconds while foreground; internet latency adds to that.
+The request list refreshes about every8seconds. Offline staff replies still wait
+for cloud recovery; only the signed destination receipt returns through nearby.
 
 ## Demo2 — nearby shelter delivery
 

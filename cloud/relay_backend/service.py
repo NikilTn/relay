@@ -78,6 +78,19 @@ class Service(InterpretationMixin, InventoryMixin, NearbyMixin):
             raise APIError(404, "request_not_found", "Request not found")
         return self.public_request(row[0])
 
+    def request_snapshot(self, principal, identifier):
+        keys = {kind: key(kind, identifier) for kind in ("request", "reservation", "history")}
+        batch = self.store.get_many(keys.values())
+        row = batch.get(keys["request"])
+        if not row or not self.can_read(principal, row[0]):
+            raise APIError(404, "request_not_found", "Request not found")
+        reservation, history = batch.get(keys["reservation"]), batch.get(keys["history"])
+        result = self.public_request(row[0], reservation=reservation)
+        result["reservation"] = reservation[0] if reservation else None
+        result["history"] = history[0] if history else {"request_id": str(identifier), "revision": 0,
+            "status": "new", "events": [], "resource_allocation_verified": False}
+        return result
+
     def request_history(self, principal, identifier):
         self.get_request(principal, identifier)  # Enforce ownership/membership before disclosing events.
         row = self.store.get(*key("history", identifier))
@@ -376,6 +389,7 @@ class Worker:
                     raise ProviderError("request_expired")
                 shelters = [x.model_dump() for x in s.settings.shelters if x.incident_id == record["submission"]["incident_id"]]
                 raw, evidence = s.providers.analyze(record["submission"], shelters)
+                evidence["queue_wait_ms"] = round(max(0, now - task["created_at"]) * 1000)
                 result = validate_model_result(raw, record["submission"], shelters)
                 state_field = "status" if task["kind"] == "interpretation" else "analysis_state"
                 record.update({state_field: result["status"], "result": result, "provider_evidence": evidence,

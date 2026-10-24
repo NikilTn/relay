@@ -33,7 +33,8 @@ final class SealedDeliveryTests: XCTestCase {
         let destinationStore = try RelayStore.open(path: ":memory:", deviceID: c)
         try senderStore.enableSealedDelivery(DeviceIdentity(deviceID: a))
         try destinationStore.enableSealedDelivery(DeviceIdentity(deviceID: c))
-        let d = try draft()
+        var d = try draft()
+        d.item = "medicines"; d.medicineDetails = "Synthetic inhaler request"; d.urgency = "urgent"; d.requestedUnit = "item"
         let saved = try senderStore.submitCloudDraft(d, scope: scope, shelter: shelter, receiver: destinationStore.sealedIdentity!.address.forAccount("test-dispatcher-a"), senderSubject: "test-requester-a", now: now)
         let sender = RelayEngine(store: senderStore), receiver = RelayEngine(store: destinationStore)
         var carrier: RelayEngine? = RelayEngine(store: try .open(path: folder.appendingPathComponent("carrier.sqlite").path, deviceID: b))
@@ -44,7 +45,7 @@ final class SealedDeliveryTests: XCTestCase {
         wire = SimulatedEncounter(carrier!, receiver, now: now.addingTimeInterval(5)); try wire!.drain()
         try carrier!.retransmitForTest(d.id, now: now.addingTimeInterval(6)); try wire!.drain(); wire!.end(); wire = nil; carrier = nil
         XCTAssertEqual(try destinationStore.nearbyRequests().count, 1)
-        XCTAssertEqual(try destinationStore.nearbyRequests()[0].verifiedBody().submission, saved.submission)
+        XCTAssertEqual(try XCTUnwrap(destinationStore.nearbyRequests().first).verifiedBody().submission, saved.submission)
         XCTAssertEqual(try destinationStore.allMessages().count, 2)
         carrier = RelayEngine(store: try .open(path: folder.appendingPathComponent("carrier.sqlite").path))
         wire = SimulatedEncounter(carrier!, sender, now: now.addingTimeInterval(10)); try wire!.drain(); wire!.end()

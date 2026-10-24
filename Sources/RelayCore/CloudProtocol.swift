@@ -77,6 +77,11 @@ public struct CloudProposal: Codable {
     public let shelter_id: String?
     public let negated: Bool
     public let missing_fields: [String]
+    public let people: Int?
+    public let landmark: String?
+    public let medicine_details: String?
+    public let urgency: String?
+    public let urgency_evidence: String?
     public let summary: String
 }
 public struct CloudValidatedResult: Codable {

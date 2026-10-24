@@ -184,3 +184,18 @@ phones are locked. Work stays in this thread. No coordination with the other cha
   No physical no-router, physical mic/GPS, range/background or disaster-resilience
   claim. No other chat or agent was contacted. No HPC/Dreamer files were changed
   except the required parent session-log entry.
+
+
+### Build19 follow-up — approximately08:00PDT
+
+User requested robust transcript extraction, faster replies, medicines and urgency.
+Implemented/verified: structured Bedrock tool output with field-level grounding,
+manual urgency and unit corrections, medicine staff-review requests, one-slot preview
+acceleration,3s focused snapshots/8s inbox polling, immutable/pending-write merge,
+legacy fractional timestamp compatibility, same-ID gateway/direct preview race fix.
+66Swift/99backend tests and TCP control pass. Three real AWS previews2.265–3.498s;
+two API reply POST/read samples1.171/1.211s. Native simulator/Mac manual override,
+review/send and automatic reply refresh pass. Both physical phones installed/launched
+build19 in place; old data preserved. TestFlight19 uploaded07:56:48PDT; external
+availability unverified. API3671/worker2040 use private aws-config-demo18; tunnel44716
+unchanged. No physical no-router acceptance or real phone mic/GPS quality claim.

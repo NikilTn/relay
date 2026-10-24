@@ -99,4 +99,58 @@ final class RequestWorkflowTests: XCTestCase {
         XCTAssertNil(try store.setting("cloud_audio:" + target))
     }
 
+    func testLegacyDraftAndFieldsDecodeWithoutNewKeys() throws {
+        let original = try draft()
+        let restored = try CloudCodec.decode(RequestDraft.self, CloudCodec.encode(original))
+        XCTAssertNil(restored.urgency); XCTAssertNil(restored.medicineDetails); XCTAssertNil(restored.requestedUnit)
+        let fields = try JSONSerialization.jsonObject(with: CloudCodec.encode(original.fields())) as! [String: Any]
+        XCTAssertNil(fields["urgency"]); XCTAssertNil(fields["medicine_details"])
+    }
+    func testMedicineUrgencyAndUnitsSurviveDraftRestart() throws {
+        let store = try RelayStore.open(path: ":memory:")
+        var d = try draft(); d.item = "medicines"; d.medicineDetails = "Synthetic inhaler request"
+        d.urgency = "urgent"; d.requestedUnit = "item"
+        try store.saveRequestDraft(d, scope: scope)
+        let recovered = try store.requestDraft(scope: scope)
+        XCTAssertEqual(recovered.urgency, "urgent"); XCTAssertEqual(recovered.unit, "item")
+        let record = try store.submitCloudDraft(recovered, scope: scope, shelter: shelter)
+        XCTAssertEqual(record.submission.structured_fields?.medicine_details, d.medicineDetails)
+        XCTAssertEqual(record.submission.structured_fields?.urgency, "urgent")
+        d.urgency = "invented"; XCTAssertThrowsError(try d.fields())
+    }
+    func testLateSnapshotKeepsNewerReplyAndPendingOperation() throws {
+        let store = try RelayStore.open(path: ":memory:")
+        var record = try store.submitCloudDraft(draft(), scope: scope, shelter: shelter)
+        let pending = CloudEventCommand(revision: 0, text: "Synthetic queued reply", status: nil)
+        record.pendingEvent = pending; record.state = "needs_attention"; record.problem = "Pending conflict"
+        try store.saveCloudRecord(record)
+        func snapshot(_ revision: Int) throws -> CloudResult {
+            let body = try JSONSerialization.jsonObject(with: CloudCodec.encode(record.submission))
+            let value: [String: Any] = ["request_id": record.id, "submission": body, "cloud_state": "accepted", "analysis_state": "ready_for_review", "history": ["request_id": record.id, "revision": revision, "status": "accepted", "events": []]]
+            return try CloudCodec.decode(CloudResult.self, JSONSerialization.data(withJSONObject: value))
+        }
+        try store.mergeCloudSnapshot(snapshot(2), scope: scope)
+        try store.mergeCloudSnapshot(snapshot(1), scope: scope)
+        let current = try XCTUnwrap(store.cloudRecords(scope: scope).first)
+        XCTAssertEqual(current.history?.revision, 2)
+        XCTAssertEqual(current.pendingEvent, pending); XCTAssertEqual(current.state, "needs_attention")
+        XCTAssertEqual(current.problem, "Pending conflict"); XCTAssertEqual(current.submission, record.submission)
+    }
+
+    func testLegacyWholeSecondCacheAcceptsFractionalServerTimestampButNotChangedContent() throws {
+        let store = try RelayStore.open(path: ":memory:")
+        let record = try store.submitCloudDraft(draft(), scope: scope, shelter: shelter)
+        var body = try JSONSerialization.jsonObject(with: CloudCodec.encode(record.submission)) as! [String: Any]
+        let originalDate = body["created_at"] as! String
+        body["created_at"] = originalDate.replacingOccurrences(of: "Z", with: ".250Z")
+        func snapshot() throws -> CloudResult {
+            let value: [String: Any] = ["request_id": record.id, "submission": body, "cloud_state": "accepted", "analysis_state": "pending"]
+            return try CloudCodec.decode(CloudResult.self, JSONSerialization.data(withJSONObject: value))
+        }
+        try store.mergeCloudSnapshot(snapshot(), scope: scope)
+        XCTAssertEqual(try store.cloudRecords(scope: scope).first?.submission, record.submission)
+        body["original_text"] = "Changed immutable body"
+        XCTAssertThrowsError(try store.mergeCloudSnapshot(snapshot(), scope: scope))
+    }
+
 }

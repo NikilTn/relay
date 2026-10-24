@@ -62,8 +62,11 @@ class InterpretationMixin:
     def preview_for_submission(self, principal, payload):
         """Return a conditional binding; the caller commits it with the request."""
         record, version = self.owned_interpretation(principal, payload["interpretation_id"])
-        if record.get("submitted_request_id"):
+        if record.get("submitted_request_id") not in (None, payload["request_id"]):
             raise APIError(409, "interpretation_already_used", "A preview can be sent as only one request")
+        # A direct sender and its authorized nearby gateway may arrive together.
+        # For the SAME request ID, let submit's transaction/replay check resolve
+        # the race; a different ID must still be rejected.
         if record["expires_at"] <= self.clock():
             raise APIError(410, "interpretation_expired", "Create a new preview before sending")
         if record["status"] not in {"ready_for_review", "needs_review"} or record["result"] is None:

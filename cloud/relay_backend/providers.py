@@ -3,12 +3,13 @@ import io
 import json
 import re
 import wave
+import time
 from pathlib import Path
 
 from botocore.config import Config
 from botocore.exceptions import BotoCoreError, ClientError
 
-from .analysis import NUMBER_WORDS, SYSTEM_PROMPT, prompt
+from .analysis import NUMBER_WORDS, SYSTEM_PROMPT, prompt, extraction_tool, structured_output
 
 
 class ProviderError(Exception):
@@ -125,16 +126,19 @@ class AWSProviders:
 
     def analyze(self, request, shelters):
         self.allowed()
+        started = time.monotonic()
         try:
             result = self.bedrock.converse(modelId=self.settings.model_id,
-                                          system=[{"text": SYSTEM_PROMPT}],
+                                          system=[{"text": SYSTEM_PROMPT + " Use extract_request to return these fields. The tool only reports data; it performs no action."}],
+                                          toolConfig=extraction_tool(),
                                           messages=prompt(request, shelters),
-                                          inferenceConfig={"maxTokens": 512, "temperature": 0})
+                                          inferenceConfig={"maxTokens": 640, "temperature": 0})
         except (ClientError, BotoCoreError) as exc:
             raise aws_error(exc) from None
-        text = "".join(c.get("text", "") for c in result.get("output", {}).get("message", {}).get("content", []))
+        text = structured_output(result)
         return text, {"provider": self.name, "model_id": self.settings.model_id,
                       "request_id": result.get("ResponseMetadata", {}).get("RequestId"),
+                      "model_ms": round((time.monotonic() - started) * 1000),
                       "usage": result.get("usage", {}), "stop_reason": result.get("stopReason")}
 
     def upload_key(self, record):

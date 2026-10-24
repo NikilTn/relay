@@ -31,6 +31,8 @@ import RelayCore
     var focusedRequestID: String?
     private var reconcilingNearby = false
     private var lastInboxRefresh = Date.distantPast
+    private var lastDirectoryRefresh = Date.distantPast
+    private var refreshingFocused = false
     private let auth = CloudAuth()
     private weak var model: RelayModel?
     private var api: CloudHTTPClient?
@@ -64,14 +66,15 @@ import RelayCore
         }
         timer = Task { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(10))
+                try? await Task.sleep(for: .seconds(3))
                 guard !Task.isCancelled else { break }
                 if self?.pollingPaused == true { continue }
                 await self?.reconcileNearby()
                 await self?.sync()
-                if let self, self.canUseCloud, self.focusedRequestID == nil, Date().timeIntervalSince(self.lastInboxRefresh) > 20 {
+                await self?.refreshFocusedRequest()
+                if let self, self.canUseCloud, self.focusedRequestID == nil, Date().timeIntervalSince(self.lastInboxRefresh) > 8 {
                     self.lastInboxRefresh = Date()
-                    await self.refreshDirectory()
+                    if Date().timeIntervalSince(self.lastDirectoryRefresh) > 60 { self.lastDirectoryRefresh = Date(); await self.refreshDirectory() }
                     await self.loadInbox(shelterID: self.isDispatcher ? self.staffShelterID : nil)
                 }
             }
@@ -174,8 +177,7 @@ import RelayCore
             let token = try await auth.accessToken()
             let pending = try await model.withStore { try $0.cloudRecords(scope: scope) }
             for var record in pending.filter({ row in
-                let active = focusedRequestID == row.id && !["completed", "cancelled", "rejected"].contains(row.history?.status ?? "new")
-                return row.retryAt <= Date() && row.state != "needs_attention" && (row.state == "queued" || row.pendingEvent != nil || row.pendingInventory != nil || active || row.retryAt == .distantPast)
+                return row.retryAt <= Date() && row.state != "needs_attention" && (row.state == "queued" || row.pendingEvent != nil || row.pendingInventory != nil || row.retryAt == .distantPast)
             }).sorted { ($0.pendingInventory != nil || $0.pendingEvent != nil || $0.state == "queued" ? 0 : 1, $0.retryAt) < ($1.pendingInventory != nil || $1.pendingEvent != nil || $1.state == "queued" ? 0 : 1, $1.retryAt) }.prefix(5) {
                 guard generation == epoch else { return }
                 do {
@@ -191,7 +193,8 @@ import RelayCore
                         } else {
                             result = try await api.call("v1/requests", token: token, method: "POST", body: CloudCodec.encode(record.submission))
                         }
-                    } else { result = try await api.call("v1/requests/" + record.id, token: token) }
+                    } else if let saved = record.result { result = saved }
+                    else { result = try await api.call("v1/requests/" + record.id, token: token) }
                     guard result.request_id == record.id, result.submission == record.submission, result.cloud_state == "accepted" else { throw RelayError.invalid("Cloud response does not match the saved request") }
                     record.result = result; record.state = "accepted"; record.problem = nil
                     if let command = record.pendingInventory {
@@ -202,9 +205,9 @@ import RelayCore
                         record.history = try await api.call("v1/requests/\(record.id)/events", token: token, method: "POST", body: CloudCodec.encode(event))
                         record.pendingEvent = nil
                     }
-                    let reservation: ReservationResult = try await api.call("v1/requests/\(record.id)/inventory", token: token)
-                    record.reservation = reservation.reservation
-                    record.history = reservation.history ?? record.history
+                    let snapshot: CloudResult = try await api.call("v1/requests/\(record.id)/snapshot", token: token)
+                    record.result = snapshot
+                    if let history = snapshot.history, history.revision >= (record.history?.revision ?? -1) { record.history = history; record.reservation = snapshot.reservation }
                     record.retryAt = Date().addingTimeInterval(20)
                 } catch {
                     let http = error as? CloudHTTPError
@@ -220,6 +223,19 @@ import RelayCore
             await reload(); if problem == "cancelled" { problem = "" }; status = "Cloud checked \(Date().formatted(date: .omitted, time: .shortened))"
         } catch { problem = error.localizedDescription; status = "Cloud unavailable · queued requests retained" }
     }
+    func refreshFocusedRequest() async {
+        guard !cloudPaused, !busy, !refreshingFocused, let id = focusedRequestID,
+              let api, let scope, let model, records.contains(where: { $0.id == id && $0.result != nil }) else { return }
+        refreshingFocused = true; defer { refreshingFocused = false }; let generation = epoch
+        do {
+            let token = try await auth.accessToken()
+            let snapshot: CloudResult = try await api.call("v1/requests/" + id + "/snapshot", token: token)
+            guard generation == epoch else { return }
+            try await model.withStore { try $0.mergeCloudSnapshot(snapshot, scope: scope) }
+            await reload()
+        } catch { /* Saved content stays visible; explicit Refresh shows actionable errors. */ }
+    }
+
     func loadInbox(shelterID: String? = nil) async {
         guard !cloudPaused, !busy, let api, let scope, let model else { return }
         busy = true; defer { busy = false }; let generation = epoch
@@ -227,7 +243,6 @@ import RelayCore
         do {
             let token = try await auth.accessToken()
             var cursor: String?
-            var historyBudget = 1
             repeat {
                 var query = [URLQueryItem(name: "view", value: shelterID == nil ? "mine" : "shelter"), .init(name: "limit", value: "50")]
                 if let shelterID { query.append(.init(name: "shelter_id", value: shelterID)) }
@@ -235,19 +250,7 @@ import RelayCore
                 let page: CloudPage = try await api.call("v1/requests", token: token, query: query)
                 guard generation == epoch else { return }
                 for result in page.items.sorted(by: { $0.submission.created_at > $1.submission.created_at }) {
-                    var record = records.first { $0.id == result.id } ?? CloudQueueRecord(scope: scope, submission: result.submission)
-                    record.result = result; record.state = "accepted"
-                    if record.pendingEvent == nil && record.pendingInventory == nil { record.problem = nil }
-                    let terminal = ["completed", "cancelled", "rejected"].contains(record.history?.status ?? "new")
-                    if let history = result.history {
-                        record.history = history; record.reservation = result.reservation
-                        if record.pendingEvent == nil && record.pendingInventory == nil { record.retryAt = Date().addingTimeInterval(20) }
-                    } else if historyBudget > 0 && !terminal {
-                        let reservation: ReservationResult = try await api.call("v1/requests/\(record.id)/inventory", token: token)
-                        record.reservation = reservation.reservation; record.history = reservation.history
-                        historyBudget -= 1
-                    }
-                    try await model.withStore { try $0.saveCloudRecord(record) }
+                    try await model.withStore { try $0.mergeCloudSnapshot(result, scope: scope) }
                 }
                 cursor = page.next_cursor
                 await reload()
@@ -308,34 +311,45 @@ import RelayCore
               let shelter = directory.first(where: { $0.shelter_id == draft.shelterID }) else { problem = "Choose a shelter first."; return }
         let text = draft.text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { problem = "Describe your request first."; return }
-        interpreting = true; defer { interpreting = false }; problem = ""; let generation = epoch
+        interpreting = true; problem = ""; let generation = epoch
         if draft.interpretationText != text || draft.interpretationShelter != shelter.shelter_id || draft.interpretationID == nil || draft.interpretationTranscription != draft.transcriptionID || interpretation?.status == "failed" {
             draft.interpretationReady = false; draft.interpretationID = UUID().uuidString.lowercased(); draft.interpretationText = text; draft.interpretationShelter = shelter.shelter_id; draft.interpretationTranscription = draft.transcriptionID
         }
         let id = draft.interpretationID!, snapshot = draft
+        defer { if draft.interpretationID == id { interpreting = false } }
         do {
             try await model.withStore { try $0.saveRequestDraft(snapshot, scope: scope) }
             let token = try await auth.accessToken()
             let command = InterpretationCommand(id: id, incident: shelter.incident_id, shelter: shelter.shelter_id, text: text, transcription: snapshot.transcriptionID)
             var value: InterpretationResult = try await api.call("v1/interpretations", token: token, method: "POST", body: CloudCodec.encode(command))
-            for _ in 0..<60 {
-                guard generation == epoch else { return }
+            for _ in 0..<40 {
+                guard generation == epoch, draft.interpretationID == id, !cloudPaused else { return }
                 if value.status != "pending" { break }
-                try await Task.sleep(for: .seconds(2))
+                try await Task.sleep(for: .milliseconds(500))
                 value = try await api.call("v1/interpretations/" + id, token: token)
             }
-            guard generation == epoch, draft.text.trimmingCharacters(in: .whitespacesAndNewlines) == text, draft.shelterID == shelter.shelter_id else { return }
+            guard generation == epoch, draft.interpretationID == id, draft.text.trimmingCharacters(in: .whitespacesAndNewlines) == text, draft.shelterID == shelter.shelter_id else { return }
             interpretation = value
             draft.interpretationReady = ["ready_for_review", "needs_review"].contains(value.status) && value.result != nil
             persistDraft()
             if let proposal = value.result?.proposal {
                 if let item = proposal.item_id, draft.item == snapshot.item { draft.item = item }
+                if draft.requestedUnit == snapshot.requestedUnit { draft.requestedUnit = proposal.unit }
+                if draft.people == snapshot.people { draft.people = proposal.people.map(String.init) ?? snapshot.people }
+                if draft.landmark == snapshot.landmark, let landmark = proposal.landmark { draft.landmark = landmark }
+                if draft.urgency == snapshot.urgency, let urgency = proposal.urgency { draft.urgency = urgency }
+                if draft.medicineDetails == snapshot.medicineDetails, let details = proposal.medicine_details { draft.medicineDetails = details }
                 if draft.quantity == snapshot.quantity { draft.quantity = proposal.quantity.map(String.init) ?? "" }
                 persistDraft()
             }
-            if value.status == "pending" { problem = "Still preparing the preview. Retry to resume the same analysis." }
+            if value.status == "pending" { problem = "Still extracting details. You can retry the same preview or enter the details yourself." }
             if let error = value.error { problem = error.message }
-        } catch { problem = error.localizedDescription }
+        } catch { if generation == epoch && draft.interpretationID == id { problem = error.localizedDescription } }
+    }
+    func skipPreview() {
+        draft.interpretationID = nil; draft.interpretationReady = nil; draft.interpretationText = nil
+        draft.interpretationShelter = nil; draft.interpretationTranscription = nil
+        interpreting = false; interpretation = nil; problem = ""; persistDraft()
     }
     func submitRequest() async -> String? {
         guard !submitting, let scope, let model, let shelter = directory.first(where: { $0.shelter_id == draft.shelterID }) else { return nil }

@@ -35,6 +35,7 @@ class Settings(BaseModel):
     aws_config_file: Path | None = None
     aws_login_cache_directory: Path | None = None
     worker_function_name: str | None = None
+    accelerate_previews: bool = False
     table_name: str = "relay-messages"
     bucket_name: str = "relay-artifacts-928489693154-use1"
     object_prefix: str = "cloud-mvp-v1/"

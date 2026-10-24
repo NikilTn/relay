@@ -1,9 +1,87 @@
 # RELAY test results — updated 24 October 2026
 
-**Current verdict:** build17 is ready for a controlled phone rehearsal. Native
+**Current verdict:** build19 is ready for a controlled phone rehearsal. Native
 software, real AWS services and separate-encounter relay controls pass. Physical
 router-free wireless acceptance is still **NOT TESTED**. The older dated sections
 below are historical; this checkpoint supersedes their feature/release status.
+
+## Build19 — extraction, urgency, medicine requests and faster replies
+
+24 October2026, approximately08:00PDT. Actual pipeline is AWS Transcribe → Bedrock
+Nova Lite (`amazon.nova-lite-v1:0`) → field validation → editable native request.
+The API and ordinary worker still run on this Mac behind `relay.stepcheck.app`.
+
+Changes and observed causes:
+
+- Global number/negation heuristics treated people, age and room numbers as competing
+  supply quantities and “no internet” as request negation. Grounding now separates
+  resource counts, people, landmarks and explicit urgency. Known fields are retained
+  when other details require review; requested units are editable and not silently
+  converted into stock units.
+- A real Nova result contained correct fields but an unexpected `missing_fields`
+  entry (`urgency_evidence`). This originally discarded the whole proposal. The
+  extraction call now requests the named structured tool, validates its input, and
+  derives missing-field annotations. Unexpected tools are never executed. Two
+  synthetic direct Bedrock diagnostic calls ran outside the app allocation counter.
+- A bounded one-slot preview lane starts durable queued previews promptly, sharing
+  the same conditional lease with the ordinary worker. Client checks every500ms
+  while extracting, with an explicit manual-entry escape. Model output is not an
+  inventory decision or medical triage.
+- Open requests fetch one authorized batched snapshot about every3s; inboxes refresh
+  about every8s and directory setup about every60s. Background reads preserve newer
+  replies and pending writes. This is foreground polling, not push notifications.
+- Legacy caches truncate fractional server timestamps. Comparing the persisted
+  timestamp representation fixes an inbox-stopping mismatch while retaining the
+  original submission. Changed immutable content still fails validation.
+- A simultaneous direct/gateway submission could see the preview already bound to
+  the SAME request and incorrectly reject it. Same-ID races now resolve through
+  the existing atomic transaction/replay check. Reuse for another request ID still
+  fails; no second model call or stock allocation is allowed.
+
+New UI: Medicines category, editable medicine name/details, requested units, and
+Routine / Soon / Urgent / Immediate tags plus “not specified.” AI suggests urgency
+only from stated language; the person can override or clear it. Tags/details travel
+inside the encrypted request and appear in the shelter inbox/review. Medicines are
+staff-reviewed requests; medication-specific inventory, prescribing, dose calculation
+and substitution are NOT implemented. Water/food/blanket stock remains separate.
+
+Validation:
+
+- **66 Swift tests PASS** ([log](docs/evidence/build19/relay19-swift-tests.txt)),
+  including new fields across encrypted carrier restart/receipt, legacy decode,
+  persisted manual tags, out-of-order replies, pending-action preservation and
+  fractional timestamps without accepting changed content.
+- **99 backend tests PASS** ([log](docs/evidence/build19/relay19-backend-tests.txt));
+  one existing dependency warning. New coverage includes narrative counts,
+  no-internet negation, ungrounded urgency/location, medicine strengths versus item
+  counts, legacy immutable digests, snapshot authorization, one-call preview leases
+  and the direct/gateway preview race.
+- **Loopback TCP PASS** ([log](docs/evidence/build19/relay19-tcp-test.txt)); restart,
+  interrupted frame, retry, duplicate and reverse-receipt controls. Not wireless.
+- **Real AWS/public API PASS:** three synthetic preview cases matched expected
+  fields in3.498s,3.203s,2.265s. Narrative case: water2/people4/room12/Urgent;
+  medicine case: inhalers2/people3/Immediate; missing-count case kept quantity unknown.
+  Two coordinator reply POST+snapshot-read samples took1.171s/1.211s. These are
+  individual API observations, not guaranteed UI latency or a load benchmark.
+  [Evidence](docs/evidence/build19/relay18-live-evidence.json).
+- **Native UI PASS:** actual simulator extraction, manual Urgent→Soon override,
+  review/send, matching Mac inbox tag, medicine details/staff-review screen, and a
+  Mac reply appearing in the open requester detail without manual refresh after
+  sending. Request `3c5c9013-5846-430f-8bd4-91be605d5b6a` reconciled cloud/nearby
+  and recognized a destination receipt. Internet remained available.
+  [Record](docs/evidence/build19/relay19-ui-evidence.json).
+- **Build/install PASS:** Mac, simulator, signed original iOS build and TestFlight
+  archive/upload. Build19 uploaded07:56:48PDT; Apple processing, external availability
+  unverified. Both physical phone apps report19 and launched. All pre-update UUIDs,
+  messages/receipts and immutable cloud submissions were preserved:45 messages/47
+  cloud records on15ProMax,47 messages/46 cloud records on16. Both retain requester
+  accounts. [15](docs/evidence/build19/iphone15-installation.json),
+  [16](docs/evidence/build19/iphone16-installation.json),
+  [build markers](docs/evidence/build19/build-markers.txt).
+- Final read-only cloud preflight **PASS**, counters34/100 request/preview allocations
+  and10/20 transcription allocations at capture. No new audio test was necessary
+  for these extraction changes. Streaming remains implemented; phone microphone
+  quality and physical no-router A–E acceptance are not established by this session.
 
 ## Physical installation follow-up — 07:10 PDT, 24 October
 

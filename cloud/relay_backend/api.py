@@ -1,4 +1,7 @@
 import os
+import threading
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import asynccontextmanager
 from uuid import UUID
 from typing import Literal
 
@@ -14,9 +17,9 @@ from .config import Settings
 from .models import (ErrorResponse, RequestSubmission, StartTranscription, TranscriptionAllocation,
                      Health, RequestResult, RequestPage, TranscriptionResult, ShelterDirectory,
                      Profile, RequestEventCommand, RequestHistory, InterpretationSubmission,
-                     InterpretationResult, Inventory, InventoryAdjustment, InventoryCommand, RequestInventory)
+                     InterpretationResult, Inventory, InventoryAdjustment, InventoryCommand, RequestInventory, InboxRequestResult)
 from .providers import AWSProviders, FixtureProviders, ProviderError
-from .service import APIError, Service
+from .service import APIError, Service, Worker
 from .store import DynamoStore, SQLiteStore
 from .speech import install_speech_routes
 from .nearby import DeviceRegistration, ReceiverAssignment, SignedRequest
@@ -41,7 +44,23 @@ def build_service(settings):
 def create_app(settings: Settings, service=None):
     service = service or build_service(settings)
     auth = Authenticator(settings)
-    app = FastAPI(title="RELAY Cloud API", version="1.0.0",
+    previews = ThreadPoolExecutor(max_workers=1, thread_name_prefix="relay-preview") if settings.accelerate_previews else None
+    preview_slot = threading.BoundedSemaphore(1)
+
+    @asynccontextmanager
+    async def lifespan(app):
+        yield
+        if previews: previews.shutdown(wait=False, cancel_futures=True)
+
+    def run_preview(identifier):
+        try:
+            Worker(service).run_once("interpretation#" + str(identifier))
+        except Exception as error:
+            print("Preview worker interrupted:", type(error).__name__, flush=True)
+        finally:
+            preview_slot.release()
+
+    app = FastAPI(lifespan=lifespan, title="RELAY Cloud API", version="1.0.0",
                   description="Durable authenticated requests, pre-send previews, reviewed speech and coordinator inventory ledger. Inventory fulfillment is a staff-recorded stock transaction, not proof of physical delivery. Nearby gateway ingestion verifies enrolled sender signatures.",
                   servers=[{"url": settings.public_base_url}],
                   responses={n: {"model": ErrorResponse} for n in (400, 401, 403, 404, 409, 410, 413, 422, 429, 503)})
@@ -115,6 +134,11 @@ def create_app(settings: Settings, service=None):
               responses={200: {"description": "Identical preview already accepted", "model": InterpretationResult}})
     def interpret(body: InterpretationSubmission, response: Response, user=Depends(principal)):
         result, created = service.interpret(user, body)
+        # Durable queue/conditional lease remain authoritative; this bounded lane
+        # removes interactive preview wait behind unrelated jobs, with no extra calls.
+        if previews and result["status"] == "pending" and preview_slot.acquire(blocking=False):
+            try: previews.submit(run_preview, body.interpretation_id)
+            except RuntimeError: preview_slot.release()
         response.status_code = 201 if created else 200
         return result
 
@@ -129,6 +153,10 @@ def create_app(settings: Settings, service=None):
     @app.post("/v1/inventory/{shelter_id}/adjust", response_model=Inventory, tags=["Inventory"])
     def adjust_inventory(shelter_id: str, body: InventoryAdjustment, user=Depends(principal)):
         return service.adjust_inventory(user, shelter_id, body)
+
+    @app.get("/v1/requests/{request_id}/snapshot", response_model=InboxRequestResult, tags=["Requests"])
+    def request_snapshot(request_id: UUID, user=Depends(principal)):
+        return service.request_snapshot(user, request_id)
 
     @app.get("/v1/requests/{request_id}/inventory", response_model=RequestInventory, tags=["Inventory"])
     def request_inventory(request_id: UUID, user=Depends(principal)):

@@ -24,8 +24,10 @@ public struct RequestFields: Codable, Equatable {
     public var unit: String?
     public var people: Int?
     public var landmark: String
-    public init(item: String?, quantity: Int?, unit: String?, people: Int?, landmark: String) {
-        item_id = item; self.quantity = quantity; self.unit = unit; self.people = people; self.landmark = landmark
+    public var urgency: String?
+    public var medicine_details: String?
+    public init(item: String?, quantity: Int?, unit: String?, people: Int?, landmark: String, urgency: String? = nil, medicineDetails: String? = nil) {
+        item_id = item; self.quantity = quantity; self.unit = unit; self.people = people; self.landmark = landmark; self.urgency = urgency; medicine_details = medicineDetails
     }
 }
 public struct RequestDraft: Codable, Equatable {
@@ -36,6 +38,9 @@ public struct RequestDraft: Codable, Equatable {
     public var quantity = ""
     public var people = ""
     public var landmark = ""
+    public var urgency: String?
+    public var medicineDetails: String?
+    public var requestedUnit: String?
     public var location: RequestLocation?
     public var transcriptionID: String?
     public var interpretationReady: Bool?
@@ -44,7 +49,8 @@ public struct RequestDraft: Codable, Equatable {
     public var interpretationShelter: String?
     public var interpretationTranscription: String?
     public init() {}
-    public var unit: String { item == "blankets" ? "piece" : "pack" }
+    public static let units = ["pack", "piece", "bottle", "item", "tablet", "vial", "box"]
+    public var unit: String { requestedUnit ?? (item == "blankets" ? "piece" : item == "medicines" ? "item" : "pack") }
     public func fields() throws -> RequestFields {
         func count(_ s: String, limit: Int) throws -> Int? {
             let s = s.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -52,9 +58,9 @@ public struct RequestDraft: Codable, Equatable {
             guard let value = Int(s), (1...limit).contains(value) else { throw RelayError.invalid("Enter a positive whole number, or leave unknown amounts blank.") }
             return value
         }
-        guard ["water_packs", "food_packs", "blankets", "other"].contains(item), landmark.count <= 240 else { throw RelayError.invalid("Check the item and landmark.") }
+        guard ["water_packs", "food_packs", "blankets", "medicines", "other"].contains(item), landmark.count <= 240, Self.units.contains(unit), urgency == nil || RequestUrgency(rawValue: urgency!) != nil, (medicineDetails?.count ?? 0) <= 240 else { throw RelayError.invalid("Check the item and landmark.") }
         let amount = try count(quantity, limit: 10000)
-        return RequestFields(item: item, quantity: amount, unit: amount == nil ? nil : unit, people: try count(people, limit: 1_000_000), landmark: landmark)
+        return RequestFields(item: item, quantity: amount, unit: amount == nil ? nil : unit, people: try count(people, limit: 1_000_000), landmark: landmark, urgency: urgency, medicineDetails: item == "medicines" ? medicineDetails : nil)
     }
 }
 public struct InterpretationCommand: Codable, Equatable {
@@ -85,7 +91,7 @@ public struct InventoryItem: Codable, Identifiable {
     public var id: String { item_id }
     public var title: String { Self.title(item_id) }
     public static func title(_ id: String) -> String {
-        switch id { case "water_packs": return "Water packs"; case "food_packs": return "Food packs"; case "blankets": return "Blankets"; default: return "Other" }
+        switch id { case "water_packs": return "Water packs"; case "food_packs": return "Food packs"; case "blankets": return "Blankets"; case "medicines": return "Medicines"; default: return "Other" }
     }
 }
 public struct InventorySnapshot: Codable { public let shelter_id: String; public let items: [InventoryItem] }
@@ -119,5 +125,39 @@ public struct InventoryCommand: Codable, Equatable {
     public init(action: String, item: String? = nil, quantity: Int? = nil, revision: Int? = nil) {
         operation_id = UUID().uuidString.lowercased(); self.action = action; item_id = item
         self.quantity = quantity; expected_inventory_revision = revision
+    }
+}
+
+public enum RequestUrgency: String, Codable, CaseIterable {
+    case routine, soon, urgent, immediate
+    public var title: String { rawValue.capitalized }
+    public var explanation: String {
+        switch self {
+        case .routine: return "No time pressure stated"
+        case .soon: return "Needed soon"
+        case .urgent: return "Time-sensitive request"
+        case .immediate: return "Help requested right now"
+        }
+    }
+}
+
+public enum ExtractionReview {
+    public static func message(_ code: String) -> String {
+        switch code {
+        case "invalid_model_output": return "Details could not be extracted. Your text is saved; enter the fields yourself."
+        case "missing_quantity", "quantity_not_grounded": return "Confirm the supply quantity, or leave it unknown. People counts are separate."
+        case "multiple_quantities_require_review": return "More than one supply quantity was mentioned. Confirm the amount below."
+        case "multiple_items_require_review": return "Several supplies were mentioned. This request holds one type; create another request for the others."
+        case "negation_requires_review": return "The request may include a cancellation or correction. Check before sending."
+        case "unit_mismatch", "unit_not_grounded", "missing_unit": return "Confirm the requested unit. Staff must check it against their stock units."
+        case "medicine_staff_review": return "Medicine requests need staff review. No medicine or dose is recommended automatically."
+        case "urgency_not_grounded": return "Urgency was not clearly stated. Choose a tag yourself if needed."
+        case "people_not_grounded": return "Confirm how many people need help."
+        case "landmark_not_grounded": return "Enter a landmark or attach your location."
+        case "complex_quantity_requires_review", "unsupported_quantity_format": return "Check the amount; it may be approximate, fractional or phrased ambiguously."
+        case "shelter_mismatch", "text_destination_conflict", "missing_shelter": return "The spoken shelter may differ from your selection. Check the destination."
+        case "unknown_or_missing_item", "item_not_grounded", "missing_item": return "Choose the supply type that matches your request."
+        default: return "Check this detail: " + code.replacingOccurrences(of: "_", with: " ")
+        }
     }
 }

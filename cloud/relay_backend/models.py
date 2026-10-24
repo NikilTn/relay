@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator, model_serializer
 
 
 class StrictModel(BaseModel):
@@ -26,18 +26,23 @@ class RequestLocation(StrictModel):
 
 
 class StructuredFields(StrictModel):
-    item_id: Literal["water_packs", "blankets", "food_packs", "other"] | None = None
+    item_id: Literal["water_packs", "blankets", "food_packs", "medicines", "other"] | None = None
     quantity: int | None = Field(default=None, strict=True, ge=1, le=10000)
-    unit: Literal["pack", "piece", "bottle"] | None = None
+    unit: Literal["pack", "piece", "bottle", "item", "tablet", "vial", "box"] | None = None
     people: int | None = Field(default=None, strict=True, ge=1, le=1000000)
     landmark: str | None = Field(default=None, max_length=500)
 
-    @model_validator(mode="after")
-    def consistent_unit(self):
-        units = {"water_packs": "pack", "food_packs": "pack", "blankets": "piece"}
-        if self.item_id in units and self.unit is not None and self.unit != units[self.item_id]:
-            raise ValueError("Unit does not match the supported item")
-        return self
+    urgency: Literal["routine", "soon", "urgent", "immediate"] | None = None
+    medicine_details: str | None = Field(default=None, max_length=240)
+
+    @model_serializer(mode="wrap")
+    def preserve_legacy_shape(self, handler):
+        value = handler(self)
+        # Existing request hashes must not change when old clients retry after upgrade.
+        for field in ("urgency", "medicine_details"):
+            if value.get(field) is None:
+                value.pop(field, None)
+        return value
 
 
 class RequestSubmission(StrictModel):
@@ -94,13 +99,19 @@ class StartTranscription(StrictModel):
 
 
 class ModelProposal(StrictModel):
-    item_id: Literal["water_packs", "blankets", "food_packs", "other"] | None
+    item_id: Literal["water_packs", "blankets", "food_packs", "medicines", "other"] | None
     quantity: int | None = Field(default=None, strict=True, ge=1, le=10000)
-    unit: Literal["pack", "piece", "bottle"] | None
+    unit: Literal["pack", "piece", "bottle", "item", "tablet", "vial", "box"] | None
     shelter_id: str | None = Field(max_length=80)
     negated: bool = Field(strict=True)
     missing_fields: list[Literal["item", "quantity", "unit", "shelter"]] = Field(max_length=4)
     summary: str = Field(min_length=1, max_length=400)
+
+    people: int | None = Field(default=None, strict=True, ge=1, le=1000000)
+    landmark: str | None = Field(default=None, max_length=240)
+    medicine_details: str | None = Field(default=None, max_length=240)
+    urgency: Literal["routine", "soon", "urgent", "immediate"] | None = None
+    urgency_evidence: str | None = Field(default=None, max_length=240)
 
 
 class ErrorDetail(StrictModel):

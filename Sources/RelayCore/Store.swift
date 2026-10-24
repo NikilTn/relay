@@ -377,6 +377,21 @@ extension RelayStore {
             return record
         }
     }
+    /// Merge a read response without losing a concurrently queued action or newer reply.
+    public func mergeCloudSnapshot(_ result: CloudResult, scope: String) throws {
+        var record = try cloudRecords(scope: scope).first { $0.id == result.id } ?? CloudQueueRecord(scope: scope, submission: result.submission)
+        // Legacy caches serialize dates at whole-second precision. Compare that
+        // persisted representation so a server's fractional timestamp does not
+        // block all inbox updates; retain the original local submission unchanged.
+        guard try CloudCodec.encode(record.submission) == CloudCodec.encode(result.submission) else { throw RelayError.invalid("Cloud response changed the saved request") }
+        if !(["ready_for_review", "needs_review"].contains(record.result?.analysis_state ?? "") && ["pending", "retrying"].contains(result.analysis_state)) { record.result = result }
+        if let history = result.history, history.revision >= (record.history?.revision ?? -1) {
+            record.history = history; record.reservation = result.reservation
+        }
+        if record.pendingEvent == nil && record.pendingInventory == nil { record.state = "accepted"; record.problem = nil }
+        try saveCloudRecord(record)
+    }
+
     public func saveCloudRecord(_ value: CloudQueueRecord) throws {
         var record = value
         // Network responses may have been in flight when a nearby receipt arrived.

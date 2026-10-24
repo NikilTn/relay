@@ -97,11 +97,14 @@ struct PublicHelpView: View {
                             }.font(.subheadline.weight(.medium)).buttonStyle(.plain).frame(minHeight: 44)
                                 .disabled(cloud.interpreting || cloud.draft.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || cloud.draft.shelterID.isEmpty)
                         }
+                        if cloud.interpreting || cloud.draft.interpretationReady == false {
+                            Button("Enter details myself") { cloud.skipPreview() }.font(.subheadline)
+                        }
                         if let result = cloud.interpretation, cloud.draft.interpretationText == cloud.draft.text.trimmingCharacters(in: .whitespacesAndNewlines) {
                             VStack(alignment: .leading, spacing: 6) {
                                 Text("AI suggestion — check the details below.").font(.caption.weight(.medium))
                                 Text(result.result?.proposal?.summary ?? "Review your request details.").font(.subheadline).foregroundStyle(RelayTheme.secondary)
-                                ForEach(result.result?.review_reasons ?? [], id: \.self) { WorkflowNotice(text: $0) }
+                                ForEach(result.result?.review_reasons ?? [], id: \.self) { WorkflowNotice(text: ExtractionReview.message($0)) }
                             }.padding(.vertical, 8)
                         }
                     }
@@ -109,8 +112,8 @@ struct PublicHelpView: View {
                     VStack(alignment: .leading, spacing: 14) {
                         Text("What do you need?").font(.title2.bold())
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 10)], spacing: 10) {
-                            ForEach(["water_packs", "food_packs", "blankets", "other"], id: \.self) { item in
-                                Button { cloud.draft.item = item } label: {
+                            ForEach(["water_packs", "food_packs", "blankets", "medicines", "other"], id: \.self) { item in
+                                Button { cloud.draft.item = item; cloud.draft.requestedUnit = nil } label: {
                                     HStack {
                                         Text(InventoryItem.title(item)).font(.body.bold())
                                         Spacer(minLength: 4)
@@ -127,6 +130,20 @@ struct PublicHelpView: View {
                             VStack(alignment: .leading, spacing: 14) { quantity; people }
                         }
                     }
+                    HStack {
+                        Text("Requested unit").font(.subheadline)
+                        Spacer()
+                        Picker("Requested unit", selection: Binding(get: { cloud.draft.unit }, set: { cloud.draft.requestedUnit = $0 })) {
+                            ForEach(RequestDraft.units, id: \.self) { Text($0.capitalized).tag($0) }
+                        }.labelsHidden()
+                    }
+                    if cloud.draft.item == "medicines" {
+                        TextField("Medicine name and details, if known", text: Binding(get: { cloud.draft.medicineDetails ?? "" }, set: { cloud.draft.medicineDetails = $0 }), axis: .vertical)
+                            .lineLimit(2...4).textFieldStyle(WorkflowInput()).focused($editing)
+                        Text("Share what you need. Shelter staff confirm availability; this app does not recommend medicines or doses.").font(.caption).foregroundStyle(RelayTheme.secondary)
+                    }
+                    Divider()
+                    UrgencySelection(value: $cloud.draft.urgency)
                     Divider().padding(.top, 4)
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
@@ -185,6 +202,8 @@ struct WorkflowReview: View {
                     WorkflowFact("Item", value: InventoryItem.title(cloud.draft.item))
                     WorkflowFact("Amount", value: cloud.draft.quantity.isEmpty ? "Unknown" : "\(cloud.draft.quantity) \(cloud.draft.unit)")
                     WorkflowFact("People", value: cloud.draft.people.isEmpty ? "Unknown" : cloud.draft.people)
+                    WorkflowFact("Reported urgency", value: cloud.draft.urgency.flatMap(RequestUrgency.init(rawValue:))?.title ?? "Not specified")
+                    if cloud.draft.item == "medicines", let details = cloud.draft.medicineDetails, !details.isEmpty { Text("Medicine: " + details) }
                     if !cloud.draft.landmark.isEmpty { Text("Landmark: " + cloud.draft.landmark) }
                     if let location = cloud.draft.location { LocationFacts(location: location) }
                     else { Text("No device location attached").foregroundStyle(RelayTheme.secondary) }
@@ -284,6 +303,8 @@ struct WorkflowRequestDetail: View {
                             WorkflowFact("Item", value: InventoryItem.title(fields.item_id ?? "other"))
                             WorkflowFact("Amount", value: fields.quantity.map { "\($0) \(fields.unit ?? "")" } ?? "Unknown")
                             WorkflowFact("People", value: fields.people.map(String.init) ?? "Unknown")
+                            WorkflowFact("Reported urgency", value: fields.urgency.flatMap(RequestUrgency.init(rawValue:))?.title ?? "Not specified")
+                            if let medicine = fields.medicine_details, !medicine.isEmpty { Text("Medicine: " + medicine) }
                             if !fields.landmark.isEmpty { Text("Landmark: " + fields.landmark) }
                         }
                         if let location = record.submission.location { LocationFacts(location: location) }
@@ -305,11 +326,18 @@ struct WorkflowRequestDetail: View {
                             WorkflowSection(title: "AI interpretation", symbol: "sparkles", subtitle: "A suggestion for staff to review")
                             Text(proposal.summary)
                             Text("\(InventoryItem.title(proposal.item_id ?? "other")) · \(proposal.quantity.map(String.init) ?? "Unknown") \(proposal.unit ?? "")")
-                            ForEach(record.result?.result?.review_reasons ?? [], id: \.self) { Text($0).font(.caption).foregroundStyle(.orange) }
+                            ForEach(record.result?.result?.review_reasons ?? [], id: \.self) { Text(ExtractionReview.message($0)).font(.caption).foregroundStyle(.orange) }
                             Text("Staff approval controls inventory. AI cannot allocate supplies.").font(.caption).foregroundStyle(RelayTheme.secondary)
                         }
                     }
-                    if cloud.isDispatcher, record.result != nil { approval(record) }
+                    if cloud.isDispatcher, record.result != nil {
+                        if record.submission.structured_fields?.item_id == "medicines" || record.result?.result?.proposal?.item_id == "medicines" {
+                            RelayCard {
+                                Text("Medicine request · staff review").font(.headline)
+                                Text("Check the named medicine and confirm availability in a reply. Medicines are not interchangeable stock; automatic reservation is unavailable.").font(.subheadline)
+                            }
+                        } else { approval(record) }
+                    }
                     if let reservation = record.reservation {
                         RelayCard {
                             Text("Supplies: \(reservation.status)").font(.headline)
@@ -346,8 +374,11 @@ struct WorkflowRequestDetail: View {
                 cloud.focusedRequestID = id
                 if let record {
                     item = record.submission.structured_fields?.item_id ?? record.result?.result?.proposal?.item_id ?? "water_packs"
-                    amount = (record.submission.structured_fields?.quantity ?? record.result?.result?.proposal?.quantity).map(String.init) ?? ""
+                    let requestedUnit = record.submission.structured_fields?.unit ?? record.result?.result?.proposal?.unit
+                    let stockUnit = item == "blankets" ? "piece" : "pack"
+                    amount = requestedUnit == stockUnit ? (record.submission.structured_fields?.quantity ?? record.result?.result?.proposal?.quantity).map(String.init) ?? "" : ""
                     if cloud.isDispatcher { cloud.staffShelterID = record.submission.destination_shelter_id; await cloud.refreshInventory() }
+                    await cloud.refreshFocusedRequest()
                 }
             }
             .confirmationDialog("Confirm the supplies were handed over?", isPresented: $confirmingHandover, titleVisibility: .visible) {
@@ -525,6 +556,28 @@ struct WorkflowSettings: View {
                 }.frame(maxWidth: .infinity, minHeight: 112).padding(.horizontal, 10)
                     .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(.black, lineWidth: readingSize == value ? 4 : highContrast ? 3 : 1.5))
             }.buttonStyle(.plain).accessibilityAddTraits(readingSize == value ? .isSelected : [])
+        }
+    }
+}
+
+struct UrgencySelection: View {
+    @Binding var value: String?
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack { Text("How urgent is it?").font(.title2.bold()); Spacer(); if value != nil { Button("Clear") { value = nil }.font(.caption) } }
+            Text("Choose or correct your reported urgency. Staff review the request.").font(.caption).foregroundStyle(RelayTheme.secondary)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 125), spacing: 10)], spacing: 10) {
+                ForEach(RequestUrgency.allCases, id: \.rawValue) { level in
+                    Button { value = level.rawValue } label: {
+                        Text(level.title).font(.body.bold()).frame(maxWidth: .infinity, minHeight: 46)
+                            .foregroundStyle(value == level.rawValue ? RelayTheme.onAction : .primary)
+                            .background(value == level.rawValue ? RelayTheme.action : .clear, in: RoundedRectangle(cornerRadius: 12))
+                            .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(.black, lineWidth: 2))
+                    }.buttonStyle(.plain).accessibilityAddTraits(value == level.rawValue ? .isSelected : [])
+                }
+            }
+            if let level = value.flatMap(RequestUrgency.init(rawValue:)) { Text(level.explanation).font(.caption) }
+            else { Text("Not specified").font(.caption).foregroundStyle(RelayTheme.secondary) }
         }
     }
 }

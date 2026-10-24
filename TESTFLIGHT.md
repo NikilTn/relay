@@ -1,4 +1,19 @@
-# Current release — build17
+# Current release — build19
+
+Build **0.1.0 (19)** signed, archived and uploaded at **07:56:48PDT,24 October2026**.
+Apple reported processing. External tester availability is **NOT VERIFIED**.
+Both original development phone apps were updated in place to19 and launched;
+messages, receipt state, identities and earlier cloud submissions were preserved.
+Next unused build:20. Build18 was an intermediate upload superseded by19.
+
+This release improves transcript extraction, adds Medicines and editable reported
+urgency, accelerates open-request replies, and fixes legacy cache timestamp refresh.
+The backend also fixes same-ID direct/gateway preview races. Medicine requests go
+through staff review; medicine-specific inventory is not implemented. See
+[TEST_RESULTS.md](TEST_RESULTS.md) for real AWS/native UI evidence and remaining
+physical wireless acceptance. The older records below are historical.
+
+# Previous release — build17
 
 Build **0.1.0 (17)** was signed, archived and uploaded successfully at
 **05:25:17 PDT on24 October2026**. Apple reported **Uploaded package is processing**.

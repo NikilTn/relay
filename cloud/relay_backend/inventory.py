@@ -119,6 +119,9 @@ class InventoryMixin:
         if history["status"] in {"completed", "cancelled", "rejected"}:
             raise APIError(409, "request_terminal", "This request is already closed")
         if command.action == "reserve":
+            fields = submission.get("structured_fields") or {}
+            if fields.get("item_id") == "medicines" or ((record.get("result") or {}).get("proposal") or {}).get("item_id") == "medicines":
+                raise APIError(422, "medicine_staff_review", "Named medicines require staff review; generic stock allocation is unavailable")
             if reservation_row:
                 raise APIError(409, "reservation_exists", "This request already has a reservation; use its existing action")
             if len(history["events"]) >= 100:

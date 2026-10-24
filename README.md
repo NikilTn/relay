@@ -1,10 +1,10 @@
 # RELAY — offline store-carry-forward prototype
 
-Buildable SwiftUI iOS and macOS apps sharing a Swift/Network.framework/SQLite engine. The relay remains local and uses no third-party runtime dependencies or external radio hardware. Build17 includes live speech and encrypted shelter delivery to the requester/coordinator workflow, with a custom HTTPS hostname for the API on this Mac.
+Buildable SwiftUI iOS and macOS apps sharing a Swift/Network.framework/SQLite engine. The relay remains local and uses no third-party runtime dependencies or external radio hardware. Build19 includes live speech and encrypted shelter delivery to the requester/coordinator workflow, with a custom HTTPS hostname for the API on this Mac.
 
 **Current verdict:** automated protocol tests, separate-process TCP loopback experiments, and native Mac ↔ iOS Simulator Bonjour control exchanges pass. **Physical iPhone A → iPhone B → Mac C and infrastructure-independent wireless delivery have NOT been verified.** See [TEST_RESULTS.md](TEST_RESULTS.md) for evidence and blockers. A simulator is not a radio test.
 
-## Current workflow — build 17
+## Current workflow — build 19
 
 The interface follows the plain reference: white backgrounds, bold system text,
 large outlined controls, a brown active accent, and functional text-size / contrast
@@ -15,6 +15,12 @@ Settings. [Design notes](DESIGN.md).
 - **Speak or type:** live AWS Transcribe displays partial words. Review the final
   editable transcript, get a Bedrock proposal, correct quantities and send explicitly.
   Both live speech and Bedrock require internet; typed requests work from cached setup.
+- **Details and urgency:** Bedrock extracts supply counts separately from people,
+  location text and reported urgency. Review or manually choose Routine, Soon,
+  Urgent or Immediate; unknown urgency stays unset. Requested units are editable.
+  Medicines requests retain the medicine name/details for staff review; they do
+  not allocate generic medicine stock or generate dosing/prescribing advice.
+  [Extraction and refresh behavior](cloud/docs/EXTRACTION.md).
 - **Location:** permission is requested only when attaching a location snapshot.
   Coordinates, accuracy and capture time are included in the reviewed request.
   No continuous tracking. A landmark can be used instead.
@@ -153,13 +159,12 @@ Apps must remain **foreground and awake** during encounters. Nearby services sta
 ## Teammate beta distribution
 
 See [TESTFLIGHT.md](TESTFLIGHT.md) for current upload and availability evidence.
-Build16 uploaded on24 October at04:42:55PDT; build17 adds recovery of a stale
-connection-error label after a successful refresh. Upload alone does not establish
+Build19 uploaded on24 October at07:56:48PDT. Upload alone does not establish
 external tester approval. The configured [TestFlight invitation](https://testflight.apple.com/join/paGggTvE)
 requires an approved build available to its tester group.
 
-The overnight session did not install on physical phones: both paired devices were
-disconnected. The original development bundle `org.relay.prototype.ios` and paid
+Both original phone apps now report build19 and launched successfully, with their
+previous data preserved. The original development bundle `org.relay.prototype.ios` and paid
 bundle `com.nikilthalapaneni.relay` are separate apps with separate stores. Update
 in place; do not uninstall to troubleshoot. No cross-bundle data migration is claimed.
 

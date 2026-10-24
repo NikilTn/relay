@@ -1,4 +1,4 @@
-# Mobile testing — build17
+# Mobile testing — build19
 
 Use [MORNING_DEMO.md](MORNING_DEMO.md) as the current procedure: two requester
 iPhones and the native Mac as Shelter A. It covers live speech, transcript review,
@@ -16,8 +16,8 @@ Keep it awake and online for AWS services. Before presenting, run the read-only
 AWS credentials. Accounts are organizer-provided synthetic RELAY accounts, separate
 from Apple or AWS-console sign-in. Never put passwords or enrollment files in Git.
 
-Both physical phones were disconnected during final builds, so installation of the
-new release and physical mic/GPS/radio checks remain operator steps. Update the same
+Both original physical phone apps were updated to build19 and launched. Physical
+mic/GPS/radio checks remain operator steps. Update the same
 bundle in place to preserve identity and SQLite data. The paid/TestFlight and original
 USB bundles have separate stores. See [TESTFLIGHT.md](TESTFLIGHT.md) for release status.
 

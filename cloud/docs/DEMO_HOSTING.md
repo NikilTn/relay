@@ -132,3 +132,11 @@ Verify `aws sts get-caller-identity --profile relay-workshop`, then restart only
 owned API/worker, preserving the existing tunnel and persistent stores. Run preflight
 and a small synthetic flow before presenting. Workshop access is temporary; this
 is not unattended permanent hosting.
+
+
+Build19 update: live runtime uses the private `aws-config-demo18.private.json`
+configuration with `accelerate_previews=true`. API process3671 and ordinary worker
+2040 use it; tunnel44716 was preserved. Final observed app allocations34/100 and
+10/20. There were two additional direct synthetic Bedrock diagnostic calls outside
+that counter. Read [EXTRACTION.md](EXTRACTION.md) for the one-slot preview lane and
+foreground snapshot polling. Runtime PIDs are observations, not permanent IDs.

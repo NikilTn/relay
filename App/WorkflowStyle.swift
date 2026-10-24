@@ -90,6 +90,7 @@ struct WorkflowRequestCard: View {
                 Spacer(minLength: 12)
                 if let quantity { Text(quantity).font(.system(.title2, design: .monospaced).weight(.medium)) }
             }
+            if let urgency = record.submission.structured_fields?.urgency.flatMap(RequestUrgency.init(rawValue:)) { Text(urgency.title + " · reported urgency").font(.caption.bold()) }
             Text(record.submission.original_text).font(.subheadline).foregroundStyle(RelayTheme.secondary).lineLimit(2)
             HStack {
                 WorkflowBadge(text: WorkflowRequestsView.progress(record), color: closed ? .secondary : RelayTheme.accent)

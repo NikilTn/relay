@@ -95,10 +95,11 @@ public struct SignedNearbyRequest: Codable {
         _ = try Curve25519.KeyAgreement.PublicKey(rawRepresentation: senderKey)
         try value.submission.location?.validate()
         if let fields = value.submission.structured_fields {
-            guard fields.item_id == nil || ["water_packs", "food_packs", "blankets", "other"].contains(fields.item_id!),
+            guard fields.item_id == nil || ["water_packs", "food_packs", "blankets", "medicines", "other"].contains(fields.item_id!),
                   fields.quantity.map({ (1...10000).contains($0) }) ?? true,
                   fields.people.map({ (1...1_000_000).contains($0) }) ?? true,
-                  fields.unit == nil || ["pack", "piece"].contains(fields.unit!), fields.landmark.count <= 240 else {
+                  fields.unit == nil || RequestDraft.units.contains(fields.unit!), fields.landmark.count <= 240,
+                  fields.urgency == nil || RequestUrgency(rawValue: fields.urgency!) != nil, (fields.medicine_details?.count ?? 0) <= 240 else {
                 throw RelayError.invalid("Invalid structured nearby request")
             }
         }
