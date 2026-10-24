@@ -13,7 +13,8 @@ from .auth import Authenticator, AuthError
 from .config import Settings
 from .models import (ErrorResponse, RequestSubmission, StartTranscription, TranscriptionAllocation,
                      Health, RequestResult, RequestPage, TranscriptionResult, ShelterDirectory,
-                     Profile, RequestEventCommand, RequestHistory)
+                     Profile, RequestEventCommand, RequestHistory, InterpretationSubmission,
+                     InterpretationResult, Inventory, InventoryAdjustment, InventoryCommand, RequestInventory)
 from .providers import AWSProviders, FixtureProviders, ProviderError
 from .service import APIError, Service
 from .store import DynamoStore, SQLiteStore
@@ -39,7 +40,7 @@ def create_app(settings: Settings, service=None):
     service = service or build_service(settings)
     auth = Authenticator(settings)
     app = FastAPI(title="RELAY Cloud API", version="1.0.0",
-                  description="Milestone 1: durable authenticated requests and reviewed recorded speech. No allocation, fulfillment, or relay-gateway authentication.",
+                  description="Durable authenticated requests, pre-send previews, reviewed speech and coordinator inventory ledger. Inventory fulfillment is a staff-recorded stock transaction, not proof of physical delivery. No relay-gateway authentication.",
                   servers=[{"url": settings.public_base_url}],
                   responses={n: {"model": ErrorResponse} for n in (400, 401, 403, 404, 409, 410, 413, 422, 429, 503)})
     app.state.service = service
@@ -106,6 +107,33 @@ def create_app(settings: Settings, service=None):
     @app.get("/v1/me", response_model=Profile, tags=["Account"])
     def me(user=Depends(principal)):
         return {"subject": user.subject, **user.membership.model_dump()}
+
+    @app.post("/v1/interpretations", status_code=201, response_model=InterpretationResult, tags=["Pre-send preview"],
+              responses={200: {"description": "Identical preview already accepted", "model": InterpretationResult}})
+    def interpret(body: InterpretationSubmission, response: Response, user=Depends(principal)):
+        result, created = service.interpret(user, body)
+        response.status_code = 201 if created else 200
+        return result
+
+    @app.get("/v1/interpretations/{interpretation_id}", response_model=InterpretationResult, tags=["Pre-send preview"])
+    def interpretation(interpretation_id: UUID, user=Depends(principal)):
+        return service.get_interpretation(user, interpretation_id)
+
+    @app.get("/v1/inventory", response_model=Inventory, tags=["Inventory"])
+    def inventory(shelter_id: str, user=Depends(principal)):
+        return service.inventory(user, shelter_id)
+
+    @app.post("/v1/inventory/{shelter_id}/adjust", response_model=Inventory, tags=["Inventory"])
+    def adjust_inventory(shelter_id: str, body: InventoryAdjustment, user=Depends(principal)):
+        return service.adjust_inventory(user, shelter_id, body)
+
+    @app.get("/v1/requests/{request_id}/inventory", response_model=RequestInventory, tags=["Inventory"])
+    def request_inventory(request_id: UUID, user=Depends(principal)):
+        return service.request_inventory(user, request_id)
+
+    @app.post("/v1/requests/{request_id}/inventory", response_model=RequestInventory, tags=["Inventory"])
+    def change_inventory(request_id: UUID, body: InventoryCommand, user=Depends(principal)):
+        return service.change_request_inventory(user, request_id, body)
 
     @app.get("/v1/requests/{request_id}/history", response_model=RequestHistory, tags=["Requests"])
     def history(request_id: UUID, user=Depends(principal)):
