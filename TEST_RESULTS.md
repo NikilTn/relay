@@ -300,3 +300,29 @@ physical three-device carry/forward **unverified**; physical return receipt rout
 **unverified**; router-independent path **unverified**; repeated-failure behavior
 **tested in software controls only**. Execute the new shelter extension in TEST_PLAN.md
 on physical devices before promoting any of these claims.
+
+### Build 6 TestFlight release follow-up — 2026-10-23 PDT
+
+User explicitly requested shipping build 6. Signed release archive **PASS**, strict
+local signature verification **PASS**, App Store Connect upload **PASS** at
+**22:36:23 PDT**. Verified archived version 0.1.0 (6), bundle
+`com.nikilthalapaneni.relay`, team U4G9LV39GM, iOS minimum 17.0 and unchanged
+encryption declaration. Source commit: `180fb8815ea0fe26c9646d2dbecf2430c80ec451`.
+
+Apple processing completed. App Store Connect **RELAY Development → Builds** shows
+**0.1.0 (6): Testing**. Saved the build-specific What to Test notes and observed the
+Saved state. Apple build ID: `81141f68-484f-4f4c-9afb-9d542a9ac049`.
+The existing internal group has one tester, still **Invited**; acceptance/download
+on a phone is not verified. No new account privileges or individual invitations
+were issued. No physical installation or wireless test was performed in this release.
+
+External build 2 remains **Waiting for Review**. Apple displays that only one build
+of version 0.1.0 can be submitted to Beta App Review until the existing build is
+approved. The existing submission was not canceled or replaced; build 6 is available
+to internal testers, not yet through the external public invitation.
+
+Evidence: [release record](evidence/testflight-upload-build-6.json),
+[signed archive](evidence/archive-testflight-build-6.txt),
+[successful upload](evidence/testflight-upload-build-6.txt),
+[source hashes](evidence/source-sha256-testflight-build-6.txt),
+[saved tester notes](evidence/testflight-test-notes-build-6.txt).

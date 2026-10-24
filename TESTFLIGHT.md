@@ -1,6 +1,8 @@
 # RELAY teammate beta deployment
 
-**Latest update: 0.1.0 (5)** adds editable persistent device names, clearer destination labels, advanced-only test roles, and forwarding copies without payload previews. Signed archive/upload passed at 19:37:57 PDT. Apple processing completed; RELAY Development shows **Testing** and build-specific test notes are saved. Both phones have the direct build installed; iPhone 16 launched, iPhone 15 Pro Max is locked and must be opened. External build 2 remains Waiting for Review; it was not replaced. [Build 5 evidence](evidence/testflight-upload-build-5.json).
+**Latest upload: 0.1.0 (6)** adds Help, Requests, Shelters and Messages; saved shelter codes, durable help drafts, review before submission, a local device inbox and separate delivery receipts. Signed archive and signature verification passed; Apple accepted the upload at **22:36:23 PDT on 2026-10-23**. Apple processing completed; **RELAY Development shows Testing** for build 6, and its What to Test notes are saved. The internal group has one tester, still listed as Invited; invitation acceptance and installation remain user steps. Build 2 remains the external submission, Waiting for Review. No direct physical-phone installation of build 6 has been performed. [Build 6 release evidence](evidence/testflight-upload-build-6.json).
+
+**Previous update: 0.1.0 (5)** adds editable persistent device names, clearer destination labels, advanced-only test roles, and forwarding copies without payload previews. Signed archive/upload passed at 19:37:57 PDT. Apple processing completed; RELAY Development shows **Testing** and build-specific test notes are saved. Both phones have the direct build installed; iPhone 16 launched, iPhone 15 Pro Max is locked and must be opened. External build 2 remains Waiting for Review; it was not replaced. [Build 5 evidence](evidence/testflight-upload-build-5.json).
 
 **Previous update: 0.1.0 (4)** contains the chat UI and repeat-send fix. It is directly installed/launched on both physical iPhones with their original IDs and all stored messages preserved. Paid-team upload succeeded at 19:18:26 PDT. Apple processing completed; RELAY Development shows **Testing** for build 4 and its test notes are saved. See [release evidence](evidence/testflight-upload-build-4.json). External build 2 was not canceled/replaced.
 
@@ -28,7 +30,7 @@ Status (2026-10-23 PDT): **version 0.1.0 (2) was signed and uploaded successfull
 - The current installed iPhone build uses the free Personal Team for direct device testing. TestFlight needs the user's enrolled Developer Program team; do not assume the Personal Team is that membership.
 - The iOS project now uses `com.nikilthalapaneni.relay` and the enrolled signing team. The original `org.relay.prototype.ios` phone apps remain available for earlier test data.
 - The selected Xcode 26.1.1 / iOS 26.1 SDK meets Apple's published October 2026 upload SDK minimum (Xcode 26 and iOS 26 SDK); no large Xcode update is indicated by that requirement. Recheck at submission time: https://developer.apple.com/news/upcoming-requirements/.
-- Latest source version is **0.1.0 (3)**. A visible navigation-bar Done button dismisses either text-field keyboard. Scroll dismissal is enabled; selecting a peer or sending also clears focus. Simulator checks passed for both fields; build 3 is installed/launched on both physical phones.
+- Latest source version is **0.1.0 (6)**. The shelter workflow passed 32 core tests and Mac/simulator UI controls. Build 6 has not been directly installed on the physical phones; TestFlight installation must be verified separately.
 - `ITSAppUsesNonExemptEncryption = NO` is generated for iOS. Source review found plain Network.framework TCP, no TLS/custom encryption, and no third-party libraries. This matches [Apple's key guidance](https://developer.apple.com/documentation/bundleresources/information-property-list/itsappusesnonexemptencryption). Reassess before introducing encryption; this setting does not make the prototype confidential.
 
 ## Repeatable archive/upload
@@ -39,8 +41,8 @@ Use the enrolled account already signed into Xcode; agreement acceptance, bundle
 # Set to the identifier actually registered under the enrolled team.
 export RELAY_TEAM_ID=U4G9LV39GM
 export RELAY_BUNDLE_ID=com.nikilthalapaneni.relay
-bash scripts/testflight.sh 5          # next build: signed archive only
-bash scripts/testflight.sh 5 --upload # next build: archive and upload
+bash scripts/testflight.sh 7          # next unused build: signed archive only
+bash scripts/testflight.sh 7 --upload # next unused build: archive and upload
 ```
 
 The script stores logs/archives in a fresh `/tmp/RELAY-testflight.*` directory, outside the file-provider-backed source directory. It uses automatic signing and never accepts a password/token. The script's signed archive path passed; its export/upload command was executed separately against that archive and passed. Use the next unused build number after each upload; the script does not silently change it. Check Apple's processing/review state after upload.

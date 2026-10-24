@@ -102,7 +102,7 @@ Apps must remain **foreground and awake** during encounters. Network services st
 
 ## Teammate beta distribution
 
-TestFlight preparation, a repeatable archive/upload script, draft beta metadata, and the enrolled-account status are in [TESTFLIGHT.md](TESTFLIGHT.md). Builds 0.1.0 (2), (3), (4), and (5) have been signed and uploaded to App Store Connect as RELAY Offline Lab. Build 2 is the external beta submission; build 5 adds device names and clearer forwarding-copy presentation. The [TestFlight invitation](https://testflight.apple.com/join/paGggTvE) is configured but cannot accept testers until Apple approves a build. After TestFlight setup, new builds can reach teammates without USB; source edits still require another build/upload.
+TestFlight preparation, a repeatable archive/upload script, draft beta metadata, and the enrolled-account status are in [TESTFLIGHT.md](TESTFLIGHT.md). Builds 0.1.0 (2), (3), (4), (5), and (6) have been signed and uploaded to App Store Connect as RELAY Offline Lab. Build 2 remains the external beta submission. Build 6 adds the shelter workflow and is verified Testing in the internal RELAY Development group. The [TestFlight invitation](https://testflight.apple.com/join/paGggTvE) is configured but cannot accept testers until Apple approves a build. After TestFlight setup, new builds can reach teammates without USB; source edits still require another build/upload.
 
 Build 5 is directly installed on both physical phones under the original development identifier, preserving both UUIDs and stores. The iPhone 16 launched successfully; the iPhone 15 Pro Max needs unlocking/opening to complete first launch and its name migration. TestFlight uses the separate paid-team identifier and therefore a separate local store.
 
