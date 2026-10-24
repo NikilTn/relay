@@ -2,9 +2,11 @@
 
 ## Current endpoint and verified scope
 
-Actual local endpoint: **http://127.0.0.1:8787**, `/v1/health` and `/docs`. The base address now redirects to `/docs`; the page was opened and visibly verified in Safari. Hosting: this Mac, loopback only, `local-test` fixtures with SQLite. Separate HTTP-client text/audio workflow and process-restart tests pass. This endpoint is not reachable from an iPhone; an iPhone's localhost refers to the phone itself. No public endpoint or tunnel has been created.
+Actual local endpoint: **http://127.0.0.1:8787**, `/v1/health` and `/docs`. The base address redirects to `/docs`. Hosting: this Mac, loopback only, with **real Cognito authentication, DynamoDB storage, private S3, Amazon Transcribe and Amazon Bedrock Nova Lite**. Health now reports mode `aws` and storage `dynamodb`.
 
-Real AWS session/account reads pass in `us-east-1`, account `928489693154`. Real Cognito login, Bedrock inference, Transcribe execution and DynamoDB writes are **NOT TESTED** while the bounded live-test proposal is pending. The Lambda role constraint remains unresolved. The app engineer can review/freeze this contract now, but must wait for live verification and a reachable authenticated HTTPS endpoint before claiming cloud integration.
+The real HTTP text/audio flow passed at 2026-10-24 05:36:49–05:37:14 UTC. A corrected reviewed transcript was submitted at 05:38:33 UTC and produced a persisted proposal. Actual AWS process-crash/replay recovery also passed. See `LIVE_AWS_DEMO.md` and `BACKEND_TEST_RESULTS.md` for the exact transcript, model output, request/job IDs and limitations.
+
+This endpoint is not reachable from a separate iPhone: localhost on an iPhone refers to the phone. No public HTTPS endpoint or tunnel exists. The dedicated Lambda execution role is still absent (`NoSuchEntity` checked at 05:37:38 UTC). The backend contract and AWS integrations are verified for this synthetic sample; public hosting and native PKCE/phone integration are the remaining gates.
 
 ## Authentication and public app configuration
 
@@ -13,17 +15,17 @@ Real AWS session/account reads pass in `us-east-1`, account `928489693154`. Real
 | Region | `us-east-1` |
 | User pool | `us-east-1_f7wyKUgiY` |
 | Issuer | `https://cognito-idp.us-east-1.amazonaws.com/us-east-1_f7wyKUgiY` |
-| New public app client | `RELAY-Cloud-MVP-Native` planned, client ID not created yet |
-| Hosted login domain | `relay-mvp-928489693154.auth.us-east-1.amazoncognito.com` planned, not created yet |
-| Native callback | `relay://oauth/callback` planned; not registered in Apple app |
-| Native logout | `relay://oauth/signout` planned |
+| New public app client | `RELAY-Cloud-MVP-Native`, client ID `dfulb5lau8283nlgil7ddu36i` (created and verified) |
+| Hosted login domain | `relay-mvp-928489693154.auth.us-east-1.amazoncognito.com` (ACTIVE) |
+| Native callback | `relay://oauth/callback` configured in Cognito; not registered in Apple app |
+| Native logout | `relay://oauth/signout` configured in Cognito |
 | Scopes | `openid email` |
 | Flow | Authorization code with PKCE S256; no client secret |
 | MFA | Existing pool requires MFA; software authenticator enabled |
 
 The existing `RELAY-Dispatcher-Web` client does not have the required OAuth/PKCE configuration; do not silently reuse it. For the new public client, use ASWebAuthenticationSession to open `/oauth2/authorize` with `response_type=code`, client_id, redirect_uri, scopes, unpredictable state and an S256 code challenge. Validate returned state; exchange the code at `/oauth2/token` using the original verifier and redirect URI. Store tokens in Keychain. The backend requires the **access token**, validates its signature/issuer/expiry/client_id/token_use, and maps its real `sub` to server-controlled incident/shelter membership. ID tokens, device UUIDs, display names and caller-supplied roles do not authorize access. Membership removal is operator-controlled; JWT revocation is not checked online on every request, so token expiration and membership removal bound access after revocation.
 
-The provisioning/test script uses password + TOTP to test the API independently. Even a successful scripted login would not by itself verify the native PKCE browser flow. Never put AWS access keys, a client secret, test signing keys or shared server tokens in the app.
+The provisioning/test script successfully authenticated four synthetic users with password + TOTP. A second sign-in for each returned SOFTWARE_TOKEN_MFA, completed that challenge and accessed the API. TOTP is enabled/preferred for these synthetic accounts; pool MFA remains required. Native PKCE browser login remains untested. Never put AWS access keys, a client secret, test signing keys or shared server tokens in the app.
 
 Reference: [Cognito public clients](https://docs.aws.amazon.com/cognito/latest/developerguide/user-pool-settings-client-apps.html), [token exchange/PKCE](https://docs.aws.amazon.com/en_en/cognito/latest/developerguide/token-endpoint.html).
 
@@ -73,7 +75,7 @@ All application errors use `{"error":{"code":"...","message":"...","retryable":f
 
 Use an API timeout around 30 seconds and S3 upload timeout around 60 seconds. A `/start` response may be lost during validation; safe replay is required. Poll analysis for up to 4 minutes in the demo UI, then retain the accepted request for later status lookup. Do not interpret a UI polling timeout as rejection or resubmit with a new ID.
 
-Model output is parsed as JSON and validated by the backend; native model schema enforcement is not assumed. Missing quantity, negation, contradictory shelters, unsupported quantities/units and malformed output are sent to review. Supported demo items are water packs, food packs and blankets; this is intentionally conservative English extraction, not a general logistics decision model.
+Live tests found that Nova Lite can still emit malformed JSON or invent an unstated quantity. Invalid output stays needs_review; ungrounded quantity values are cleared, and missing quantity/negation are checked from source text even when parsing fails. Model output is parsed as JSON and validated by the backend; native model schema enforcement is not assumed. Missing quantity, negation, contradictory shelters, unsupported quantities/units and malformed output are sent to review. Supported demo items are water packs, food packs and blankets; this is intentionally conservative English extraction, not a general logistics decision model.
 
 ## Swift URLSession documentation examples
 
@@ -119,6 +121,6 @@ func uploadWAV(url: URL, fields: [String: String], wav: Data) async throws {
 
 ## Remaining integration gates
 
-Approve/run the bounded live AWS tests; provision and verify real Cognito login; resolve the dedicated execution role and separately approve HTTPS hosting; run the independent client against that hosted URL; then register the native callback, implement PKCE/Keychain, map the existing persisted message IDs, add cloud acceptance/result state and optional reviewed audio. Finally test on physical iPhones. No native integration, offline gateway sync, signed gateway ingestion, inventory allocation, fulfillment, custom ASR, TTS or Android support is claimed here.
+Real AWS tests and scripted Cognito MFA login now pass. Next resolve the dedicated execution role and separately approve HTTPS hosting; run the independent client against that hosted URL; then register the native callback, implement PKCE/Keychain, map the existing persisted message IDs, add cloud acceptance/result state and optional reviewed audio. Finally test on physical iPhones. No native integration, offline gateway sync, signed gateway ingestion, inventory allocation, fulfillment, custom ASR, TTS or Android support is claimed here.
 
 Future relay/gateway ingestion needs a separately versioned signed envelope, original-sender proof, replay protection and membership verification. No unsigned gateway endpoint exists; forwarding another person's text under the gateway's token does not authenticate the original sender.

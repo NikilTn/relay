@@ -1,6 +1,6 @@
 # RELAY cloud MVP
 
-A runnable, separately authenticated backend for immutable resource requests and reviewed short recordings. The Apple checkout and sources are unchanged. **Current verification: local fixtures and restart recovery pass; real AWS inference, speech and public hosting await approval/access.** See `docs/BACKEND_TEST_RESULTS.md` for evidence.
+A runnable, separately authenticated backend for immutable resource requests and reviewed short recordings. The Apple checkout and sources are unchanged. **Current verification: real Cognito MFA, S3 upload, Amazon Transcribe, Nova Lite and DynamoDB pass through the running local API. Thirty automated tests and real AWS restart recovery pass. Public hosting remains blocked by the missing dedicated Lambda role.** See `docs/BACKEND_TEST_RESULTS.md` for evidence.
 
 The API durably commits a request and its work record before acknowledging acceptance. A separate worker proposes structured fields through Bedrock and validates them in code. Nothing allocates inventory or marks fulfillment. Recorded speech is a separate owned upload/job; its transcript must be reviewed and submitted explicitly through the same request endpoint.
 
@@ -33,7 +33,7 @@ The committed WAV is locally generated synthetic/TTS speech; its format and chec
 
 ## Use real AWS locally, after the test proposal is approved
 
-1. Read `docs/AWS_TEST_PROPOSAL.md`; the `$2` ceiling is pending until explicitly approved. Do not infer spending approval from an AWS login.
+1. Read `docs/AWS_TEST_PROPOSAL.md`. The recorded live run was authorized within its `$2` limit; additional runs must remain within that same approval and the remaining resource counters. Do not infer spending approval from an AWS login.
 2. Use the official AWS CLI v2 browser login with profile `relay-workshop`, region `us-east-1`, and private task-specific config/cache paths. Boto3 requires its `crt` extra for this login. `configure_workshop.py` is an alternative for organizer-issued temporary credentials entered privately. Never extract browser tokens.
 3. Run `scripts/audit_session.py` using that session to recheck identity/ownership. Existing resources must match account 928489693154 and the documented schema/policies.
 4. Preview `provision_demo_auth.py --runtime-dir /private/runtime`. Only after approval, append `--apply-approved-scope`. It creates a new secretless client/domain and four synthetic users, enrolls TOTP MFA, and saves credentials/tokens only in that directory. It aborts on unexplained existing same-name resources. It does not weaken MFA or send invitations.
@@ -51,3 +51,5 @@ Contract and examples: `openapi/relay-v1.yaml`, `fixtures/`, `docs/INTEGRATION_H
 ```sh
 PYTHONPATH=cloud cloud/.venv/bin/python cloud/scripts/export_contract.py
 ```
+
+Live evidence and the exact sample transcript/model output are in `docs/LIVE_AWS_DEMO.md`. The running service on this Mac currently uses real AWS; the fixture commands above remain available for offline contract testing.

@@ -137,6 +137,32 @@ def test_invalid_model_output_is_explicit(env):
     assert r["analysis_state"] == "needs_review" and r["result"]["proposal"] is None
 
 
+def test_invented_quantity_is_removed_and_missing_input_is_explicit(env):
+    env["service"].providers.raw_override = json.dumps({
+        "item_id": "water_packs", "quantity": 1, "unit": "pack", "shelter_id": "shelter-a",
+        "negated": False, "missing_fields": [], "summary": "Shelter A requests one water pack."})
+    body = submission("Shelter A needs water packs.")
+    env["client"].post("/v1/requests", json=body, headers=auth(env))
+    Worker(env["service"]).run_once()
+    result = env["client"].get("/v1/requests/" + body["request_id"], headers=auth(env)).json()["result"]
+    assert result["status"] == "needs_review" and result["proposal"]["quantity"] is None
+    assert {"quantity_not_grounded", "missing_quantity"} <= set(result["review_reasons"])
+
+
+@pytest.mark.parametrize("text,reason", [
+    ("Shelter A needs water packs.", "missing_quantity"),
+    ("Do not send 20 water packs to Shelter A.", "negation_requires_review"),
+])
+def test_source_review_signals_survive_malformed_model_output(env, text, reason):
+    env["service"].providers.raw_override = '{"quantity":null}]'
+    body = submission(text)
+    env["client"].post("/v1/requests", json=body, headers=auth(env))
+    Worker(env["service"]).run_once()
+    result = env["client"].get("/v1/requests/" + body["request_id"], headers=auth(env)).json()["result"]
+    assert result["status"] == "needs_review" and result["proposal"] is None
+    assert {reason, "invalid_model_output"} <= set(result["review_reasons"])
+
+
 def test_failure_retries_and_expired_lease_survive_restart(env):
     service = env["service"]
     clock = [time.time()]

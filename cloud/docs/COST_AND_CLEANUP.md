@@ -1,14 +1,16 @@
 # Cost observations and cleanup
 
-**Current consumption:** zero Bedrock inference calls, zero Transcribe jobs, no hosted stack, and no new AWS resource provisioning from this milestone. Read-only account/resource checks and official CLI authentication succeeded. Actual billing/credits have not been reconciled; do not report an inferred $0 invoice. The proposed incremental test allowance is $2, pending explicit approval. The earlier $5 planning number was not approval.
+**Observed consumption:** 12 durably accepted synthetic requests, 16 real Nova Lite invocations (4 standalone diagnostic calls included), **6,948 input tokens and 1,181 output tokens**, and one 1.824-second batch Transcribe job. One public Cognito client/domain and four synthetic MFA users were created. Three private S3 objects were verified (upload, sealed input, transcript). No Lambda/API Gateway stack was deployed.
 
-The initial live test uses four text analyses (ordinary, missing quantity, negation and reviewed transcript) plus one short synthetic/TTS audio job. Additional checks may run only within 30 accepted requests and five recordings. Each request has a maximum of three automatic model dispatches per cycle and two explicit retry cycles; the counter is durable before each model dispatch, including crash recovery. Output is capped at 512 tokens. A process failure after a response can still create another billable invocation within these limits. Transcription polling is bounded, and job names are deterministic.
+This run was authorized after the user explicitly requested real service testing in response to the proposed $2 scope. Usage stayed within the 30-request/five-recording bounds; 18 request slots and four recording slots remain. The invocation total includes unsuccessful formatting tests, not just successful outputs. Actual billed charges and workshop credits are **not reconciled**; observed usage is not an invoice. See `evidence/aws-live-usage.json` for individual AWS request IDs and token counts.
 
-Record Bedrock input/output token usage and request IDs from safe API results; record Transcribe job name and actual recording duration. Separate usage-derived cost estimates from delayed account billing. Do not infer workshop credits from access alone. No TTS, streaming, GPU instance, training or model subscription is part of this scope. Hosted recovery schedules have continuing idle costs and require separate approval.
+The server still enforces three model dispatches per cycle, at most two explicit retry cycles, 512 maximum output tokens, and deterministic transcription job names. No TTS API, streaming, GPU instance, training or Marketplace subscription was used. The audio fixture was generated locally with macOS speech. Hosting is separate and remains unapproved/blocked; no scheduled Lambda idle charges exist. A running local worker queries DynamoDB while idle, so stop it when the approved demo window ends. Scope limits are not a hard AWS dollar cap.
+
+Reference pricing pages: [Bedrock](https://aws.amazon.com/bedrock/pricing/), [Transcribe](https://aws.amazon.com/transcribe/pricing/). Reconcile actual charges before making claims about credits or final spend.
 
 ## Cleanup review
 
-Nothing cloud-side has been created yet; `RESOURCE_MANIFEST.json` states that explicitly. After provisioning, preserve the private runtime `created-resources.json`, and copy only non-secret IDs and test resource references into the repository manifest. Never copy `demo-identities.private.json`, tokens, passwords, TOTP secrets, browser login caches or presigned forms.
+The exact new client, domain, synthetic users, Transcribe job, three S3 object keys and 12 request IDs are recorded in `RESOURCE_MANIFEST.json`. Preserve the private runtime `created-resources.json`; only non-secret resource IDs and test references were copied into the repository. Never copy `demo-identities.private.json`, tokens, passwords, TOTP secrets, browser login caches or presigned forms.
 
 When cleanup is requested:
 
