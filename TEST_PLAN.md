@@ -1,5 +1,10 @@
 # RELAY physical acceptance plan
 
+**Build21 resident setup:** [procedure and privacy boundary](docs/RESIDENT_SETUP.md#test-procedure).
+Record first-run Save/Skip, tour navigation, restart persistence, Cancel behavior,
+account separation, larger text and clearing disposable profile data separately.
+Use synthetic profile values. Installing this UI update is not a wireless test.
+
 **Build20 alerts/location extension:** follow the reproducible steps in
 [Announcements and shelter information](cloud/docs/ANNOUNCEMENTS.md#reproduce).
 Record cloud incident publication, each phone's downloaded cache, read-aloud audio,

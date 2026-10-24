@@ -1,4 +1,9 @@
-# Mobile testing — build20
+# Mobile testing — build21
+
+New in21: [optional personal details, first-run walkthrough and supply emojis](docs/RESIDENT_SETUP.md).
+On a resident's first launch, save synthetic details or Skip for now, then finish
+or skip the tour. **How RELAY works** at the top of Help reopens it any time.
+Profile fields remain local and are not attached to requests in this version.
 
 New in20: [alerts, shelter instructions/distance and location checks](cloud/docs/ANNOUNCEMENTS.md#reproduce).
 Each resident needs a separate organizer-issued account; public self-registration

@@ -1,4 +1,4 @@
-# RELAY morning demo — build20
+# RELAY morning demo — build21
 
 The smallest clear demo is **two requester iPhones and this Mac as Shelter A**.
 Use the native apps. There is no separate dispatcher website to configure.
@@ -10,9 +10,11 @@ cloud features. See [hosting](cloud/docs/DEMO_HOSTING.md).
 
 ## Before presenting
 
-1. Check Settings → Demo tools → Build20 on each app. The new TestFlight package
+1. Check Settings → Demo tools → Build21 on each app. The new TestFlight package
    was uploaded, but check its availability before assuming your friends have it.
-   At approximately09:15PDT both original development phone apps were updated to20 and launched.
+   On first opening21 as a resident, save synthetic details or Skip for now, then
+   finish/skip the tour. Personal details remain local; do not imply the shelter
+   sees them. How RELAY works at the top of Help reopens the guide.
    Existing identities, messages and receipts were preserved. Physical wireless
    acceptance is still a separate test.
 2. Use **Requester A** on the15 Pro Max, **Requester B** on the iPhone16, and

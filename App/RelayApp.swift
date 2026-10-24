@@ -349,6 +349,7 @@ struct ContentView: View {
     @StateObject private var cloud = CloudModel()
     @State private var selectedTab = 3
     @State private var requestPath: [String] = []
+    @State private var residentWelcome = false
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -373,6 +374,11 @@ struct ContentView: View {
             Task { await cloud.reconcileNearby() }
         }
         .onChange(of: cloud.profile?.role) { _, _ in selectedTab = 3; requestPath = [] }
+        .onChange(of: cloud.residentContextID) { _, value in
+            if value != nil, cloud.residentSetup.needsWelcome { residentWelcome = true }
+            else if value == nil { residentWelcome = false }
+        }
+        .sheet(isPresented: $residentWelcome) { ResidentWelcomeView().environmentObject(cloud) }
             .alert("Couldn’t complete that action", isPresented: Binding(get: { !model.error.isEmpty }, set: { if !$0 { model.error = "" } })) {
                 Button("OK") { model.error = "" }
             } message: { Text(model.error) }

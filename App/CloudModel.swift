@@ -29,6 +29,14 @@ import RelayCore
     @Published var pendingAnnouncement: AnnouncementCommand?
     @Published var announcementsBusy = false
     @Published var announcementsProblem = ""
+    @Published private(set) var residentDetails = ResidentDetails()
+    @Published private(set) var residentSetup = ResidentSetupState()
+    @Published private(set) var residentContextScope: String?
+    @Published private(set) var residentDetailsAvailable = false
+    @Published var residentDetailsProblem = ""
+    @Published private(set) var residentDetailsBusy = false
+    private let residentVault = ResidentDetailsVault()
+    var residentContextID: String? { profile?.role == "requester" && residentContextScope == scope ? residentContextScope : nil }
     private var lastAlertsRefresh = Date.distantPast
     @Published var cloudPaused = UserDefaults.standard.bool(forKey: "relay.demo.cloudPaused") {
         didSet { UserDefaults.standard.set(cloudPaused, forKey: "relay.demo.cloudPaused") }
@@ -64,6 +72,7 @@ import RelayCore
                     draft = try await model.withStore { try $0.requestDraft(scope: scope) }
                     await reload(); status = "Saved account · connecting…"
                     await loadAnnouncementCache()
+                    await loadResidentContext()
                 } catch { problem = error.localizedDescription }
             }
             staffShelterID = directory.first?.shelter_id ?? ""
@@ -139,6 +148,7 @@ import RelayCore
             UserDefaults.standard.set(url.absoluteString, forKey: "relay.cloud.endpoint")
             status = "Signed in · \(verified.role.capitalized)"
             await loadAnnouncementCache()
+            await loadResidentContext()
             await refreshAnnouncements()
         } catch { problem = error.localizedDescription; status = "Cloud unavailable; nearby delivery still works" }
     }
@@ -147,6 +157,7 @@ import RelayCore
         epoch = UUID(); auth.signOut(); profile = nil; api = nil; scope = nil
         records = []; directory = []; bindings = []; audioJob = nil; transcript = ""; draft = RequestDraft(); interpretation = nil; inventory = nil; signInNeedsCode = false; status = "Signed out"
         announcementFeed = nil; announcementReads = [:]; pendingAnnouncement = nil; announcementsProblem = ""
+        residentDetails = ResidentDetails(); residentSetup = ResidentSetupState(); residentContextScope = nil; residentDetailsAvailable = false; residentDetailsProblem = ""
     }
     func bind(localID: String, cloudID: String) async {
         guard let destination = directory.first(where: { $0.id == cloudID }), let scope, let model else { return }
@@ -665,6 +676,48 @@ import RelayCore
         guard generation == epoch else { return }
         try await model.withStore { try $0.setSetting("cloud_directory:" + scope, String(decoding: CloudCodec.encode(updated.items), as: UTF8.self)) }
         if generation == epoch { directory = updated.items }
+    }
+
+    func loadResidentContext(force: Bool = false) async {
+        guard profile?.role == "requester", let scope, let model else { return }
+        guard force || residentContextScope != scope else { return }
+        residentContextScope = nil; residentDetails = ResidentDetails(); residentDetailsAvailable = false; residentDetailsProblem = ""
+        do {
+            let state = try await model.withStore { try $0.residentSetup(scope: scope) }
+            guard self.scope == scope, profile?.role == "requester" else { return }
+            residentSetup = state
+            do { residentDetails = try residentVault.read(scope: scope); residentDetailsAvailable = true }
+            catch { residentDetailsProblem = error.localizedDescription }
+            residentContextScope = scope
+        } catch { residentDetailsProblem = error.localizedDescription }
+    }
+    func saveResidentDetails(_ value: ResidentDetails) async -> Bool {
+        guard !residentDetailsBusy, residentDetailsAvailable, let scope = residentContextID, let model else { return false }
+        residentDetailsBusy = true; defer { residentDetailsBusy = false }; residentDetailsProblem = ""
+        do {
+            let validated = try ResidentDetailsDraft(value).validated(decimalSeparator: ".")
+            try residentVault.save(validated, scope: scope)
+            var updated = residentSetup; updated.profileOffered = true
+            try await model.withStore { try $0.saveResidentSetup(updated, scope: scope) }
+            guard residentContextID == scope else { return false }
+            residentDetails = validated; residentSetup = updated; return true
+        } catch { if residentContextID == scope { residentDetailsProblem = error.localizedDescription }; return false }
+    }
+    func completeResidentStep(profile: Bool = false, guide: Bool = false) async -> Bool {
+        guard !residentDetailsBusy, let scope = residentContextID, let model else { return false }
+        residentDetailsBusy = true; defer { residentDetailsBusy = false }
+        do {
+            var updated = residentSetup
+            if profile { updated.profileOffered = true }
+            if guide { updated.guideSeen = true }
+            try await model.withStore { try $0.saveResidentSetup(updated, scope: scope) }
+            guard residentContextID == scope else { return false }; residentSetup = updated; return true
+        } catch { if residentContextID == scope { residentDetailsProblem = error.localizedDescription }; return false }
+    }
+    func clearResidentDetails() -> Bool {
+        guard !residentDetailsBusy, let scope = residentContextID else { return false }
+        do { try residentVault.clear(scope: scope); residentDetails = ResidentDetails(); residentDetailsAvailable = true; residentDetailsProblem = ""; return true }
+        catch { residentDetailsProblem = error.localizedDescription; return false }
     }
 
 }

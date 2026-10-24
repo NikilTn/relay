@@ -1,10 +1,49 @@
 # RELAY test results — updated 24 October 2026
 
-**Current verdict:** build20 is installed and launched on both owned phones and the
+**Current verdict:** build21 is installed and launched on both owned phones and the
 Mac. Incident alerts downloaded and persisted on both physical phones. Native
 software, real AWS services and separate-encounter relay controls pass. Physical
 router-free wireless acceptance is still **NOT TESTED**. The older dated sections
 below are historical; this checkpoint supersedes their feature/release status.
+
+## Build21 — supply emojis, private resident details and walkthrough
+
+24 October2026, approximately09:41–09:49PDT. Same hardware/SDK versions as build20
+below. Internet was available. This update changes the native apps/shared local
+models; no backend request schema, inference prompt or radio protocol changed.
+
+| Check | Result | Evidence / boundary |
+|---|---|---|
+| Swift tests | PASS | 78 tests, zero failures; optional profile/validation/locale, serialization, per-account setup persistence and protocol-label compatibility added |
+| Native builds | PASS | macOS, signed original-bundle iOS, iOS Simulator; source manifest matches final source snapshot |
+| First-run setup | PASS (Simulator UI) | Existing requester account on first feature launch saw optional profile; synthetic fields saved; transitioned to six-page walkthrough |
+| Profile persistence | PASS (Simulator Keychain) | App terminated, updated and relaunched; profile retained all nine synthetic fields, including O− and numeric measurements; introduction did not repeat |
+| Cancel edits | PASS (Simulator UI) | Changed synthetic name, cancelled, reopened; original saved value retained |
+| Walkthrough | PASS (Simulator UI) | All six pages traversed; Back verified; completion returned home; top How RELAY works reopened page1 with Close |
+| Profile data boundary | PASS (code + storage check) | No automatic request/AI attachment exists. Synthetic name/health-note markers absent from Simulator request SQLite/WAL/SHM; setup metadata contains only two booleans |
+| Emojis/layout | PASS (native visual control) | Resident supply buttons retain readable labels with emojis; Mac inventory headings show matching emojis; height/weight units remain in field labels |
+| Coordinator workspace | PASS | Mac opened Inbox directly with existing coordinator account; no resident introduction; inventory read without stock changes |
+| Physical installs/launches | PASS | Both original apps installed/launched as21, devicectl verifies build; no personal/medical fields populated on physical phones by the agent |
+| Upgrade preservation | PASS |15ProMax51→51 messages,51→51 cloud records;16:51→51 messages,46→46 cloud records. Device IDs, keys, message bytes, prior receipts and immutable cloud submissions retained; quick_check=ok |
+| TCP regression | PASS | Frame interruption/no false ACK, duplicate suppression, carrier restart, separate encounters and reverse receipt on loopback |
+| TestFlight | PASS (upload only) | Paid build21 upload succeeded09:47:27PDT; Apple said processing. External availability/review remains NOT VERIFIED |
+| Backend regression | NOT RERUN | No backend source changes in this update; last build20 run was106 tests. Read-only live preflight passed after the separate account task's runtime reload |
+| Additional manual UI checks | NOT TESTED | Physical profile entry, first-run Skip branches, largest text/VoiceOver, same-device account switching, clearing profile, locked-Keychain failure and offline profile editing require further manual checks |
+| Physical radio acceptance A–E | NOT TESTED | No router exclusion/range/failure-reliability measurement was performed |
+
+Personal details are optional, self-reported and local to that account/device in
+Keychain (`WhenUnlockedThisDeviceOnly`, sync disabled). They are **not attached to
+requests or sent to AI** in this version. The SQLite first-run flags are separate
+from medical fields. There is no new public sign-up or medical triage feature.
+See [resident setup behavior](docs/RESIDENT_SETUP.md) and
+[build21 evidence](docs/evidence/build21). Simulator UI capture occasionally failed;
+reacquiring the native surface allowed final state verification. No failed capture
+was counted as successful UI verification.
+
+The separately running AWS account task reported adding six memberships while
+preserving the previous four and reloading API as19133; worker12407 and tunnel12053
+were retained. This native task did not edit memberships, credentials, quotas or
+the backend process configuration. The public hostname remains relay.stepcheck.app.
 
 ## Build20 — alerts, shelter instructions/distance and location requirement
 

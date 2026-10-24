@@ -65,11 +65,22 @@ struct PublicHelpView: View {
     @EnvironmentObject private var cloud: CloudModel
     @StateObject private var locator = RequestLocationModel()
     @State private var reviewing = false
+    @State private var showingGuide = false
+    @State private var showingDetails = false
+    @Environment(\.dynamicTypeSize) private var typeSize
     @FocusState private var editing: Bool
     let sent: (String) -> Void
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
+                HStack {
+                    if cloud.residentContextID != nil {
+                        Button("Your details") { editing = false; showingDetails = true }.accessibilityIdentifier("homeResidentDetails")
+                    }
+                    Spacer()
+                    Button { editing = false; showingGuide = true } label: { Label("How RELAY works", systemImage: "questionmark.circle") }
+                        .accessibilityIdentifier("homeResidentGuide")
+                }.font(.subheadline.weight(.medium)).frame(minHeight: 44)
                 WorkflowHeader(eyebrow: "New request", title: "Ask for help", subtitle: "Tell your shelter what you need.")
                 if cloud.profile == nil { AccountSignInView() }
                 else {
@@ -114,14 +125,15 @@ struct PublicHelpView: View {
                     Divider()
                     VStack(alignment: .leading, spacing: 14) {
                         Text("What do you need?").font(.title2.bold())
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 10)], spacing: 10) {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: typeSize.isAccessibilitySize ? 280 : 150), spacing: 10)], spacing: 10) {
                             ForEach(["water_packs", "food_packs", "blankets", "medicines", "other"], id: \.self) { item in
                                 Button { cloud.draft.item = item; cloud.draft.requestedUnit = nil } label: {
                                     HStack {
+                                        Text(InventoryItem.emoji(item)).font(.title2).accessibilityHidden(true)
                                         Text(InventoryItem.title(item)).font(.body.bold())
                                         Spacer(minLength: 4)
                                         if cloud.draft.item == item { Text("✓").font(.subheadline.weight(.medium)) }
-                                    }.padding(.horizontal, 13).padding(.vertical, 12).frame(maxWidth: .infinity, minHeight: 60)
+                                    }.padding(.horizontal, 13).padding(.vertical, 12).frame(maxWidth: .infinity, minHeight: 72)
                                         .foregroundStyle(cloud.draft.item == item ? RelayTheme.onAction : .primary)
                                         .background(cloud.draft.item == item ? RelayTheme.action : .clear, in: RoundedRectangle(cornerRadius: 16))
                                         .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(.black, lineWidth: 2))
@@ -184,6 +196,8 @@ struct PublicHelpView: View {
             .toolbar { ToolbarItem(placement: .primaryAction) { if editing { Button("Done") { editing = false } } } }
             .onChange(of: cloud.draft) { _, _ in cloud.persistDraft() }
             .sheet(isPresented: $reviewing) { WorkflowReview { id in reviewing = false; sent(id) } }
+            .sheet(isPresented: $showingGuide) { ResidentGuideView() }
+            .sheet(isPresented: $showingDetails) { ResidentDetailsEditor() }
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             .scrollDismissesKeyboard(.interactively)
@@ -433,6 +447,7 @@ struct InventoryView: View {
                 ForEach((cloud.inventory?.items ?? []).sorted { $0.available == $1.available ? $0.id < $1.id : $0.available > $1.available }) { row in
                     VStack(alignment: .leading, spacing: 16) {
                         HStack(alignment: .firstTextBaseline) {
+                            Text(InventoryItem.emoji(row.item_id)).accessibilityHidden(true)
                             Text(row.title).font(.title3.weight(.medium))
                             Spacer()
                             Text(row.unit.uppercased()).font(.system(.caption2, design: .monospaced)).foregroundStyle(RelayTheme.secondary)
@@ -487,6 +502,8 @@ struct WorkflowSettings: View {
     @AppStorage("relay.readingSize") private var readingSize = "Normal"
     @AppStorage("relay.highContrast") private var highContrast = false
     @State private var assigningReceiver = false
+    @State private var showingDetails = false
+    @State private var showingGuide = false
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
@@ -509,6 +526,10 @@ struct WorkflowSettings: View {
                     Text("Your workspace").font(.title2.bold())
                     if let profile = cloud.profile {
                         Text(profile.role == "dispatcher" ? "Shelter coordinator" : "Public requester").font(.headline)
+                        if profile.role == "requester" {
+                            Button("Personal details") { showingDetails = true }.buttonStyle(WorkflowSecondaryButton()).accessibilityIdentifier("settingsResidentDetails")
+                            Button("How RELAY works") { showingGuide = true }.buttonStyle(WorkflowSecondaryButton()).accessibilityIdentifier("settingsResidentGuide")
+                        }
                         Text("Account: " + String(profile.subject.prefix(8)) + "…").font(.caption.monospaced())
                         Text("Device: " + String(model.deviceID.prefix(8)) + "…").font(.caption.monospaced())
                         Text("Your account controls access to requests. This device has its own nearby delivery ID. Use a separate account for each resident.").font(.caption).foregroundStyle(RelayTheme.secondary)
@@ -549,6 +570,8 @@ struct WorkflowSettings: View {
                 }.font(.headline)
             }.padding(.horizontal, 24).padding(.vertical, 16).frame(maxWidth: 650).frame(maxWidth: .infinity)
         }.navigationTitle("").background(RelayTheme.canvas)
+            .sheet(isPresented: $showingDetails) { ResidentDetailsEditor() }
+            .sheet(isPresented: $showingGuide) { ResidentGuideView() }
             .confirmationDialog("Use this device as the shelter's nearby inbox? New requests will be addressed here after their directory refreshes.", isPresented: $assigningReceiver, titleVisibility: .visible) {
                 Button("Use this device") { Task { await cloud.useThisDeviceForShelter() } }
                 Button("Cancel", role: .cancel) {}
