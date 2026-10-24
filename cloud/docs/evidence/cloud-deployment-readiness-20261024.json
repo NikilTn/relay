@@ -1,0 +1,125 @@
+{
+  "started_at": "2026-10-24T06:42:56.560516+00:00",
+  "prior_stack_failure_events": [
+    {
+      "Timestamp": "2026-10-24 02:16:51.660000+00:00",
+      "LogicalResourceId": "relay-public",
+      "ResourceType": "AWS::CloudFormation::Stack",
+      "ResourceStatus": "ROLLBACK_COMPLETE",
+      "ResourceStatusReason": null,
+      "EventId": "f994ae00-cf50-11f1-83b8-0e54e818a535"
+    },
+    {
+      "Timestamp": "2026-10-24 02:16:46.825000+00:00",
+      "LogicalResourceId": "relay-public",
+      "ResourceType": "AWS::CloudFormation::Stack",
+      "ResourceStatus": "ROLLBACK_IN_PROGRESS",
+      "ResourceStatusReason": "The following resource(s) failed to create: [WebBucket, ApiRole, WorkerRole]. Rollback requested by user.",
+      "EventId": "f6b4bf90-cf50-11f1-ac3e-12fff0c6a953"
+    },
+    {
+      "Timestamp": "2026-10-24 02:16:46.498000+00:00",
+      "LogicalResourceId": "WebBucket",
+      "ResourceType": "AWS::S3::Bucket",
+      "ResourceStatus": "CREATE_FAILED",
+      "ResourceStatusReason": "Resource creation cancelled",
+      "EventId": "WebBucket-CREATE_FAILED-2026-10-24T02:16:46.498Z"
+    },
+    {
+      "Timestamp": "2026-10-24 02:16:46.367000+00:00",
+      "LogicalResourceId": "ApiRole",
+      "ResourceType": "AWS::IAM::Role",
+      "ResourceStatus": "CREATE_FAILED",
+      "ResourceStatusReason": "Underlying denial: iam:CreateRole has no identity-based Allow; surfaced through UnauthorizedTaggingOperation.",
+      "EventId": "ApiRole-CREATE_FAILED-2026-10-24T02:16:46.367Z",
+      "safe_iam_request_id": "9a3ecf95-68b4-4706-b98a-45684ae66b02"
+    },
+    {
+      "Timestamp": "2026-10-24 02:16:46.247000+00:00",
+      "LogicalResourceId": "WorkerRole",
+      "ResourceType": "AWS::IAM::Role",
+      "ResourceStatus": "CREATE_FAILED",
+      "ResourceStatusReason": "Underlying denial: iam:CreateRole has no identity-based Allow; surfaced through UnauthorizedTaggingOperation.",
+      "EventId": "WorkerRole-CREATE_FAILED-2026-10-24T02:16:46.247Z",
+      "safe_iam_request_id": "64b410d6-1c57-4549-8f14-3a2ecb722080"
+    }
+  ],
+  "table": {
+    "TableName": "relay-messages",
+    "TableArn": "arn:aws:dynamodb:us-east-1:928489693154:table/relay-messages",
+    "TableStatus": "ACTIVE",
+    "KeySchema": [
+      {
+        "AttributeName": "pk",
+        "KeyType": "HASH"
+      },
+      {
+        "AttributeName": "sk",
+        "KeyType": "RANGE"
+      }
+    ],
+    "AttributeDefinitions": [
+      {
+        "AttributeName": "pk",
+        "AttributeType": "S"
+      },
+      {
+        "AttributeName": "sk",
+        "AttributeType": "S"
+      }
+    ],
+    "BillingModeSummary": {
+      "BillingMode": "PAY_PER_REQUEST",
+      "LastUpdateToPayPerRequestDateTime": "2026-10-23 18:50:49.610000-07:00"
+    }
+  },
+  "table_request_id": "3JQL77E6OPQK711MQCUP1D1273VV4KQNSO5AEMVJF66Q9ASUAAJG",
+  "private_artifacts": {
+    "public_access_block": {
+      "BlockPublicAcls": true,
+      "IgnorePublicAcls": true,
+      "BlockPublicPolicy": true,
+      "RestrictPublicBuckets": true
+    },
+    "encryption": {
+      "Rules": [
+        {
+          "ApplyServerSideEncryptionByDefault": {
+            "SSEAlgorithm": "AES256"
+          },
+          "BucketKeyEnabled": false,
+          "BlockedEncryptionTypes": {
+            "EncryptionType": [
+              "SSE-C"
+            ]
+          }
+        }
+      ]
+    },
+    "request_ids": [
+      "XQH58XAKMDTC5PRY",
+      "XQH8EEPCGVD9BWZY"
+    ]
+  },
+  "model_availability": {
+    "modelId": "amazon.nova-lite-v1",
+    "agreementAvailability": {
+      "status": "AVAILABLE"
+    },
+    "authorizationStatus": "AUTHORIZED",
+    "entitlementAvailability": "AVAILABLE",
+    "regionAvailability": "AVAILABLE"
+  },
+  "model_availability_request_id": "a36fcacf-006e-4cad-ad81-7cc538c9442a",
+  "fresh_cognito_login": {
+    "status": "PASS",
+    "actor": "test-requester-a",
+    "initial_challenge": "SOFTWARE_TOKEN_MFA",
+    "initiate_request_id": "2329c66e-8d08-4679-a926-ef6b8c304cd9",
+    "authentication_request_id": "b870a1d4-52b2-4bab-850a-d319065b1d38",
+    "token_type": "Bearer",
+    "expires_in_seconds": 3600,
+    "tokens": "kept private; not included"
+  },
+  "finished_at": "2026-10-24T06:42:59.883743+00:00"
+}

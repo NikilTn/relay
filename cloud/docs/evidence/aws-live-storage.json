@@ -1,0 +1,276 @@
+{
+  "observed_at": "2026-10-24T05:40:38.643950+00:00",
+  "account": "928489693154",
+  "sts_request_id": "a421c9ed-a2a7-483c-95ee-6e3e6f67d7ed",
+  "requests": [
+    {
+      "request_id": "376e2b7e-a4ef-4561-a630-5196fba7a4ae",
+      "status": "PASS",
+      "strongly_consistent_read": true,
+      "ddb_request_id": "BK7OPEHQQ6G1KE5Q0DT6JETHP7VV4KQNSO5AEMVJF66Q9ASUAAJG",
+      "analysis_state": "ready_for_review"
+    },
+    {
+      "request_id": "f1c47880-9fee-4a0f-8c35-1654cda3ec5a",
+      "status": "PASS",
+      "strongly_consistent_read": true,
+      "ddb_request_id": "JMQV2A34M8PHL018OT17VI19UBVV4KQNSO5AEMVJF66Q9ASUAAJG",
+      "analysis_state": "needs_review"
+    },
+    {
+      "request_id": "47a8dc50-86c0-4a56-a6c2-d18e6a933173",
+      "status": "PASS",
+      "strongly_consistent_read": true,
+      "ddb_request_id": "RGO1CP3S4HP3DGM27E5FSQ42Q7VV4KQNSO5AEMVJF66Q9ASUAAJG",
+      "analysis_state": "needs_review"
+    },
+    {
+      "request_id": "8098e613-6e1a-4482-8866-3a8b77a6d26f",
+      "status": "PASS",
+      "strongly_consistent_read": true,
+      "ddb_request_id": "1BSL8O05PJ56TRJUL4GNH2UJIVVV4KQNSO5AEMVJF66Q9ASUAAJG",
+      "analysis_state": "ready_for_review"
+    },
+    {
+      "request_id": "41332d51-6592-4b8a-a264-8dc9cbcf8ada",
+      "status": "PASS",
+      "strongly_consistent_read": true,
+      "ddb_request_id": "HF5OI5Q0JVPFTAVR8RD0QC8VHNVV4KQNSO5AEMVJF66Q9ASUAAJG",
+      "analysis_state": "ready_for_review"
+    },
+    {
+      "request_id": "b75af109-b98a-4dcd-a4e5-15ae3feb84c4",
+      "status": "PASS",
+      "strongly_consistent_read": true,
+      "ddb_request_id": "D8FL1QCP926M7N1VOP5SB3DTIFVV4KQNSO5AEMVJF66Q9ASUAAJG",
+      "analysis_state": "ready_for_review"
+    }
+  ],
+  "transcriptions": [
+    {
+      "transcription_id": "4c846e02-915b-4512-a2b9-767dcb7d1728",
+      "status": "PASS",
+      "ddb_request_id": "GFO9DVKO6AOP146JU31SGEQ4G3VV4KQNSO5AEMVJF66Q9ASUAAJG",
+      "job_name": "relay-mvp-4c846e02-915b-4512-a2b9-767dcb7d1728",
+      "job_request_id": "bcd450f0-977a-4a27-9ce3-4ab352429d5b",
+      "transcript_matches_s3": true,
+      "objects": [
+        {
+          "key": "cloud-mvp-v1/uploads/4c846e02-915b-4512-a2b9-767dcb7d1728.wav",
+          "bytes": 62464,
+          "encryption": "AES256",
+          "request_id": "KDJ04842QKNGK1Y8"
+        },
+        {
+          "key": "cloud-mvp-v1/sealed/4c846e02-915b-4512-a2b9-767dcb7d1728.wav",
+          "bytes": 62464,
+          "encryption": "AES256",
+          "request_id": "KDJE8Z3VZSNBXNPK"
+        },
+        {
+          "key": "cloud-mvp-v1/transcripts/4c846e02-915b-4512-a2b9-767dcb7d1728.json",
+          "bytes": 1052,
+          "encryption": "AES256",
+          "request_id": "KDJ0QPDZG60KW9ES"
+        }
+      ]
+    }
+  ],
+  "all_synthetic_request_results": [
+    {
+      "request_id": "85cb9dc2-6010-4320-8cdc-79b1e6d8aa36",
+      "analysis_state": "needs_review",
+      "analysis_attempts": 1,
+      "provider_evidence": {
+        "provider": "aws",
+        "model_id": "amazon.nova-lite-v1:0",
+        "request_id": "dc11925e-3831-44d4-bc95-9a1782b64c77",
+        "usage": {
+          "inputTokens": 273,
+          "outputTokens": 75,
+          "totalTokens": 348
+        },
+        "stop_reason": "end_turn"
+      }
+    },
+    {
+      "request_id": "1af39a95-646b-422b-abca-9c5fcc51af01",
+      "analysis_state": "needs_review",
+      "analysis_attempts": 1,
+      "provider_evidence": {
+        "provider": "aws",
+        "model_id": "amazon.nova-lite-v1:0",
+        "request_id": "331f0ef6-238e-4d99-a006-7db62b41ec01",
+        "usage": {
+          "inputTokens": 347,
+          "outputTokens": 213,
+          "totalTokens": 560
+        },
+        "stop_reason": "end_turn"
+      }
+    },
+    {
+      "request_id": "6b757796-b58b-4a08-8529-d90a22ae0211",
+      "analysis_state": "ready_for_review",
+      "analysis_attempts": 1,
+      "provider_evidence": {
+        "provider": "aws",
+        "model_id": "amazon.nova-lite-v1:0",
+        "request_id": "d632c06f-9450-4613-b3fc-ece59c5031cd",
+        "usage": {
+          "inputTokens": 445,
+          "outputTokens": 50,
+          "totalTokens": 495
+        },
+        "stop_reason": "end_turn"
+      }
+    },
+    {
+      "request_id": "5c611b12-7f19-41cc-8842-46a1e9764d34",
+      "analysis_state": "needs_review",
+      "analysis_attempts": 1,
+      "provider_evidence": {
+        "provider": "aws",
+        "model_id": "amazon.nova-lite-v1:0",
+        "request_id": "47b50e4f-ca81-4851-abf6-d4402da6df06",
+        "usage": {
+          "inputTokens": 438,
+          "outputTokens": 47,
+          "totalTokens": 485
+        },
+        "stop_reason": "end_turn"
+      }
+    },
+    {
+      "request_id": "6e96ac56-5f4c-4e01-9bf4-2f1b85ee6e0a",
+      "analysis_state": "ready_for_review",
+      "analysis_attempts": 1,
+      "provider_evidence": {
+        "provider": "aws",
+        "model_id": "amazon.nova-lite-v1:0",
+        "request_id": "28526d30-4e63-4914-adcd-80f1fc99ecca",
+        "usage": {
+          "inputTokens": 491,
+          "outputTokens": 50,
+          "totalTokens": 541
+        },
+        "stop_reason": "end_turn"
+      }
+    },
+    {
+      "request_id": "30d67c4e-1f5a-4525-8d2a-40c3584a9421",
+      "analysis_state": "needs_review",
+      "analysis_attempts": 1,
+      "provider_evidence": {
+        "provider": "aws",
+        "model_id": "amazon.nova-lite-v1:0",
+        "request_id": "66683d15-7fc3-49a4-b7fa-b4b9b4bdc194",
+        "usage": {
+          "inputTokens": 484,
+          "outputTokens": 55,
+          "totalTokens": 539
+        },
+        "stop_reason": "end_turn"
+      }
+    },
+    {
+      "request_id": "376e2b7e-a4ef-4561-a630-5196fba7a4ae",
+      "analysis_state": "ready_for_review",
+      "analysis_attempts": 1,
+      "provider_evidence": {
+        "provider": "aws",
+        "model_id": "amazon.nova-lite-v1:0",
+        "request_id": "bfb5208e-7d18-442d-a661-b8dac8b13bcc",
+        "usage": {
+          "inputTokens": 491,
+          "outputTokens": 50,
+          "totalTokens": 541
+        },
+        "stop_reason": "end_turn"
+      }
+    },
+    {
+      "request_id": "f1c47880-9fee-4a0f-8c35-1654cda3ec5a",
+      "analysis_state": "needs_review",
+      "analysis_attempts": 1,
+      "provider_evidence": {
+        "provider": "aws",
+        "model_id": "amazon.nova-lite-v1:0",
+        "request_id": "ae1b5709-5128-432a-97f8-d0de0c2b80bb",
+        "usage": {
+          "inputTokens": 484,
+          "outputTokens": 55,
+          "totalTokens": 539
+        },
+        "stop_reason": "end_turn"
+      }
+    },
+    {
+      "request_id": "47a8dc50-86c0-4a56-a6c2-d18e6a933173",
+      "analysis_state": "needs_review",
+      "analysis_attempts": 1,
+      "provider_evidence": {
+        "provider": "aws",
+        "model_id": "amazon.nova-lite-v1:0",
+        "request_id": "0dc66d42-5591-4f6d-a112-2a6fb2a401c5",
+        "usage": {
+          "inputTokens": 489,
+          "outputTokens": 53,
+          "totalTokens": 542
+        },
+        "stop_reason": "end_turn"
+      }
+    },
+    {
+      "request_id": "8098e613-6e1a-4482-8866-3a8b77a6d26f",
+      "analysis_state": "ready_for_review",
+      "analysis_attempts": 1,
+      "provider_evidence": {
+        "provider": "aws",
+        "model_id": "amazon.nova-lite-v1:0",
+        "request_id": "ad7e2eef-9c2f-4f22-bea1-50ebb4f9979f",
+        "usage": {
+          "inputTokens": 486,
+          "outputTokens": 47,
+          "totalTokens": 533
+        },
+        "stop_reason": "end_turn"
+      }
+    },
+    {
+      "request_id": "41332d51-6592-4b8a-a264-8dc9cbcf8ada",
+      "analysis_state": "ready_for_review",
+      "analysis_attempts": 1,
+      "provider_evidence": {
+        "provider": "aws",
+        "model_id": "amazon.nova-lite-v1:0",
+        "request_id": "f0d88c90-3d37-47a5-92f2-e2ee75259ff9",
+        "usage": {
+          "inputTokens": 486,
+          "outputTokens": 48,
+          "totalTokens": 534
+        },
+        "stop_reason": "end_turn"
+      }
+    },
+    {
+      "request_id": "b75af109-b98a-4dcd-a4e5-15ae3feb84c4",
+      "analysis_state": "ready_for_review",
+      "analysis_attempts": 1,
+      "provider_evidence": {
+        "provider": "aws",
+        "model_id": "amazon.nova-lite-v1:0",
+        "request_id": "b127b37e-051c-4265-8362-c60f1853848d",
+        "usage": {
+          "inputTokens": 485,
+          "outputTokens": 45,
+          "totalTokens": 530
+        },
+        "stop_reason": "end_turn"
+      }
+    }
+  ],
+  "accepted_request_count": 12,
+  "work_queue_empty": true,
+  "status": "PASS"
+}

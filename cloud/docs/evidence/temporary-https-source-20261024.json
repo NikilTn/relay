@@ -1,0 +1,24 @@
+{
+  "backend_disk_files_match_cfcaade": true,
+  "backend_file_count": 11,
+  "origin_checkout_head": "cfcaade434114ca584de406c9104de21e0b64008",
+  "native_working_tree_changes": [
+    " M App/CloudViews.swift",
+    " M App/VoiceRecorder.swift",
+    " M CLOUD_INTEGRATION.md",
+    " M Config/iOS-Info.plist",
+    " M Config/macOS-Info.plist",
+    " M Config/macOS.entitlements",
+    " M README.md",
+    " M RELAY.xcodeproj/project.pbxproj",
+    " M scripts/generate_project.py",
+    "?? DEMO_HOSTING.md",
+    "?? cloud/scripts/demo_login_panel.py",
+    "?? evidence/automated-tests-build-9.txt",
+    "?? evidence/backend-tests-build-9.txt",
+    "?? evidence/https-tunnel-build-9.json",
+    "?? evidence/physical-build9-install.json",
+    "?? evidence/testflight-upload-build-9.json"
+  ],
+  "note": "Source files on disk verified; no Lambda deployment or runtime-revision endpoint inferred."
+}
