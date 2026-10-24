@@ -12,6 +12,8 @@ from .common import APIError, PREFIX, WORK, canonical, digest, key, work_key
 from .interpretations import InterpretationMixin
 from .inventory import InventoryMixin
 
+_UNLOADED = object()
+
 
 class Service(InterpretationMixin, InventoryMixin):
     def __init__(self, settings, store, providers, clock=time.time):
@@ -47,9 +49,10 @@ class Service(InterpretationMixin, InventoryMixin):
             principal.membership.incident_id == record["submission"]["incident_id"] and
             record["submission"]["destination_shelter_id"] in principal.membership.shelter_ids)
 
-    def public_request(self, record):
+    def public_request(self, record, reservation=_UNLOADED):
         result = {k: v for k, v in record.items() if k not in {"payload_hash", "owner_subject"}}
-        reservation = self.store.get(*key("reservation", record["request_id"]))
+        if reservation is _UNLOADED:
+            reservation = self.store.get(*key("reservation", record["request_id"]))
         status = reservation[0]["status"] if reservation else "unassigned"
         result.update(assignment_state=status, fulfillment_state="fulfilled" if status == "fulfilled" else "not_fulfilled")
         return result
@@ -200,11 +203,14 @@ class Service(InterpretationMixin, InventoryMixin):
             except (ValueError, KeyError, TypeError):
                 raise APIError(400, "invalid_cursor", "Cursor does not match this authorized inbox") from None
         rows, next_after = self.store.query(pk, after=after, limit=limit)
+        keys = [key(kind, reference["request_id"]) for _, reference, _ in rows
+                for kind in ("request", "reservation")]
+        batch = self.store.get_many(keys)
         records = []
         for _, reference, _ in rows:
-            row = self.store.get(*key("request", reference["request_id"]))
+            row = batch.get(key("request", reference["request_id"]))
             if row and self.can_read(principal, row[0]):
-                records.append(self.public_request(row[0]))
+                records.append(self.public_request(row[0], batch.get(key("reservation", reference["request_id"]))))
         next_cursor = base64.urlsafe_b64encode(canonical({"scope": scope, "after": next_after}).encode()).decode().rstrip("=") if next_after else None
         return {"items": records, "next_cursor": next_cursor}
 

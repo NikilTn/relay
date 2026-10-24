@@ -4,6 +4,7 @@ import json
 import sqlite3
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -52,6 +53,19 @@ class SQLiteStore:
             row = self.db.execute("SELECT payload,v FROM records WHERE pk=? AND sk=?", (pk, sk)).fetchone()
             return (json.loads(row[0]), row[1]) if row else None
 
+    def get_many(self, keys):
+        keys = list(dict.fromkeys(keys))
+        results = dict.fromkeys(keys)
+        with self.lock:
+            for offset in range(0, len(keys), 100):
+                batch = keys[offset:offset + 100]
+                placeholders = ",".join("(?,?)" for _ in batch)
+                rows = self.db.execute(
+                    "SELECT pk,sk,payload,v FROM records WHERE (pk,sk) IN (VALUES " + placeholders + ")",
+                    [part for pair in batch for part in pair]).fetchall()
+                results.update({(pk, sk): (json.loads(payload), version) for pk, sk, payload, version in rows})
+        return results
+
     def query(self, pk, after=None, limit=25):
         with self.lock:
             rows = self.db.execute("SELECT sk,payload,v FROM records WHERE pk=? AND sk>? ORDER BY sk LIMIT ?",
@@ -85,6 +99,7 @@ class SQLiteStore:
 class DynamoStore:
     def __init__(self, client, table_name):
         self.client, self.table = client, table_name
+        self._batch_get_denied = False
 
     @staticmethod
     def key(pk, sk):
@@ -95,6 +110,56 @@ class DynamoStore:
     def get(self, pk, sk):
         item = self.client.get_item(TableName=self.table, Key=self.key(pk, sk), ConsistentRead=True).get("Item")
         return (json.loads(item["payload"]["S"]), int(item["v"]["N"])) if item else None
+
+    def _point_reads(self, keys):
+        """Use existing GetItem permissions with bounded concurrency, never a scan."""
+        results = {}
+        with ThreadPoolExecutor(max_workers=6) as pool:
+            pending = {pool.submit(self.get, *pair): pair for pair in keys}
+            try:
+                for future in as_completed(pending):
+                    results[pending[future]] = future.result()
+            except Exception:
+                for future in pending:
+                    future.cancel()
+                raise
+        return results
+
+    def get_many(self, keys):
+        keys = list(dict.fromkeys(keys))
+        # Validate every key before issuing any call, including the IAM fallback.
+        encoded = {pair: self.key(*pair) for pair in keys}
+        results = dict.fromkeys(keys)
+        for offset in range(0, len(keys), 100):
+            pending = keys[offset:offset + 100]
+            if self._batch_get_denied:
+                results.update(self._point_reads(pending))
+                continue
+            for attempt in range(3):
+                try:
+                    response = self.client.batch_get_item(RequestItems={self.table: {
+                        "Keys": [encoded[pair] for pair in pending], "ConsistentRead": True}})
+                except ClientError as exc:
+                    if exc.response["Error"]["Code"] not in {"AccessDeniedException", "AccessDenied", "UnauthorizedOperation"}:
+                        raise
+                    # Do not require a new IAM grant or repeat a denied call each poll.
+                    self._batch_get_denied = True
+                    break
+                for item in response.get("Responses", {}).get(self.table, []):
+                    pair = (item["pk"]["S"], item["sk"]["S"])
+                    if pair in encoded:
+                        results[pair] = (json.loads(item["payload"]["S"]), int(item["v"]["N"]))
+                unprocessed = response.get("UnprocessedKeys", {}).get(self.table, {}).get("Keys", [])
+                remaining = {(item["pk"]["S"], item["sk"]["S"]) for item in unprocessed}
+                pending = [pair for pair in pending if pair in remaining]
+                if not pending:
+                    break
+                if attempt < 2:
+                    time.sleep(0.05 * (2 ** attempt))
+            # Never silently treat unprocessed keys as missing records.
+            if pending:
+                results.update(self._point_reads(pending))
+        return results
 
     def query(self, pk, after=None, limit=25):
         self.key(pk, after or "")
