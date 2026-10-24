@@ -12,18 +12,18 @@ struct AccountSignInView: View {
             Label("Welcome to RELAY", systemImage: "hands.sparkles.fill").font(.title2.bold())
             Text("Sign in once to send requests or coordinate your shelter. Your account opens the right workspace.").foregroundStyle(.secondary)
             if cloud.signInNeedsCode {
-                TextField("Six-digit authenticator code", text: $code).textFieldStyle(.roundedBorder).focused($editing)
+                TextField("Six-digit authenticator code", text: $code).textFieldStyle(WorkflowInput()).focused($editing)
                     .accessibilityIdentifier("loginCode")
                     #if os(iOS)
                     .keyboardType(.numberPad).textContentType(.oneTimeCode)
                     #endif
             } else {
-                TextField("Email", text: $email).textFieldStyle(.roundedBorder).focused($editing).autocorrectionDisabled()
+                TextField("Email", text: $email).textFieldStyle(WorkflowInput()).focused($editing).autocorrectionDisabled()
                     .accessibilityIdentifier("loginEmail")
                     #if os(iOS)
                     .textInputAutocapitalization(.never).keyboardType(.emailAddress).textContentType(.username)
                     #endif
-                SecureField("Password", text: $password).textFieldStyle(.roundedBorder).focused($editing).accessibilityIdentifier("loginPassword")
+                SecureField("Password", text: $password).textFieldStyle(WorkflowInput()).focused($editing).accessibilityIdentifier("loginPassword")
             }
             Button(cloud.busy ? "Signing in…" : cloud.signInNeedsCode ? "Verify and continue" : "Sign in") {
                 editing = false
@@ -42,10 +42,10 @@ struct WorkflowStatus: View {
     @EnvironmentObject private var cloud: CloudModel
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: cloud.status.contains("unavailable") ? "clock" : "cloud.fill")
-            Text(cloud.status.contains("unavailable") ? "Waiting for connection · requests stay saved" : cloud.profile == nil ? "Your requests start here" : "Cloud delivery is automatic")
+            Image(systemName: "cloud").foregroundStyle(RelayTheme.accent)
+            Text(cloud.status.contains("unavailable") ? "Waiting to reconnect · your request stays saved" : "Cloud requests · saved before sending")
                 .font(.caption)
-        }.foregroundStyle(.secondary)
+        }.foregroundStyle(.secondary).padding(.horizontal, 4)
     }
 }
 struct LocationFacts: View {
@@ -69,72 +69,101 @@ struct PublicHelpView: View {
     let sent: (String) -> Void
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                Text("What do you need?").font(.largeTitle.bold())
-                WorkflowStatus()
+            VStack(alignment: .leading, spacing: 16) {
+                WorkflowHeader(eyebrow: "Your community", title: "Ask for help", subtitle: "Tell a shelter what you need. Keep every update in one place.")
                 if cloud.profile == nil { AccountSignInView() }
                 else {
+                    WorkflowStatus()
                     RelayCard {
-                        Text("Send to a shelter").font(.headline)
-                        Picker("Shelter", selection: $cloud.draft.shelterID) {
+                        WorkflowSection(title: "Your shelter", symbol: "building.2.fill")
+                        Picker("Send to", selection: $cloud.draft.shelterID) {
                             Text("Choose shelter").tag("")
                             ForEach(cloud.directory) { Text($0.display_name).tag($0.shelter_id) }
                         }.accessibilityIdentifier("destinationShelter")
-                        if cloud.directory.isEmpty { Text("No authorized shelter is available. Your draft stays saved.").foregroundStyle(.secondary) }
+                        if cloud.directory.isEmpty { Text("No shelter available yet. Your draft stays saved.").font(.subheadline).foregroundStyle(.secondary) }
                     }
                     RelayCard {
+                        WorkflowSection(title: "What do you need?", symbol: "text.bubble.fill", subtitle: "Speak naturally or write a short message.")
                         NavigationLink { VoiceInputView() } label: {
-                            Label("Speak your request", systemImage: "mic.fill").font(.headline).frame(maxWidth: .infinity, minHeight: 46)
-                        }.buttonStyle(.borderedProminent).disabled(cloud.audioBusy)
-                        TextField("Or type what you need", text: $cloud.draft.text, axis: .vertical).lineLimit(3...7).textFieldStyle(.roundedBorder).focused($editing).accessibilityIdentifier("requestText")
+                            Label("Speak your request", systemImage: "mic.fill")
+                        }.buttonStyle(WorkflowSecondaryButton()).disabled(cloud.audioBusy)
+                        TextField("e.g. Two water packs for one person", text: $cloud.draft.text, axis: .vertical)
+                            .lineLimit(3...6).textFieldStyle(WorkflowInput()).focused($editing)
+                            .accessibilityLabel("Describe your request").accessibilityIdentifier("requestText")
                         Button { editing = false; Task { await cloud.previewRequest() } } label: {
-                            Label(cloud.interpreting ? "Preparing your request…" : "Prepare structured request", systemImage: "sparkles")
-                        }.buttonStyle(.bordered).disabled(cloud.interpreting || cloud.draft.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || cloud.draft.shelterID.isEmpty)
-                        if cloud.interpreting { ProgressView() }
+                            HStack(spacing: 8) {
+                                if cloud.interpreting { ProgressView().controlSize(.small) } else { Image(systemName: "sparkles") }
+                                Text(cloud.interpreting ? "Preparing details…" : "Prepare details with AI")
+                            }
+                        }.buttonStyle(WorkflowSecondaryButton())
+                            .disabled(cloud.interpreting || cloud.draft.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || cloud.draft.shelterID.isEmpty)
                         if let result = cloud.interpretation, cloud.draft.interpretationText == cloud.draft.text.trimmingCharacters(in: .whitespacesAndNewlines) {
-                            Text(result.result?.proposal?.summary ?? "Review the fields below.").font(.subheadline)
-                            ForEach(result.result?.review_reasons ?? [], id: \.self) { Text($0).font(.caption).foregroundStyle(.orange) }
-                            Text("AI prepared these fields. Check and edit them before sending.").font(.caption).foregroundStyle(.secondary)
+                            VStack(alignment: .leading, spacing: 8) {
+                                Label("Ready for your review", systemImage: "checkmark.circle.fill").font(.subheadline.bold()).foregroundStyle(RelayTheme.accent)
+                                Text(result.result?.proposal?.summary ?? "Check the details below.").font(.subheadline)
+                                ForEach(result.result?.review_reasons ?? [], id: \.self) { Text($0).font(.caption).foregroundStyle(.orange) }
+                                Text("Check the AI suggestion before sending.").font(.caption).foregroundStyle(.secondary)
+                            }.padding(14).frame(maxWidth: .infinity, alignment: .leading).background(RelayTheme.accent.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
                         }
                     }
                     RelayCard {
-                        Text("Request details").font(.headline)
-                        Picker("Item", selection: $cloud.draft.item) {
-                            ForEach(["water_packs", "food_packs", "blankets", "other"], id: \.self) { Text(InventoryItem.title($0)).tag($0) }
+                        WorkflowSection(title: "Request details", symbol: "checklist", subtitle: "Edit these yourself, or use the AI suggestion.")
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 135), spacing: 10)], spacing: 10) {
+                            ForEach(["water_packs", "food_packs", "blankets", "other"], id: \.self) { item in
+                                Button { cloud.draft.item = item } label: {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: WorkflowPalette.symbol(item)).foregroundStyle(WorkflowPalette.color(item))
+                                        Text(InventoryItem.title(item)).font(.subheadline.weight(.semibold))
+                                        Spacer(minLength: 0)
+                                        if cloud.draft.item == item { Image(systemName: "checkmark.circle.fill").foregroundStyle(RelayTheme.accent) }
+                                    }.padding(12).frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+                                        .background(cloud.draft.item == item ? RelayTheme.accent.opacity(0.09) : RelayTheme.canvas, in: RoundedRectangle(cornerRadius: 12))
+                                        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(cloud.draft.item == item ? RelayTheme.accent : .clear, lineWidth: 1.5))
+                                }.buttonStyle(.plain).accessibilityAddTraits(cloud.draft.item == item ? .isSelected : [])
+                            }
                         }
-                        HStack {
-                            TextField("Quantity (optional)", text: $cloud.draft.quantity).textFieldStyle(.roundedBorder).focused($editing).accessibilityLabel("Quantity")
-                            Text(cloud.draft.unit).foregroundStyle(.secondary)
+                        ViewThatFits(in: .horizontal) {
+                            HStack(alignment: .top, spacing: 12) { quantity; people }
+                            VStack(alignment: .leading, spacing: 12) { quantity; people }
                         }
-                        TextField("People affected (optional)", text: $cloud.draft.people).textFieldStyle(.roundedBorder).focused($editing)
+                        Text("Leave amounts blank if you are unsure.").font(.caption).foregroundStyle(.secondary)
                     }
                     RelayCard {
-                        Text("Where is help needed?").font(.headline)
-                        TextField("Landmark, entrance or room (optional)", text: $cloud.draft.landmark, axis: .vertical).lineLimit(1...3).textFieldStyle(.roundedBorder).focused($editing)
+                        WorkflowSection(title: "Where do you need help?", symbol: "mappin.and.ellipse", subtitle: "A landmark or optional location snapshot.")
+                        TextField("Landmark, entrance or room", text: $cloud.draft.landmark, axis: .vertical).lineLimit(1...3).textFieldStyle(WorkflowInput()).focused($editing)
                         Button { editing = false; locator.capture { cloud.draft.location = $0; cloud.persistDraft() } } label: {
                             Label(locator.busy ? "Finding location…" : cloud.draft.location == nil ? "Use current location" : "Refresh location", systemImage: "location")
-                        }.buttonStyle(.bordered).disabled(locator.busy)
+                        }.buttonStyle(WorkflowSecondaryButton()).disabled(locator.busy)
                         if let location = cloud.draft.location {
                             LocationFacts(location: location)
-                            Button("Remove location") { cloud.draft.location = nil }
+                            Button("Remove location") { cloud.draft.location = nil }.font(.subheadline)
                         }
-                        if !locator.problem.isEmpty { Text(locator.problem).font(.caption).foregroundStyle(.orange) }
-                        Text("Optional. Your location snapshot is sent to the authorized shelter with this request.").font(.caption).foregroundStyle(.secondary)
+                        if !locator.problem.isEmpty { WorkflowNotice(text: locator.problem) }
+                        Text("Shared with your authorized shelter only when you send.").font(.caption).foregroundStyle(.secondary)
                     }
-                    if !cloud.problem.isEmpty { Text(cloud.problem).foregroundStyle(.orange).font(.callout) }
-                    Button { editing = false; reviewing = true } label: { Label("Review and send", systemImage: "arrow.right") }
-                        .buttonStyle(PrimaryButton()).disabled(cloud.submitting || cloud.interpreting || locator.busy || cloud.draft.shelterID.isEmpty || cloud.draft.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    Text("Saved on this phone while you compose. Sending does not guarantee staff acceptance.").font(.caption).foregroundStyle(.secondary)
+                    if !cloud.problem.isEmpty { WorkflowNotice(text: cloud.problem) }
                 }
             }.padding(20).frame(maxWidth: 660).frame(maxWidth: .infinity)
         }.background(RelayTheme.canvas).navigationTitle("Help")
-            .toolbar { ToolbarItem(placement: .primaryAction) { if editing { Button("Done") { editing = false } } else { NavigationLink { WorkflowSettings(model: model) } label: { Image(systemName: "gearshape") } } } }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if cloud.profile != nil {
+                    VStack(spacing: 7) {
+                        Button { editing = false; reviewing = true } label: { HStack { Text("Review and send"); Spacer(); Image(systemName: "arrow.right") }.padding(.horizontal, 18) }
+                            .buttonStyle(PrimaryButton()).disabled(cloud.submitting || cloud.interpreting || locator.busy || cloud.draft.shelterID.isEmpty || cloud.draft.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        Text("Draft saved on this device").font(.caption2).foregroundStyle(.secondary)
+                    }.padding(.horizontal, 20).padding(.vertical, 10).frame(maxWidth: 660).frame(maxWidth: .infinity).background(.bar)
+                }
+            }
+            .toolbar { ToolbarItem(placement: .primaryAction) { if editing { Button("Done") { editing = false } } else { NavigationLink { WorkflowSettings(model: model) } label: { Image(systemName: "gearshape") }.accessibilityLabel("Settings") } } }
             .onChange(of: cloud.draft) { _, _ in cloud.persistDraft() }
             .sheet(isPresented: $reviewing) { WorkflowReview { id in reviewing = false; sent(id) } }
             #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
             .scrollDismissesKeyboard(.interactively)
             #endif
     }
+    private var quantity: some View { WorkflowField(title: "Quantity · \(cloud.draft.unit)", placeholder: "Unknown", text: $cloud.draft.quantity, focus: $editing).frame(minWidth: 115) }
+    private var people: some View { WorkflowField(title: "People affected", placeholder: "Unknown", text: $cloud.draft.people, focus: $editing).frame(minWidth: 115) }
 }
 struct WorkflowReview: View {
     @EnvironmentObject private var cloud: CloudModel
@@ -173,45 +202,43 @@ struct WorkflowRequestsView: View {
     @ObservedObject var model: RelayModel
     @EnvironmentObject private var cloud: CloudModel
     let staff: Bool
+    @State private var filter = "Open"
     private var rows: [CloudQueueRecord] {
         cloud.records.filter { !staff || $0.submission.destination_shelter_id == cloud.staffShelterID }.sorted { $0.submission.created_at > $1.submission.created_at }
     }
+    private var visibleRows: [CloudQueueRecord] { rows.filter { filter == "All" || (filter == "Closed") == ["completed", "cancelled", "rejected"].contains($0.history?.status ?? "new") } }
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    Text(staff ? "Shelter inbox" : "My requests").font(.largeTitle.bold())
-                    Spacer()
-                    Button { Task { await cloud.loadInbox(shelterID: staff ? cloud.staffShelterID : nil) } } label: { Image(systemName: "arrow.clockwise") }.disabled(cloud.busy)
-                }
+                WorkflowHeader(eyebrow: staff ? "Coordinator" : "Your requests", title: staff ? "Shelter inbox" : "You're in the loop", subtitle: staff ? "Review needs. Reserve supplies. Keep people informed." : "Follow your requests and hear back from your shelter.")
                 if cloud.profile == nil { AccountSignInView() }
                 else {
-                    if staff {
-                        Picker("Shelter", selection: $cloud.staffShelterID) { ForEach(cloud.directory) { Text($0.display_name).tag($0.shelter_id) } }
-                            .onChange(of: cloud.staffShelterID) { _, value in Task { await cloud.loadInbox(shelterID: value) } }
+                    HStack {
+                        if staff {
+                            Picker("Shelter", selection: $cloud.staffShelterID) { ForEach(cloud.directory) { Text($0.display_name).tag($0.shelter_id) } }
+                                .onChange(of: cloud.staffShelterID) { _, value in Task { await cloud.loadInbox(shelterID: value) } }
+                        } else { Text("\(rows.count) saved request\(rows.count == 1 ? "" : "s")").font(.subheadline).foregroundStyle(.secondary) }
+                        Spacer()
+                        Button { Task { await cloud.loadInbox(shelterID: staff ? cloud.staffShelterID : nil) } } label: { Image(systemName: "arrow.clockwise").frame(width: 44, height: 44) }
+                            .buttonStyle(.plain).disabled(cloud.busy).accessibilityLabel("Refresh requests")
                     }
-                    WorkflowStatus()
-                    if rows.isEmpty { ContentUnavailableView(staff ? "No requests yet" : "Your requests will appear here", systemImage: "tray", description: Text(staff ? "New requests arrive automatically. Refresh to check now." : "Create a request in Help.")) }
-                    ForEach(rows) { record in
+                    Picker("Show requests", selection: $filter) { Text("Open").tag("Open"); Text("All").tag("All"); Text("Closed").tag("Closed") }.pickerStyle(.segmented)
+                    if visibleRows.isEmpty { ContentUnavailableView(filter == "Open" ? "No open requests" : "No requests here", systemImage: "tray", description: Text(staff ? "New requests appear here when they reach RELAY." : "Create a request in Help. Your shelter's replies will appear here.")) }
+                    ForEach(visibleRows) { record in
                         NavigationLink { WorkflowRequestDetail(id: record.id) } label: {
-                            RelayCard {
-                                HStack {
-                                    Text(InventoryItem.title(record.submission.structured_fields?.item_id ?? record.result?.result?.proposal?.item_id ?? "other")).font(.headline)
-                                    Spacer(); Image(systemName: "chevron.right").font(.caption)
-                                }
-                                Text(record.submission.original_text).lineLimit(2).foregroundStyle(.primary)
-                                Text(Self.progress(record)).font(.subheadline.weight(.medium)).foregroundStyle(RelayTheme.accent)
-                                Text(record.result == nil ? "Saved on phone · waiting to send" : "Received by RELAY").font(.caption).foregroundStyle(.secondary)
-                                Text(record.submission.created_at, format: .dateTime.month().day().hour().minute()).font(.caption).foregroundStyle(.secondary)
-                            }.multilineTextAlignment(.leading)
+                            WorkflowRequestCard(record: record, shelter: cloud.directory.first(where: { $0.shelter_id == record.submission.destination_shelter_id })?.display_name ?? "Shelter")
                         }.buttonStyle(.plain)
                     }
-                    if !cloud.problem.isEmpty { Text(cloud.problem).font(.caption).foregroundStyle(.orange) }
+                    WorkflowStatus()
+                    if !cloud.problem.isEmpty { WorkflowNotice(text: cloud.problem) }
                 }
             }.padding(20).frame(maxWidth: 780).frame(maxWidth: .infinity)
         }.background(RelayTheme.canvas).navigationTitle(staff ? "Inbox" : "Requests")
-            .toolbar { ToolbarItem(placement: .primaryAction) { NavigationLink { WorkflowSettings(model: model) } label: { Image(systemName: "gearshape") } } }
+            .toolbar { ToolbarItem(placement: .primaryAction) { NavigationLink { WorkflowSettings(model: model) } label: { Image(systemName: "gearshape") }.accessibilityLabel("Settings") } }
             .task { if cloud.canUseCloud { await cloud.loadInbox(shelterID: staff ? cloud.staffShelterID : nil) } }
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
     }
     static func progress(_ record: CloudQueueRecord) -> String {
         switch record.history?.status {
@@ -238,7 +265,8 @@ struct WorkflowRequestDetail: View {
             if let record {
                 VStack(alignment: .leading, spacing: 18) {
                     RelayCard {
-                        Text(WorkflowRequestsView.progress(record)).font(.title2.bold())
+                        WorkflowBadge(text: WorkflowRequestsView.progress(record), symbol: ["accepted", "in_progress", "completed"].contains(record.history?.status ?? "") ? "checkmark.circle" : "clock")
+                        Text(InventoryItem.title(record.submission.structured_fields?.item_id ?? record.result?.result?.proposal?.item_id ?? "other")).font(.title2.bold())
                         Text(record.submission.original_text)
                         if let fields = record.submission.structured_fields {
                             LabeledContent("Item", value: InventoryItem.title(fields.item_id ?? "other"))
@@ -247,12 +275,12 @@ struct WorkflowRequestDetail: View {
                             if !fields.landmark.isEmpty { Text("Landmark: " + fields.landmark) }
                         }
                         if let location = record.submission.location { LocationFacts(location: location) }
-                        Text(record.id).font(.caption.monospaced()).foregroundStyle(.secondary).textSelection(.enabled)
-                        Button("Refresh / retry") { Task { await cloud.retry(id); if cloud.isDispatcher { await cloud.refreshInventory() } } }.disabled(cloud.busy)
+                        DisclosureGroup("Request reference") { Text(record.id).font(.caption.monospaced()).foregroundStyle(.secondary).textSelection(.enabled) }.font(.caption)
+                        Button { Task { await cloud.retry(id); if cloud.isDispatcher { await cloud.refreshInventory() } } } label: { Label("Refresh / retry", systemImage: "arrow.clockwise") }.buttonStyle(WorkflowSecondaryButton()).disabled(cloud.busy)
                     }
                     if let proposal = record.result?.result?.proposal {
                         RelayCard {
-                            Label("AI interpretation", systemImage: "sparkles").font(.headline)
+                            WorkflowSection(title: "AI interpretation", symbol: "sparkles", subtitle: "A suggestion for staff to review")
                             Text(proposal.summary)
                             Text("\(InventoryItem.title(proposal.item_id ?? "other")) · \(proposal.quantity.map(String.init) ?? "Unknown") \(proposal.unit ?? "")")
                             ForEach(record.result?.result?.review_reasons ?? [], id: \.self) { Text($0).font(.caption).foregroundStyle(.orange) }
@@ -267,16 +295,16 @@ struct WorkflowRequestDetail: View {
                         }
                     }
                     RelayCard {
-                        Text("Conversation").font(.headline)
+                        WorkflowSection(title: "Updates & replies", symbol: "bubble.left.and.bubble.right.fill")
                         ForEach(record.history?.events ?? []) { event in
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(event.author_role == "dispatcher" ? "Shelter coordinator" : "Requester").font(.caption.bold())
                                 if !event.text.isEmpty { Text(event.text) }
                                 if let status = event.status { Text(status.replacingOccurrences(of: "_", with: " ")).font(.caption).foregroundStyle(.secondary) }
-                            }.padding(.vertical, 5)
+                            }.padding(12).frame(maxWidth: .infinity, alignment: .leading).background(event.author_role == "dispatcher" ? RelayTheme.accent.opacity(0.07) : RelayTheme.canvas, in: RoundedRectangle(cornerRadius: 12))
                         }
-                        TextField("Reply", text: $reply, axis: .vertical).lineLimit(2...5).textFieldStyle(.roundedBorder).focused($editing)
-                        Button("Send reply") { let text = reply; editing = false; Task { await cloud.sendEvent(id, text: text, status: nil); if cloud.problem.isEmpty { reply = "" } } }.disabled(cloud.busy || reply.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || record.result == nil || record.pendingEvent != nil)
+                        TextField("Write a reply…", text: $reply, axis: .vertical).lineLimit(2...5).textFieldStyle(WorkflowInput()).focused($editing)
+                        Button("Send reply") { let text = reply; editing = false; Task { await cloud.sendEvent(id, text: text, status: nil); if cloud.problem.isEmpty { reply = "" } } }.buttonStyle(WorkflowSecondaryButton()).disabled(cloud.busy || reply.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || record.result == nil || record.pendingEvent != nil)
                         if !cloud.isDispatcher, !["completed", "cancelled", "rejected"].contains(record.history?.status ?? "new") {
                             Button("Cancel request", role: .destructive) { Task { await cloud.sendEvent(id, text: "Requester cancelled this request.", status: "cancelled") } }.disabled(cloud.busy || record.result == nil)
                         }
@@ -308,18 +336,18 @@ struct WorkflowRequestDetail: View {
     @ViewBuilder private func approval(_ record: CloudQueueRecord) -> some View {
         if record.reservation?.status == "reserved" {
             RelayCard {
-                Text("Reservation ready").font(.headline)
-                Button("Mark supplies handed over") { confirmingHandover = true }.buttonStyle(.borderedProminent).disabled(cloud.busy || record.pendingInventory != nil)
+                WorkflowSection(title: "Supplies reserved", symbol: "shippingbox.fill", subtitle: "Record the next step when it happens.")
+                Button("Mark supplies handed over") { confirmingHandover = true }.buttonStyle(PrimaryButton()).disabled(cloud.busy || record.pendingInventory != nil)
                 Button("Release reservation", role: .destructive) { Task { await cloud.inventoryAction(id, action: "release") } }.disabled(cloud.busy || record.pendingInventory != nil)
             }
         } else if !["completed", "cancelled", "rejected"].contains(record.history?.status ?? "new") {
             RelayCard {
-                Text("Approve supplies").font(.headline)
+                WorkflowSection(title: "Approve supplies", symbol: "checkmark.seal.fill")
                 Picker("Item", selection: $item) { ForEach(["water_packs", "food_packs", "blankets"], id: \.self) { Text(InventoryItem.title($0)).tag($0) } }
-                TextField("Quantity to reserve", text: $amount).textFieldStyle(.roundedBorder).focused($editing)
+                TextField("Quantity to reserve", text: $amount).textFieldStyle(WorkflowInput()).focused($editing)
                 if let stock = cloud.inventory?.items.first(where: { $0.id == item }) { Text("Available: \(stock.available) \(stock.unit) · already reserved: \(stock.reserved)").font(.subheadline) }
                 Button("Approve and reserve") { editing = false; Task { await cloud.inventoryAction(id, action: "reserve", item: item, quantity: Int(amount)) } }
-                    .buttonStyle(.borderedProminent).disabled(cloud.busy || cloud.inventoryBusy || record.pendingInventory != nil || (Int(amount) ?? 0) <= 0 || cloud.inventory == nil)
+                    .buttonStyle(PrimaryButton()).disabled(cloud.busy || cloud.inventoryBusy || record.pendingInventory != nil || (Int(amount) ?? 0) <= 0 || cloud.inventory == nil)
                 Text("Approval reserves stock. Handover deducts it. Concurrent approvals cannot overbook available supplies.").font(.caption).foregroundStyle(.secondary)
             }
         }
@@ -331,43 +359,61 @@ struct InventoryView: View {
     @State private var item = "water_packs"
     @State private var amount = ""
     @State private var note = "Synthetic demo stock"
+    @State private var editingStock = false
     @FocusState private var editing: Bool
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                Text("Shelter inventory").font(.largeTitle.bold())
-                Picker("Shelter", selection: $cloud.staffShelterID) { ForEach(cloud.directory) { Text($0.display_name).tag($0.shelter_id) } }
-                    .onChange(of: cloud.staffShelterID) { _, _ in Task { await cloud.refreshInventory() } }
-                Button("Refresh stock") { Task { await cloud.refreshInventory() } }.disabled(cloud.inventoryBusy)
-                ForEach(cloud.inventory?.items ?? []) { row in
+            VStack(alignment: .leading, spacing: 16) {
+                WorkflowHeader(eyebrow: "Coordinator", title: "Supplies at a glance", subtitle: "Know what's available before you approve a request.")
+                HStack {
+                    Picker("Shelter", selection: $cloud.staffShelterID) { ForEach(cloud.directory) { Text($0.display_name).tag($0.shelter_id) } }
+                        .onChange(of: cloud.staffShelterID) { _, _ in Task { await cloud.refreshInventory() } }
+                    Spacer()
+                    Button { Task { await cloud.refreshInventory() } } label: { Image(systemName: "arrow.clockwise").frame(width: 44, height: 44) }
+                        .buttonStyle(.plain).disabled(cloud.inventoryBusy).accessibilityLabel("Refresh stock")
+                }
+                if cloud.inventory == nil && !cloud.inventoryBusy { ContentUnavailableView("Stock not loaded", systemImage: "shippingbox", description: Text("Refresh when your connection is available.")) }
+                ForEach((cloud.inventory?.items ?? []).sorted { $0.available == $1.available ? $0.id < $1.id : $0.available > $1.available }) { row in
                     RelayCard {
-                        Text(row.title).font(.headline)
-                        HStack {
-                            stat("Available", value: row.available)
-                            Spacer(); stat("Reserved", value: row.reserved)
-                            Spacer(); stat("On hand", value: row.on_hand)
+                        HStack(spacing: 12) {
+                            SupplyIcon(item: row.id)
+                            VStack(alignment: .leading, spacing: 3) { Text(row.title).font(.headline); Text("Measured in \(row.unit)").font(.caption).foregroundStyle(.secondary) }
+                            Spacer()
                         }
-                        Text("Unit: \(row.unit)").font(.caption).foregroundStyle(.secondary)
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Text("\(row.available)").font(.system(.largeTitle, design: .rounded).weight(.bold)).monospacedDigit()
+                            Text("available").font(.subheadline).foregroundStyle(.secondary)
+                        }
+                        Divider()
+                        HStack { stat("Reserved", value: row.reserved); Spacer(); stat("On hand", value: row.on_hand) }
                     }
                 }
+                Text("Approval reserves supplies. Handover deducts stock.").font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
                 RelayCard {
-                    Text("Record stock change").font(.headline)
-                    Picker("Item", selection: $item) { ForEach(["water_packs", "food_packs", "blankets"], id: \.self) { Text(InventoryItem.title($0)).tag($0) } }
-                    TextField("Amount to add (negative to remove)", text: $amount).textFieldStyle(.roundedBorder).focused($editing)
-                    TextField("Reason", text: $note).textFieldStyle(.roundedBorder).focused($editing)
-                    Button(cloud.pendingAdjustment ? "Retry saved stock change" : "Save stock change") {
-                        editing = false; Task { await cloud.adjustInventory(item: item, amount: Int(amount) ?? 0, note: note); if !cloud.pendingAdjustment && cloud.problem.isEmpty { amount = "" } }
-                    }.buttonStyle(.borderedProminent).disabled(cloud.inventoryBusy || (!cloud.pendingAdjustment && (Int(amount) ?? 0) == 0))
-                    Text("Use synthetic stock for this demonstration. Stock is shared by authorized coordinators and persists in AWS.").font(.caption).foregroundStyle(.secondary)
+                    DisclosureGroup(isExpanded: $editingStock) {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Picker("Item", selection: $item) { ForEach(["water_packs", "food_packs", "blankets"], id: \.self) { Text(InventoryItem.title($0)).tag($0) } }
+                            WorkflowField(title: "Stock change", placeholder: "Add amount, or use − to remove", text: $amount, focus: $editing)
+                            WorkflowField(title: "Reason", placeholder: "Why is stock changing?", text: $note, focus: $editing)
+                            Button(cloud.pendingAdjustment ? "Retry saved stock change" : "Save stock change") {
+                                editing = false; Task { await cloud.adjustInventory(item: item, amount: Int(amount) ?? 0, note: note); if !cloud.pendingAdjustment && cloud.problem.isEmpty { amount = "" } }
+                            }.buttonStyle(PrimaryButton()).disabled(cloud.inventoryBusy || (!cloud.pendingAdjustment && (Int(amount) ?? 0) == 0))
+                            Text("Use synthetic stock for this demonstration.").font(.caption).foregroundStyle(.secondary)
+                        }.padding(.top, 12)
+                    } label: { Label("Record a stock change", systemImage: "plus.circle.fill").font(.headline) }
                 }
-                if cloud.inventoryBusy { ProgressView() }
-                if !cloud.problem.isEmpty { Text(cloud.problem).foregroundStyle(.orange) }
+                if cloud.inventoryBusy { ProgressView("Updating stock…").frame(maxWidth: .infinity) }
+                if !cloud.problem.isEmpty { WorkflowNotice(text: cloud.problem) }
             }.padding(20).frame(maxWidth: 700).frame(maxWidth: .infinity)
         }.background(RelayTheme.canvas).navigationTitle("Inventory")
-            .toolbar { ToolbarItem(placement: .primaryAction) { if editing { Button("Done") { editing = false } } else { NavigationLink { WorkflowSettings(model: model) } label: { Image(systemName: "gearshape") } } } }
-            .task { await cloud.refreshInventory() }
+            .toolbar { ToolbarItem(placement: .primaryAction) { if editing { Button("Done") { editing = false } } else { NavigationLink { WorkflowSettings(model: model) } label: { Image(systemName: "gearshape") }.accessibilityLabel("Settings") } } }
+            .task { await cloud.refreshInventory(); if cloud.pendingAdjustment { editingStock = true } }
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            .scrollDismissesKeyboard(.interactively)
+            #endif
     }
-    private func stat(_ title: String, value: Int) -> some View { VStack(alignment: .leading, spacing: 4) { Text("\(value)").font(.title2.bold()); Text(title).font(.caption).foregroundStyle(.secondary) } }
+    private func stat(_ title: String, value: Int) -> some View { HStack(spacing: 7) { Text(title).font(.caption).foregroundStyle(.secondary); Text("\(value)").font(.subheadline.bold()).monospacedDigit() } }
 }
 struct WorkflowSettings: View {
     @ObservedObject var model: RelayModel

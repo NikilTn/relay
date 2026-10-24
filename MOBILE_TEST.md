@@ -1,14 +1,14 @@
 # Test the requester and shelter coordinator
 
-Use the original development RELAY app launched by the installer on each phone.
+Use build 14 of the original development RELAY app launched by the installer on each phone.
 Settings shows the build number. The paid/TestFlight app has a separate store.
 This workflow uses internet. Keep the Mac awake, powered and online: its API and
 worker run behind the temporary Cloudflare tunnel described in DEMO_HOSTING.md.
 
 ## Prepared accounts
 
-- iPhone 15 Pro Max: existing synthetic Requester-A, public Help / Requests / Messages.
-- iPhone 16: existing synthetic Dispatcher-A, coordinator Inbox / Inventory / Messages.
+- iPhone 15 Pro Max: existing synthetic Requester-A, public Help / Requests / Nearby.
+- iPhone 16: existing synthetic Dispatcher-A, coordinator Inbox / Inventory / Nearby.
 - Both identities are authorized for Shelter A by the backend. UI labels never grant a role.
 - These owned development phones are prepared through a one-use file copied through
   the trusted Mac/device connection. It contains a freshly MFA-authenticated Cognito
@@ -17,6 +17,11 @@ worker run behind the temporary Cloudflare tunnel described in DEMO_HOSTING.md.
 - TestFlight uses the normal email/password/authenticator flow. Accounts are
   pre-enrolled; the Apple account and AWS console account are not RELAY accounts.
   The private helper on the Mac supplies the existing synthetic test credentials.
+
+The request list defaults to Open. Select All or Closed to see completed or released
+requests. Prepare details with AI is the typed-request preview action. Review and
+send stays at the bottom; Done dismisses the keyboard. Inventory → Record a stock
+change expands the adjustment form. Nearby is separate device chat, not a shelter inbox.
 
 ## 1. Make a voice request on the 15 Pro Max
 
@@ -80,7 +85,7 @@ need internet; a GPS fix itself depends on available sensors and surroundings.
 
 ## Separate offline demo
 
-Messages still support nearby discovery, durable forwarding and return receipts.
+The Nearby tab still supports nearby discovery, durable forwarding and return receipts.
 Discovery starts automatically while the app is open; foreground encounters are
 required. Settings → Developer tools retains the existing offline shelter form,
 directory and diagnostics. Follow TEST_PLAN.md for no-router A–E evidence.

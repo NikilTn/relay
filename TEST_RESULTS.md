@@ -2,6 +2,35 @@
 
 **Verdict: implemented and tested as a software prototype; the controlled physical offline demonstration remains pending and unverified.** No physical wireless acceptance test is reported as a pass. Software evidence below does not establish disaster resilience.
 
+## Build 14 — interface polish, 2026-10-24
+
+The update changes presentation and client-side filtering only. Shared headers,
+navy/teal colors, supply icons, labeled fields, a fixed Review and send action,
+request status badges, Open/All/Closed filters, inventory emphasis and numbered
+voice steps replace the plain forms. The third tab is now Nearby, distinguishing
+device chat from request-specific shelter conversations. Core protocol, durable
+IDs, cloud operations and inventory transaction rules are unchanged.
+
+- **PASS:** Mac, signed iOS Simulator, signed physical iOS and Release archive builds;
+  [build markers](evidence/build14/build-markers.txt). **49 Swift tests pass**, [log](evidence/build14/swift-tests.txt).
+  The unchanged backend retains the prior 67-test result; it was not rerun for presentation-only changes.
+- **PASS:** native Mac dark appearance shows inbox/Closed filter and inventory cards.
+  iPhone 17 Pro simulator/iOS26.1 light appearance verified Help, selected supply,
+  quantity/people focus, software keyboard, Done dismissal, fixed review action,
+  review sheet/Edit and voice screen. No new AI/audio/stock operations were used.
+  [Recorded checks](evidence/build14/ui-verification.json). Simulator checks are not physical phone evidence.
+- **PASS:** original phone installs and launches. The 15 Pro Max retained32/32messages;
+  iPhone16 retained33/33. Each retained20prior immutable cloud submissions, identity,
+  shelters and final receipts; [A](evidence/build14/iphone15promax-install.json),
+  [B](evidence/build14/iphone16-install.json). Existing Keychain accounts were kept;
+  the installer did not inject or replace phone sessions in this update.
+- **PASS:** TestFlight14 upload at02:19:07PDT. Release contains no debug enrollment
+  credentials; external beta review remains a separate gate.
+- App Store Connect browser sign-in expired before internal build14 availability could be checked; upload success does not establish tester availability.
+- **NOT TESTED:** largest accessibility text, older OS/device sizes, physical phone
+  visual acceptance, microphone/GPS or no-router wireless acceptance in this pass.
+  No new claim of automatic cloud-to-P2P failover or ASR speed is made.
+
 ## Current release — 0.1.0 (13), 2026-10-24
 
 **Implemented and ready for the operator's two-phone cloud test.** Public Help / Requests / Messages and coordinator Inbox / Inventory / Messages now use server-authorized roles. The workflow covers voice upload/transcription, editable AI preview before Send, optional one-shot location or landmark, durable drafts/outbox, coordinator reservation/handover/release, inventory and request history. See [MOBILE_TEST.md](MOBILE_TEST.md).

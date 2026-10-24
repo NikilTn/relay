@@ -306,7 +306,8 @@ struct RelayCard<Content: View>: View {
         VStack(alignment: .leading, spacing: 16) { content }
             .frame(maxWidth: .infinity, alignment: .leading).padding(20)
             .background(.background, in: RoundedRectangle(cornerRadius: 24))
-            .overlay(RoundedRectangle(cornerRadius: 24).stroke(.primary.opacity(0.05)))
+            .overlay(RoundedRectangle(cornerRadius: 24).stroke(.primary.opacity(0.06)))
+            .shadow(color: .black.opacity(0.025), radius: 10, y: 3)
     }
 }
 
@@ -361,8 +362,8 @@ struct ContentView: View {
                 VStack(spacing: 0) {
                     HStack(alignment: .center) {
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("Chats").font(.largeTitle.bold())
-                            Text(model.displayName).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                            Text("Nearby messages").font(.title.bold())
+                            Text("Device conversations · separate from shelter requests").font(.caption).foregroundStyle(.secondary)
                         }
                         Spacer()
                         Button { choosingPeer = true } label: {
@@ -392,14 +393,14 @@ struct ContentView: View {
                                 }
                             }.background(.background, in: RoundedRectangle(cornerRadius: 18)).padding(.horizontal, 16)
                         }
-                        Text("Only conversations you send or receive. Forwarding copies stay in Tools.")
+                        Text("Shelter conversations are in Requests or Inbox. Devices carry eligible nearby messages automatically.")
                             .font(.caption2).foregroundStyle(.secondary).padding(20)
                     }
                 }.background(RelayTheme.canvas)
                     .navigationDestination(for: String.self) { peerID in
                         ConversationView(model: model, peerID: peerID) { choosingPeer = true }
                     }
-            }.tabItem { Label("Messages", systemImage: "bubble.left.and.bubble.right.fill") }.tag(0)
+            }.tabItem { Label("Nearby", systemImage: "bubble.left.and.bubble.right.fill") }.tag(0)
         }.tint(RelayTheme.accent)
             .environmentObject(cloud)
         .task(id: model.ready) { if model.ready { model.setNearby(active: true); Task { await cloud.attach(model) } } }

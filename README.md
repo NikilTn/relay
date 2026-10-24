@@ -4,6 +4,16 @@ Buildable SwiftUI iOS and macOS apps sharing a Swift/Network.framework/SQLite en
 
 **Current verdict:** automated protocol tests, separate-process TCP loopback experiments, and native Mac ↔ iOS Simulator Bonjour control exchanges pass. **Physical iPhone A → iPhone B → Mac C and infrastructure-independent wireless delivery have NOT been verified.** See [TEST_RESULTS.md](TEST_RESULTS.md) for evidence and blockers. A simulator is not a radio test.
 
+## Interface update — build 14
+
+A shared navy/teal visual system now covers Help, requests, voice and inventory:
+readable headers, supply icons, labeled fields, a fixed Review and send action,
+Open/All/Closed inbox filters, clearer stock totals and quieter request references.
+The third tab is **Nearby**, explicitly separate from shelter request conversations.
+It retains device messaging; this update does not implement unified cloud/P2P routing.
+Build 14 is installed/launched on both original phones with prior data retained.
+See [current UI checks](evidence/build14/ui-verification.json).
+
 ## Current workflow — build 13
 
 One native app now opens the workspace authorized by the account:

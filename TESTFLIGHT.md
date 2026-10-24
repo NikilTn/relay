@@ -1,3 +1,15 @@
+# UI update — build 14
+
+Build **0.1.0 (14)** signed, archived and uploaded at **02:19:07 PDT on 2026-10-24**.
+The updated interface is already installed and launched on both original development
+phone apps. It adds a consistent navy/teal layout, supply choices, fixed review action,
+request filters and clearer stock/voice screens. Nearby replaces the Messages tab
+label; shelter conversation and transport behavior are unchanged. Next unused build:15.
+
+App Store Connect browser sign-in expired during the availability check. Upload is confirmed; internal processing/testing availability and new What to Test notes remain unverified for14. The phones already have the development build and do not depend on this check.
+
+The build13 records below remain historical workflow evidence.
+
 # Current TestFlight status — build 13
 
 Build **0.1.0 (13)** archived and uploaded successfully on 2026-10-24 at 01:47 PDT. App Store Connect subsequently showed **Testing** in the internal **RELAY Development** group (1 tester), and the new testing instructions were saved. The original development app is already installed on both owned phones; use that prepared copy for the requester/coordinator demo.

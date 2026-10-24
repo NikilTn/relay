@@ -173,29 +173,47 @@ struct VoiceInputView: View {
     @State private var importingWAV = false
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                Text("Speak, then review").font(.title2.bold())
-                Text("Record up to 60 seconds of synthetic English speech. Transcription needs internet. Review names, quantities and locations before sending.").foregroundStyle(.secondary)
-                Button(recorder.recording ? "Stop recording" : "Record") {
-                    if recorder.recording { recorder.stop() }
-                    else { Task { await recorder.start { url in Task { await cloud.saveRecording(url: url) } } } }
-                }.buttonStyle(.borderedProminent).disabled(cloud.audioBusy)
-                Button("Import WAV recording") { importingWAV = true }.disabled(recorder.recording || cloud.audioBusy)
-                if recorder.recording { Label("Recording…", systemImage: "record.circle").foregroundStyle(.red) }
-                if !recorder.problem.isEmpty { Text(recorder.problem).foregroundStyle(.orange) }
+            VStack(alignment: .leading, spacing: 16) {
+                WorkflowHeader(eyebrow: "Voice request", title: "Speak. Review. Send.", subtitle: "Say what you need. You'll check the words before anything is sent to a shelter.")
+                RelayCard {
+                    WorkflowSection(title: "1. Record your request", symbol: "mic.fill", subtitle: "Up to 60 seconds · English · internet needed")
+                    Image(systemName: recorder.recording ? "waveform" : "waveform.circle.fill")
+                        .font(.system(size: 58)).foregroundStyle(recorder.recording ? .red : RelayTheme.accent)
+                        .frame(maxWidth: .infinity).padding(.vertical, 12).accessibilityHidden(true)
+                    Button {
+                        if recorder.recording { recorder.stop() }
+                        else { Task { await recorder.start { url in Task { await cloud.saveRecording(url: url) } } } }
+                    } label: { Label(recorder.recording ? "Stop recording" : "Start recording", systemImage: recorder.recording ? "stop.fill" : "mic.fill") }
+                        .buttonStyle(PrimaryButton()).disabled(cloud.audioBusy)
+                    Button("Import WAV recording") { importingWAV = true }.buttonStyle(WorkflowSecondaryButton()).disabled(recorder.recording || cloud.audioBusy)
+                    if recorder.recording { Label("Recording…", systemImage: "record.circle").font(.subheadline).foregroundStyle(.red) }
+                    if !recorder.problem.isEmpty { WorkflowNotice(text: recorder.problem) }
+                }
                 if cloud.audioJob != nil {
-                    Button("Transcribe / resume") { Task { await cloud.transcribe() } }.disabled(recorder.recording || cloud.audioBusy)
+                    RelayCard {
+                        WorkflowSection(title: "2. Turn speech into text", symbol: "text.quote", subtitle: "Processed by Amazon Transcribe")
+                        Button { Task { await cloud.transcribe() } } label: {
+                            HStack { if cloud.audioBusy { ProgressView().controlSize(.small) }; Text(cloud.audioBusy ? "Transcribing…" : "Transcribe / resume") }
+                        }.buttonStyle(WorkflowSecondaryButton()).disabled(recorder.recording || cloud.audioBusy)
+                        Text(cloud.audioStatus).font(.subheadline).foregroundStyle(.secondary)
+                        if cloud.audioBusy { Text("This can take a little time. Your recording is saved for retry.").font(.caption).foregroundStyle(.secondary) }
+                    }
                 }
-                if cloud.audioBusy { ProgressView() }
-                Text(cloud.audioStatus).font(.subheadline)
                 if cloud.audioJob?.transcript != nil {
-                    TextField("Review transcript", text: $cloud.transcript, axis: .vertical).lineLimit(5...12).textFieldStyle(.roundedBorder).focused($editing)
-                    Button("Prepare request from this text") { cloud.applyTranscript(); dismiss(); Task { await cloud.previewRequest() } }.buttonStyle(.borderedProminent)
+                    RelayCard {
+                        WorkflowSection(title: "3. Check the words", symbol: "checkmark.bubble.fill", subtitle: "Review names, quantities and locations.")
+                        TextField("Review transcript", text: $cloud.transcript, axis: .vertical).lineLimit(5...12).textFieldStyle(WorkflowInput()).focused($editing)
+                        Button("Prepare request from this text") { cloud.applyTranscript(); dismiss(); Task { await cloud.previewRequest() } }.buttonStyle(PrimaryButton())
+                    }
                 }
-                if !cloud.problem.isEmpty { Text(cloud.problem).foregroundStyle(.orange) }
-                Text("Recording does not submit a request. Saved recordings stay on this device; this build does not forward audio over nearby connections.").font(.caption).foregroundStyle(.secondary)
+                if !cloud.problem.isEmpty { WorkflowNotice(text: cloud.problem) }
+                Text("Use synthetic test data. Audio stays separate from nearby text messaging.").font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
             }.padding(20).frame(maxWidth: 680).frame(maxWidth: .infinity)
-        }.navigationTitle("Voice input")
+        }.background(RelayTheme.canvas).navigationTitle("Voice input")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            .scrollDismissesKeyboard(.interactively)
+            #endif
             .fileImporter(isPresented: $importingWAV, allowedContentTypes: [.audio]) { result in
                 do {
                     let source = try result.get()
