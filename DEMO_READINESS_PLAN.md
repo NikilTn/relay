@@ -118,3 +118,69 @@ phones are locked. Work stays in this thread. No coordination with the other cha
   to avoid ad-hoc Keychain prompts between development rebuilds; Release still
   uses the stable native session service. Updated Mac build with this last auth
   tweak still needs rebuilding/enrollment before the next native rehearsal.
+
+
+### 04:12 PDT — unified bridge implementation checkpoint
+
+- Commit924d12d is pushed to feature/cloud-integration / PR2. Later bridge changes
+  are still uncommitted and need native integration validation before release.
+- Added CryptoKit X25519/HKDF/ChaChaPoly envelopes and P256 signatures. New requests
+  use one immutable CloudSubmission ID across HTTP/nearby. SQLite atomically stores
+  decrypted destination content and a signed receipt; carriers only store ciphertext.
+  A plaintext forged receipt cannot complete an encrypted request. Existing IDs,
+  plaintext chat and queues remain compatible; encrypted requests are excluded
+  from personal chat projections.
+- Device keys persist in an app-sandbox file (0600; iOS file protection), not a
+  Secure Enclave or production security claim. Receipt proves destination-device
+  persistence, not authenticated staff approval. Offline sender identity is pending
+  server verification. Enrollment is scoped by account subject AND stable device
+  ID, so changing accounts preserves earlier signed ownership and device routing.
+- Gateway API registration/receiver assignment/ingestion checks current membership,
+  receiver revision, exact-byte P256 signature and registered origin keys. It
+  submits under the original requester. Direct upload/gateway replay deduplicate.
+- 61 Swift tests pass (six new encryption/carry/restart/forgery/key-persistence
+  tests); 87 backend tests pass (nine new gateway/enrollment/auth/duplicate tests).
+  Native CryptoKit→Python fixture gateway smoke passed:
+  f0ddd77c-0d6d-4954-9cd5-1bd857c0c5be. This is fixture API verification, not live
+  AWS or physical wireless evidence. Current native macOS/iOS builds pass.
+- App now registers keys, Mac auto-selects itself when a shelter has no receiver,
+  caches receiver keys, queues encrypted nearby copies from the main request form,
+  reconciles received requests into the coordinator inbox, and ingests through the
+  signed gateway. It distinguishes relay saved / verified shelter receipt / cloud
+  acceptance / staff action. These app changes still need the native rehearsal.
+- Added an explicit Demo tools “Pause cloud delivery” control for software route
+  isolation. This does not prove router-free connectivity and must not be reported
+  as physical offline radio success. Need finish gating all relevant cloud actions
+  and verify the pause/reconnect path.
+- Preparing iPhone17 Pro simulator (RequesterA), iPhone17 Pro Max simulator
+  (RequesterB), and existing Mac coordinator. Live RequesterB membership was
+  explicitly extended to ShelterA for this two-requester/same-shelter synthetic
+  demo; fixture RequesterB remains isolated to ShelterB for authorization tests.
+- Remaining: run real native nearby/gateway/receipt workflow, exercise carrier
+  restart separately, refresh signed builds after final changes, update evidence,
+  portable hosting/restart guidance, morning operator steps, and distribution.
+  Physical phones remain untouched/locked; no physical wireless success claim.
+
+
+### Final checkpoint — 24 October, 05:27 PDT
+
+- Plain-reference UI and live speech are implemented;62 Swift/87 backend tests pass.
+- Encrypted native requester→carrier→Mac shelter and signed return receipt passed
+  on two iPhone simulators plus Mac, with two carrier restarts and A/C never active
+  together. Cloud resumed under the same request ID; foreign carried content stayed
+  outside the carrier's personal inbox. Three further TCP failure trials passed.
+- Build16 uploaded04:42:55PDT; final build17 uploaded05:25:17PDT with the last
+  successful-refresh error-label fix. Mac/simulator builds pass. Apple processing
+  reported; external tester availability is unverified. Phones were disconnected.
+- Final cloud preflight exposed expired AWS refresh credentials. Renewed the SAME
+  WSParticipantRole/Participant in account928489693154 via the existing Workshop
+  Studio session, restarted API86528/worker86529, retained tunnel44716. No IAM
+  changes or store/counter reset. Preflight, live native Transcribe and Bedrock
+  worker processing pass again. App counters24/100 requests,8/20 transcriptions.
+- `relay.stepcheck.app` verified through CloudFront to the Mac; PC migration is
+  documented but unavailable without a configured PC connection. Keep Mac powered,
+  awake and online for cloud. The current keep-awake session ends about11:19PDT.
+- MORNING_DEMO.md and TEST_RESULTS.md contain exact rehearsal steps/IDs/limitations.
+  No physical no-router, physical mic/GPS, range/background or disaster-resilience
+  claim. No other chat or agent was contacted. No HPC/Dreamer files were changed
+  except the required parent session-log entry.

@@ -1,0 +1,52 @@
+{
+  "mac": {
+    "device_id": "fabb432e-244d-4be8-86eb-eb9ac6982d0f",
+    "requests": [
+      {
+        "request_id": "3383e7c6-215b-484a-ab7a-c4b867c14fb1",
+        "state": "accepted",
+        "nearby_state": "received",
+        "problem": null,
+        "cloud_accepted": true,
+        "location": {
+          "captured_at": "2026-10-24T11:18:03Z",
+          "horizontal_accuracy": 5,
+          "latitude": 1.23456,
+          "longitude": 2.34567,
+          "precision": "precise",
+          "source": "device"
+        },
+        "receipt_id": null,
+        "ciphertext_present": true,
+        "plaintext_absent_from_wire": true
+      }
+    ]
+  },
+  "requester_a": {
+    "device_id": "e816be05-b366-4b44-a5dd-8b56ef7e5884",
+    "requests": []
+  },
+  "requester_b": {
+    "device_id": "985a586f-34e1-4331-ad31-24f032c78552",
+    "requests": [
+      {
+        "request_id": "3383e7c6-215b-484a-ab7a-c4b867c14fb1",
+        "state": "queued",
+        "nearby_state": "shelter_saved",
+        "problem": null,
+        "cloud_accepted": false,
+        "location": {
+          "captured_at": "2026-10-24T11:18:03Z",
+          "horizontal_accuracy": 5,
+          "latitude": 1.23456,
+          "longitude": 2.34567,
+          "precision": "precise",
+          "source": "device"
+        },
+        "receipt_id": "15c9bea5-8727-48e7-8ad8-848f7f508918",
+        "ciphertext_present": true,
+        "plaintext_absent_from_wire": true
+      }
+    ]
+  }
+}

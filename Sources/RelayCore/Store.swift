@@ -34,6 +34,16 @@ public final class RelayStore {
     private let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
     public let deviceID: String
     public let path: String
+    public private(set) var sealedIdentity: DeviceIdentity?
+    public func enableSealedDelivery(_ identity: DeviceIdentity) throws {
+        guard identity.deviceID == deviceID else { throw RelayError.invalid("Receiving key belongs to another device") }
+        sealedIdentity = identity
+    }
+    public func nearbyRequests() throws -> [SignedNearbyRequest] {
+        try rows("SELECT value FROM metadata WHERE key LIKE 'nearby_request:%' ORDER BY key").map {
+            try CloudCodec.decode(SignedNearbyRequest.self, Data($0[0]!.utf8))
+        }
+    }
 
     private init(openPath: String, requestedID: String?) throws {
         path = openPath
@@ -229,6 +239,15 @@ public final class RelayStore {
         try message.validate(now: now)
         if ShelterRequestCodec.isRequest(message) { _ = try ShelterRequestCodec.decode(message) }
         guard message.hopCount > 0 else { throw RelayError.invalid("received hop must be positive") }
+        var nearby: SignedNearbyRequest?
+        if SealedDelivery.isSealed(message), message.destinationID == deviceID {
+            guard let identity = sealedIdentity else { throw RelayError.invalid("This receiving device has no saved decryption key") }
+            nearby = try SealedDelivery.open(message, identity: identity)
+        }
+        if message.messageType == .receipt, message.destinationID == deviceID,
+           let originalID = message.payload.originalMessageID, let original = try self.message(originalID), SealedDelivery.isSealed(original) {
+            try SealedDelivery.verifyReceipt(message, original: original)
+        }
         return try transaction {
             let previous = try self.message(message.id)
             if let previous, !previous.sameContent(as: message) { throw RelayError.invalid("UUID content collision \(message.id)") }
@@ -236,15 +255,23 @@ public final class RelayStore {
             else if message.hopCount < previous!.hopCount {
                 try execute("UPDATE messages SET body=? WHERE id=?", [String(decoding: try WireCodec.encode(message), as: UTF8.self), message.id])
             }
+            if let nearby {
+                try setSetting("nearby_request:" + message.id, String(decoding: try CloudCodec.encode(nearby), as: UTF8.self))
+            }
             var generated: RelayMessage?
             var recognized = false
             if message.destinationID == deviceID && message.messageType == .request {
                 // Insert request and its receipt atomically. A duplicate never repeats the application action.
                 let receipts = try allMessages().filter { $0.messageType == .receipt && $0.originID == deviceID && $0.payload.originalMessageID == message.id }
                 if receipts.isEmpty {
-                    let receipt = RelayMessage(originID: deviceID, destinationID: message.originID,
-                        messageType: .receipt, payload: Payload(text: "Final destination persisted request", originalMessageID: message.id),
-                        createdAt: WireCodec.second(now), maxHops: message.maxHops)
+                    let receipt: RelayMessage
+                    if SealedDelivery.isSealed(message) {
+                        receipt = try SealedDelivery.receipt(for: message, identity: sealedIdentity!, now: now)
+                    } else {
+                        receipt = RelayMessage(originID: deviceID, destinationID: message.originID,
+                            messageType: .receipt, payload: Payload(text: "Final destination persisted request", originalMessageID: message.id),
+                            createdAt: WireCodec.second(now), maxHops: message.maxHops)
+                    }
                     try insert(receipt); generated = receipt
                 }
             }
@@ -333,7 +360,7 @@ extension RelayStore {
         guard let text = try setting("request_compose:" + scope) else { return RequestDraft() }
         return try CloudCodec.decode(RequestDraft.self, Data(text.utf8))
     }
-    public func submitCloudDraft(_ draft: RequestDraft, scope: String, shelter: CloudShelter, now: Date = Date()) throws -> CloudQueueRecord {
+    public func submitCloudDraft(_ draft: RequestDraft, scope: String, shelter: CloudShelter, receiver: ShelterReceiver? = nil, senderSubject: String? = nil, now: Date = Date()) throws -> CloudQueueRecord {
         try transaction {
             if let existing = try cloudRecords(scope: scope).first(where: { $0.id == draft.id }) {
                 let replay = try CloudSubmission(draft: draft, shelter: shelter, deviceID: deviceID, now: existing.submission.created_at)
@@ -342,11 +369,27 @@ extension RelayStore {
             }
             let record = CloudQueueRecord(scope: scope, submission: try CloudSubmission(draft: draft, shelter: shelter, deviceID: deviceID, now: now))
             try saveCloudRecord(record)
+            if let receiver {
+                guard let identity = sealedIdentity, let senderSubject else { throw RelayError.invalid("Nearby delivery keys and account are not ready") }
+                try insert(SealedDelivery.seal(record.submission, identity: identity, receiver: receiver, subject: senderSubject))
+            }
             if try requestDraft(scope: scope).id == draft.id { try execute("DELETE FROM metadata WHERE key=?", ["request_compose:" + scope]) }
             return record
         }
     }
-    public func saveCloudRecord(_ record: CloudQueueRecord) throws {
+    public func saveCloudRecord(_ value: CloudQueueRecord) throws {
+        var record = value
+        // Network responses may have been in flight when a nearby receipt arrived.
+        // Derive delivery projection from durable transport state on every save.
+        if let message = try message(record.id), SealedDelivery.isSealed(message) {
+            if message.originID == deviceID {
+                let receipt = try rows("SELECT final_receipt FROM messages WHERE id=?", [record.id]).first?[0]
+                let acceptance = try rows("SELECT 1 FROM transfers WHERE message_id=? AND acceptance IS NOT NULL LIMIT 1", [record.id])
+                record.nearbyState = receipt != nil ? "shelter_saved" : !acceptance.isEmpty ? "relay_saved" : "queued"
+            } else if message.destinationID == deviceID, try setting("nearby_request:" + record.id) != nil {
+                record.nearbyState = "received"
+            }
+        }
         guard record.scope.count == 64, record.scope.allSatisfy({ $0.isHexDigit }), UUID(uuidString: record.id) != nil else { throw RelayError.invalid("Invalid cloud queue key") }
         let key = "cloud_record:" + record.scope + ":" + record.id
         if let old = try setting(key) {

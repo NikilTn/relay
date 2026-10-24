@@ -19,6 +19,7 @@ from .providers import AWSProviders, FixtureProviders, ProviderError
 from .service import APIError, Service
 from .store import DynamoStore, SQLiteStore
 from .speech import install_speech_routes
+from .nearby import DeviceRegistration, ReceiverAssignment, SignedRequest
 
 
 def build_service(settings):
@@ -41,7 +42,7 @@ def create_app(settings: Settings, service=None):
     service = service or build_service(settings)
     auth = Authenticator(settings)
     app = FastAPI(title="RELAY Cloud API", version="1.0.0",
-                  description="Durable authenticated requests, pre-send previews, reviewed speech and coordinator inventory ledger. Inventory fulfillment is a staff-recorded stock transaction, not proof of physical delivery. No relay-gateway authentication.",
+                  description="Durable authenticated requests, pre-send previews, reviewed speech and coordinator inventory ledger. Inventory fulfillment is a staff-recorded stock transaction, not proof of physical delivery. Nearby gateway ingestion verifies enrolled sender signatures.",
                   servers=[{"url": settings.public_base_url}],
                   responses={n: {"model": ErrorResponse} for n in (400, 401, 403, 404, 409, 410, 413, 422, 429, 503)})
     app.state.service = service
@@ -148,6 +149,20 @@ def create_app(settings: Settings, service=None):
     @app.get("/v1/shelters", operation_id="listShelters", tags=["Directory"], response_model=ShelterDirectory)
     def shelters(user=Depends(principal)):
         return {"schema_version": 1, "items": service.directory(user)}
+
+    @app.post("/v1/devices", tags=["Nearby delivery"])
+    def register_device(body: DeviceRegistration, user=Depends(principal)):
+        return service.register_device(user, body)
+
+    @app.put("/v1/shelters/{shelter_id}/receiver", tags=["Nearby delivery"])
+    def assign_receiver(shelter_id: str, body: ReceiverAssignment, user=Depends(principal)):
+        return service.assign_receiver(user, shelter_id, body)
+
+    @app.post("/v1/relay/requests", response_model=RequestResult, tags=["Nearby delivery"])
+    def ingest_nearby(body: SignedRequest, response: Response, user=Depends(principal)):
+        result, created = service.ingest_nearby(user, body)
+        response.status_code = 201 if created else 200
+        return result
 
     @app.post("/v1/requests", status_code=201, operation_id="submitRequest", tags=["Requests"], response_model=RequestResult,
               responses={200: {"description": "An identical request was already accepted"}})

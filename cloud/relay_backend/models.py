@@ -167,10 +167,19 @@ class TranscriptionResult(StrictModel):
     upload: UploadAuthorization | None = None
 
 
+class ShelterReceiver(StrictModel):
+    account_subject: str
+    device_id: UUID
+    signing_key: str
+    encryption_key: str
+    revision: int
+
+
 class DirectoryEntry(StrictModel):
     shelter_id: str
     incident_id: str
     display_name: str
+    receiver: ShelterReceiver | None = None
 
 
 class ShelterDirectory(StrictModel):

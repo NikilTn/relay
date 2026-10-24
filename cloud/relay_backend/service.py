@@ -11,11 +11,12 @@ from .store import Conflict, Delete, Put
 from .common import APIError, PREFIX, WORK, canonical, digest, key, work_key
 from .interpretations import InterpretationMixin
 from .inventory import InventoryMixin
+from .nearby import NearbyMixin
 
 _UNLOADED = object()
 
 
-class Service(InterpretationMixin, InventoryMixin):
+class Service(InterpretationMixin, InventoryMixin, NearbyMixin):
     def __init__(self, settings, store, providers, clock=time.time):
         self.settings, self.store, self.providers, self.clock = settings, store, providers, clock
 
@@ -25,8 +26,13 @@ class Service(InterpretationMixin, InventoryMixin):
 
     def directory(self, principal):
         m = principal.membership
-        return [s.model_dump() for s in self.settings.shelters
-                if s.incident_id == m.incident_id and s.shelter_id in m.shelter_ids]
+        shelters = [s.model_dump() for s in self.settings.shelters
+                    if s.incident_id == m.incident_id and s.shelter_id in m.shelter_ids]
+        receivers = self.store.get_many([key("receiver", s["incident_id"] + ":" + s["shelter_id"]) for s in shelters])
+        for shelter in shelters:
+            row = receivers.get(key("receiver", shelter["incident_id"] + ":" + shelter["shelter_id"]))
+            shelter["receiver"] = row[0] if row else None
+        return shelters
 
     def budget_put(self, kind):
         row = self.store.get(PREFIX + "BUDGET", kind)
@@ -40,7 +46,7 @@ class Service(InterpretationMixin, InventoryMixin):
         exists = any(s.shelter_id == shelter and s.incident_id == incident for s in self.settings.shelters)
         if not exists:
             raise APIError(400, "invalid_shelter", "Unknown destination shelter")
-        if not any(s["shelter_id"] == shelter and s["incident_id"] == incident for s in self.directory(principal)):
+        if principal.membership.incident_id != incident or shelter not in principal.membership.shelter_ids:
             raise APIError(403, "shelter_forbidden", "This shelter is not authorized for the caller")
 
     def can_read(self, principal, record):

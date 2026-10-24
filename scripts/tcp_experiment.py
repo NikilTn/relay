@@ -5,6 +5,7 @@ Terminates and restarts B with the same SQLite database between encounters.
 """
 import datetime
 import json
+import os
 import pathlib
 import queue
 import subprocess
@@ -14,7 +15,7 @@ import threading
 import time
 import uuid
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-BINARY = ROOT / '.build/debug/RelayLab'
+BINARY = pathlib.Path(os.environ.get('RELAY_LAB_BINARY', str(ROOT / '.build/debug/RelayLab')))
 log_lock = threading.Lock()
 def log(text):
     with log_lock:

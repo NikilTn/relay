@@ -43,7 +43,7 @@ struct WorkflowStatus: View {
     var body: some View {
         HStack(spacing: 8) {
             Rectangle().fill(.secondary).frame(width: 4, height: 4).accessibilityHidden(true)
-            Text(cloud.status.contains("unavailable") ? "Waiting to reconnect · your request stays saved" : "Saved locally · sent when cloud is available")
+            Text(cloud.cloudPaused ? "Demo: cloud delivery paused. Nearby remains active." : cloud.isDispatcher ? "Keep RELAY open to receive nearby requests." : cloud.selectedReceiver == nil ? "Saved on this device until cloud delivery is available." : "Saved first. Uses cloud or nearby phones to reach your shelter.")
                 .font(.caption)
         }.foregroundStyle(RelayTheme.secondary).padding(.horizontal, 4)
     }
@@ -81,6 +81,8 @@ struct PublicHelpView: View {
                             ForEach(cloud.directory) { Text($0.display_name).tag($0.shelter_id) }
                         }.labelsHidden().accessibilityLabel("Destination shelter").accessibilityIdentifier("destinationShelter")
                     }.padding(.vertical, 4)
+                    Text(cloud.cloudPaused ? "Nearby delivery · cloud paused for demo" : cloud.selectedReceiver == nil ? "Cloud delivery · nearby destination not set up yet" : "Cloud + nearby delivery")
+                        .font(.subheadline).foregroundStyle(RelayTheme.secondary)
                     Divider()
                     VStack(alignment: .leading, spacing: 12) {
                         TextField("What do you need?", text: $cloud.draft.text, axis: .vertical)
@@ -187,7 +189,8 @@ struct WorkflowReview: View {
                     if let location = cloud.draft.location { LocationFacts(location: location) }
                     else { Text("No device location attached").foregroundStyle(RelayTheme.secondary) }
                     if let error = validation { Text(error).foregroundStyle(.orange) }
-                    Text("Your request is saved first and sent automatically when the cloud is reachable. Staff will review availability before approving supplies.").font(.subheadline).foregroundStyle(RelayTheme.secondary)
+                    Text(cloud.selectedReceiver == nil ? "Your request stays saved until the cloud is reachable. This shelter has no nearby receiver configured yet." : "Your request stays saved. Nearby phones can carry an encrypted copy to this shelter when internet is unavailable.")
+                    Text("Shelter receipt and staff approval are separate. Staff review supplies before approving.").font(.subheadline).foregroundStyle(RelayTheme.secondary)
                     Button(cloud.submitting ? "Saving…" : "Send request") {
                         Task { if let id = await cloud.submitRequest() { sent(id) } }
                     }.buttonStyle(PrimaryButton()).disabled(cloud.submitting || validation != nil).accessibilityIdentifier("sendReviewedRequest")
@@ -251,7 +254,12 @@ struct WorkflowRequestsView: View {
         case "completed": return record.reservation?.status == "fulfilled" ? "Supplies marked handed over" : "Reported completed"
         case "cancelled": return "Cancelled"
         case "rejected": return "Unable to fulfill"
-        default: return record.result == nil ? "Queued" : "Waiting for coordinator"
+        default:
+            if record.result != nil { return "Waiting for coordinator" }
+            if record.nearbyState == "received" { return "Received nearby · identity check pending" }
+            if record.nearbyState == "shelter_saved" { return "Shelter received · awaiting staff" }
+            if record.nearbyState == "relay_saved" { return "Nearby relay saved · awaiting shelter" }
+            return "Queued"
         }
     }
 }
@@ -281,6 +289,16 @@ struct WorkflowRequestDetail: View {
                         if let location = record.submission.location { LocationFacts(location: location) }
                         DisclosureGroup("Request reference") { Text(record.id).font(.caption.monospaced()).foregroundStyle(RelayTheme.secondary).textSelection(.enabled) }.font(.caption)
                         Button("Refresh / retry") { Task { await cloud.retry(id); if cloud.isDispatcher { await cloud.refreshInventory() } } }.buttonStyle(WorkflowSecondaryButton()).disabled(cloud.busy)
+                    }
+                    if let nearby = record.nearbyState {
+                        RelayCard {
+                            Text("Delivery").font(.headline)
+                            Text(nearby == "received" ? "Saved on this shelter device" : nearby == "shelter_saved" ? "Shelter receipt verified" : nearby == "relay_saved" ? "A nearby phone saved a copy" : "Nearby copy queued")
+                            Text(record.result == nil ? "Cloud acceptance pending" : "Cloud accepted this request").font(.subheadline)
+                            if nearby == "received", record.result == nil {
+                                Text("Sender identity is checked when the cloud reconnects. Inventory approval becomes available after that check.").font(.subheadline).foregroundStyle(RelayTheme.secondary)
+                            }
+                        }
                     }
                     if let proposal = record.result?.result?.proposal {
                         RelayCard {
@@ -341,8 +359,8 @@ struct WorkflowRequestDetail: View {
         if record.reservation?.status == "reserved" {
             RelayCard {
                 WorkflowSection(title: "Supplies reserved", symbol: "shippingbox.fill", subtitle: "Record the next step when it happens.")
-                Button("Mark supplies handed over") { confirmingHandover = true }.buttonStyle(PrimaryButton()).disabled(cloud.busy || record.pendingInventory != nil)
-                Button("Release reservation", role: .destructive) { Task { await cloud.inventoryAction(id, action: "release") } }.disabled(cloud.busy || record.pendingInventory != nil)
+                Button("Mark supplies handed over") { confirmingHandover = true }.buttonStyle(PrimaryButton()).disabled(cloud.cloudPaused || cloud.busy || record.pendingInventory != nil)
+                Button("Release reservation", role: .destructive) { Task { await cloud.inventoryAction(id, action: "release") } }.disabled(cloud.cloudPaused || cloud.busy || record.pendingInventory != nil)
             }
         } else if !["completed", "cancelled", "rejected"].contains(record.history?.status ?? "new") {
             RelayCard {
@@ -351,7 +369,7 @@ struct WorkflowRequestDetail: View {
                 TextField("Quantity to reserve", text: $amount).textFieldStyle(WorkflowInput()).focused($editing)
                 if let stock = cloud.inventory?.items.first(where: { $0.id == item }) { Text("Available: \(stock.available) \(stock.unit) · already reserved: \(stock.reserved)").font(.subheadline) }
                 Button("Approve and reserve") { editing = false; Task { await cloud.inventoryAction(id, action: "reserve", item: item, quantity: Int(amount)) } }
-                    .buttonStyle(PrimaryButton()).disabled(cloud.busy || cloud.inventoryBusy || record.pendingInventory != nil || (Int(amount) ?? 0) <= 0 || cloud.inventory == nil)
+                    .buttonStyle(PrimaryButton()).disabled(cloud.cloudPaused || cloud.busy || cloud.inventoryBusy || record.pendingInventory != nil || (Int(amount) ?? 0) <= 0 || cloud.inventory == nil)
                 Text("Approval reserves stock. Handover deducts it. Concurrent approvals cannot overbook available supplies.").font(.caption).foregroundStyle(RelayTheme.secondary)
             }
         }
@@ -433,6 +451,7 @@ struct WorkflowSettings: View {
     @EnvironmentObject private var cloud: CloudModel
     @AppStorage("relay.readingSize") private var readingSize = "Normal"
     @AppStorage("relay.highContrast") private var highContrast = false
+    @State private var assigningReceiver = false
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
@@ -455,6 +474,13 @@ struct WorkflowSettings: View {
                     Text("Your workspace").font(.title2.bold())
                     if let profile = cloud.profile {
                         Text(profile.role == "dispatcher" ? "Shelter coordinator" : "Public requester").font(.headline)
+                        if cloud.isDispatcher {
+                            Text(cloud.receivesHere ? "This device receives nearby shelter requests." : "Nearby requests go to the shelter's selected receiving device.").font(.subheadline)
+                            if !cloud.receivesHere {
+                                Button("Receive shelter requests here") { assigningReceiver = true }.buttonStyle(WorkflowSecondaryButton()).disabled(cloud.busy)
+                            }
+                        }
+                        if !cloud.nearbyProblem.isEmpty { WorkflowNotice(text: cloud.nearbyProblem) }
                         Button("Sign out / switch account") { cloud.signOut() }
                             .buttonStyle(WorkflowSecondaryButton()).disabled(cloud.busy || cloud.audioBusy || cloud.interpreting || cloud.submitting)
                     } else { AccountSignInView() }
@@ -468,6 +494,10 @@ struct WorkflowSettings: View {
                     .font(.subheadline).foregroundStyle(RelayTheme.secondary)
                 DisclosureGroup("Demo tools") {
                     VStack(alignment: .leading, spacing: 20) {
+                        Toggle("Pause cloud delivery (demo)", isOn: $cloud.cloudPaused)
+                            .disabled(cloud.busy || cloud.audioBusy || cloud.submitting || cloud.interpreting)
+                            .onChange(of: cloud.cloudPaused) { _, paused in if !paused { Task { await cloud.connect(signIn: false) } } }
+                        Text("This isolates the nearby request path in software. It does not prove that the radios are disconnected from a router.").font(.caption).foregroundStyle(RelayTheme.secondary)
                         NavigationLink("Diagnostics and test routes") { ToolsView(model: model) }
                         NavigationLink("Offline shelter directory") { ShelterDirectoryView(model: model, choose: { _ in }) }
                         NavigationLink("Saved offline requests") { HelpRequestsView(model: model) }
@@ -478,6 +508,10 @@ struct WorkflowSettings: View {
                 }.font(.headline)
             }.padding(.horizontal, 24).padding(.vertical, 16).frame(maxWidth: 650).frame(maxWidth: .infinity)
         }.navigationTitle("").background(RelayTheme.canvas)
+            .confirmationDialog("Use this device as the shelter's nearby inbox? New requests will be addressed here after their directory refreshes.", isPresented: $assigningReceiver, titleVisibility: .visible) {
+                Button("Use this device") { Task { await cloud.useThisDeviceForShelter() } }
+                Button("Cancel", role: .cancel) {}
+            }
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif

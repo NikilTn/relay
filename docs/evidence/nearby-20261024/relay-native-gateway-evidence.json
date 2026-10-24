@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "request_id": "f0ddd77c-0d6d-4954-9cd5-1bd857c0c5be",
+  "scope": "Native CryptoKit signature/encryption with Python fixture-auth API; not physical wireless or live AWS verification",
+  "gateway_ingestion": "PASS",
+  "direct_upload_dedup": "PASS",
+  "original_owner_preserved": "PASS",
+  "foreign_account_read_denied": "PASS"
+}

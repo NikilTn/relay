@@ -1,52 +1,46 @@
 # RELAY — offline store-carry-forward prototype
 
-Buildable SwiftUI iOS and macOS apps sharing a Swift/Network.framework/SQLite engine. The relay remains local and uses no third-party runtime dependencies or external radio hardware. Build 13 adds the cloud-first requester/coordinator workflow and inventory, with a temporary HTTPS tunnel to the API on this Mac.
+Buildable SwiftUI iOS and macOS apps sharing a Swift/Network.framework/SQLite engine. The relay remains local and uses no third-party runtime dependencies or external radio hardware. Build17 includes live speech and encrypted shelter delivery to the requester/coordinator workflow, with a custom HTTPS hostname for the API on this Mac.
 
 **Current verdict:** automated protocol tests, separate-process TCP loopback experiments, and native Mac ↔ iOS Simulator Bonjour control exchanges pass. **Physical iPhone A → iPhone B → Mac C and infrastructure-independent wireless delivery have NOT been verified.** See [TEST_RESULTS.md](TEST_RESULTS.md) for evidence and blockers. A simulator is not a radio test.
 
-## Interface redesign — build 15
+## Current workflow — build 17
 
-Build 15 replaces the earlier banner-and-card treatment with warm neutral surfaces,
-serif page headings, plain supply controls, text navigation and a message-first
-composer. Inbox and inventory use rows and thin dividers. Functional refresh/back
-controls remain; decorative category icons and AI sparkles are removed. The new
-app icon is an R with a small rust rule. [Design reference](DESIGN.md).
+The interface follows the plain reference: white backgrounds, bold system text,
+large outlined controls, a brown active accent, and functional text-size / contrast
+settings. Public tabs are **Ask for help / Requests / Settings**. Coordinator tabs
+are **Inbox / Inventory / Settings**. Nearby chat and engineering tools are inside
+Settings. [Design notes](DESIGN.md).
 
-The current cloud workflow and separate Nearby transport are unchanged. See
-[MOBILE_TEST.md](MOBILE_TEST.md) and [TEST_RESULTS.md](TEST_RESULTS.md).
+- **Speak or type:** live AWS Transcribe displays partial words. Review the final
+  editable transcript, get a Bedrock proposal, correct quantities and send explicitly.
+  Both live speech and Bedrock require internet; typed requests work from cached setup.
+- **Location:** permission is requested only when attaching a location snapshot.
+  Coordinates, accuracy and capture time are included in the reviewed request.
+  No continuous tracking. A landmark can be used instead.
+- **One request, two routes:** the main form durably saves one immutable request ID.
+  Cloud delivery and an encrypted nearby copy can reach the same enrolled shelter
+  receiver. Carriers store ciphertext; only the addressed receiver decrypts it.
+  A signed destination receipt can return through a later encounter. Relay storage,
+  shelter receipt, cloud acceptance and staff approval remain distinct.
+- **Authorized gateway:** a coordinator uploads the carried sender-signed request.
+  The backend checks the enrolled origin key/current membership and retains the
+  original requester as owner. A later direct upload deduplicates the same ID/body.
+- **Inventory:** staff approve/reserve, confirm handover or release stock. These
+  are atomic server ledger operations, require cloud access, and cannot be triggered
+  by the model. Staff replies and inventory status synchronize through the cloud;
+  only the destination delivery receipt currently returns through the nearby path.
+- **Preparation:** accounts and shelter receiving keys must be enrolled/cached
+  while online before the offline demonstration. Every participating app must stay
+  open during encounters. Background/terminated forwarding is not promised.
 
-## Current workflow — build 13
-
-One native app now opens the workspace authorized by the account:
-
-- **Public:** Help / Requests / Messages. Speak or type, review an editable Bedrock
-  preview, attach a one-time location snapshot or landmark, review, and Send.
-- **Coordinator:** Inbox / Inventory / Messages. Review the request, approve and
-  reserve supplies, record handover or release, and reply to the requester.
-- **Automatic cloud:** directory/account caching, local durable draft and outbox,
-  same-ID retries, and clear separation of cloud receipt, staff approval and stock
-  handover. Ordinary users do not configure URLs, map shelter IDs, or toggle cloud.
-- **Inventory:** atomic stock + reservation + history + audit ledger transactions.
-  Available = on hand − reserved. Approval reserves; handover deducts; cancellation
-  or release restores availability. The model never authorizes an allocation.
-- **Location:** coordinates, accuracy, precision and capture time are carried as
-  structured cloud data. Permission is requested only on Use current location;
-  denial/approximate access/landmark-only input are supported. No live tracking.
-- **Nearby messaging:** the original text relay/receipts remain, with automatic
-  foreground discovery. Existing offline shelter requests and diagnostics are in
-  Settings → Developer tools. Existing IDs, messages and receipt state are retained.
-
-Read [MOBILE_TEST.md](MOBILE_TEST.md) for the exact two-phone demonstration.
-The Mac API/worker use real Cognito, S3, Transcribe, Bedrock Nova Lite and DynamoDB
-through the temporary [HTTPS setup](DEMO_HOSTING.md). Permanent AWS Lambda/API
-Gateway hosting remains blocked by the organizer role/PassRole requirement.
-
-The cloud composer keeps precise location out of the current plaintext peer
-transport. Authenticated carrier-to-cloud ingestion and encrypted cross-transport
-location/return replies remain pending; a cloud request currently waits for its
-origin phone to regain internet. Staff handover is a recorded assertion, not
-independently verified physical delivery. Phone microphone/GPS and isolated radio
-acceptance must be verified by the operator; see [TEST_RESULTS.md](TEST_RESULTS.md).
+Use [MORNING_DEMO.md](MORNING_DEMO.md) for the two-phone/Mac rehearsal and
+[TEST_RESULTS.md](TEST_RESULTS.md) for the boundary between tested software and
+physical wireless claims. The current API is **https://relay.stepcheck.app**.
+It still runs on this Mac, using real AWS services behind the TLS tunnel/proxy.
+See [hosting details](cloud/docs/DEMO_HOSTING.md) and
+[live speech details](cloud/docs/STREAMING.md). No always-on PC or managed AWS
+compute deployment is claimed.
 
 ## Build and install
 
@@ -85,9 +79,9 @@ The project is checked in. `python3 scripts/generate_project.py` deterministical
 
 ## Shelter requests (build 7)
 
-The historical build 7 interface had **Help, Requests, Shelters, Messages**; these offline shelter tools now live under Settings → Developer tools. Help's gear opens
+The historical build 7 interface had **Help, Requests, Shelters, Messages**; these offline shelter tools now live under Settings → Demo tools. Help's gear opens
 Settings/Tools; **Help → Nearby devices** opens discovery and peer messaging.
-The existing Chats interface is retained under Messages.
+The existing Chats interface is retained under Settings → Nearby messages.
 
 - **Shelters:** create a synthetic shelter received by this device, configure a
   different device's UUID, or import a shared `RELAY-SHELTER-1:` code. The code is
@@ -102,12 +96,11 @@ The existing Chats interface is retained under Messages.
 - Submission atomically inserts the immutable message and clears that submitted
   draft. Its ID is reused on retry. A new form remains available after sending.
   Delivery details keep local save, relay ACK, destination receipt and staff progress
-  separate. Staff assignments, fulfillment, inventory, authentication and cloud sync
-  are not implemented in this build.
+  separate. These legacy offline tools do not control the authenticated inventory ledger; use the current main workflow for staff actions.
 - Structured help content is versioned JSON inside a reserved `payload.text` prefix
   (`RELAY-HELP-1` followed by a newline), preserving the v1 transport envelope and
   byte-for-byte forwarding through older relay codecs. Older apps can carry it but
-  do not provide the new request UI. All participating demo endpoints should use build 7.
+  do not provide the new request UI. This describes the legacy build7 format; use the current build on all endpoints.
 - SQLite schema 3 adds a shelter directory and durable draft metadata. Existing
   device identities, message bodies, peers and receipt state are preserved.
 
@@ -137,7 +130,7 @@ limit of 100 saved entries.
 - **New chat:** choose a connected or previously encountered device, or enter its full UUID. Selecting an existing peer opens the same conversation. Invalid/self destinations cannot open a new chat.
 - **Nearby:** Connect/Pause controls, connected and remembered peers, and Message this device to open a chat. Forwarding, retry, persistence, and receipts still run through the shared relay engine.
 - **Names:** Tools → Edit name sets the name other devices see in Nearby, New chat, and existing conversations after reconnecting. Names persist across restart; every device can send, receive, and carry. A short UUID stays below each name to distinguish duplicate names. Routing and conversation grouping always use the full stable UUID, never the display name. Names are not authenticated identities. Devices that have not yet exchanged a name show a Device + short-ID fallback.
-- **Tools:** device-name editing and ID copy/share; test roles under **Advanced relay test**; **Open durable queue** for forwarding/receipt metadata; and diagnostics/fault injection. Carried requests and receipt envelopes are excluded from personal chats. Forwarding copies explicitly say they are not addressed to you, and their payload text is hidden in the queue, including expanded rows. The underlying database and transport remain plaintext; this is presentation separation, not confidentiality. No stored messages are deleted. Tap a personal chat bubble for delivery details.
+- **Tools:** device-name editing and ID copy/share; test roles under **Advanced relay test**; **Open durable queue** for forwarding/receipt metadata; and diagnostics/fault injection. Carried requests and receipt envelopes are excluded from personal chats. Forwarding copies explicitly say they are not addressed to you, and their payload text is hidden in the queue, including expanded rows. Legacy chat and shelter-code payloads remain plaintext; hiding those rows is presentation separation. Main-workflow encrypted shelter requests are described above. No stored messages are deleted. Tap a personal chat bubble for delivery details.
 - Standard body-sized message text, adaptive light/dark colors, width-limited bubbles, compact connection controls, and 44-point send targets. Receipt confirmation remains distinct from a relay's storage acknowledgement.
 
 For a **two-phone test**, turn off **Tools → Advanced relay test → Force A → B → C** on both, tap **Connect**, then **Nearby → Message this device**. Type a synthetic message in the fixed bottom input and tap the send arrow. New stores default to direct mode; existing saved test settings are preserved. Keep the Mac and simulator paused during the two-phone test. Read the no-internet/no-router setup in TEST_PLAN.md before claiming offline success.
@@ -155,13 +148,20 @@ Follow [TEST_PLAN.md](TEST_PLAN.md), including network isolation and evidence ca
 7. Stop C, stop/restart B if desired, then start B and A. A recognizes the returned receipt and displays **Final destination receipt received**. A's earlier relay ACK must never be mistaken for this state.
 8. Repeat with A and C genuinely out of direct range, with forced routing disabled on all devices, before claiming physical separation.
 
-Apps must remain **foreground and awake** during encounters. Network services start only when the operator presses Start; they resume after relaunch when Start is pressed again. Once running, discovery, connection, inventory, forwarding, and retries are automatic. iOS background/terminated discovery is not implemented or promised.
+Apps must remain **foreground and awake** during encounters. Nearby services start automatically when the app becomes active; diagnostics can pause them. Once running, discovery, connection, inventory, forwarding, and retries are automatic. iOS background/terminated discovery is not implemented or promised.
 
 ## Teammate beta distribution
 
-TestFlight preparation, a repeatable archive/upload script, draft beta metadata, and the enrolled-account status are in [TESTFLIGHT.md](TESTFLIGHT.md). Builds 0.1.0 (2), (3), (4), (5), (6), and (7) have been signed and uploaded to App Store Connect as RELAY Offline Lab. Build 2 remains the external beta submission. Build 7 adds shelter removal and clearer import; Apple processing completed and it is Testing in the internal RELAY Development group. External build 2 still awaits beta review. The [TestFlight invitation](https://testflight.apple.com/join/paGggTvE) is configured but cannot accept testers until Apple approves a build. After TestFlight setup, new builds can reach teammates without USB; source edits still require another build/upload.
+See [TESTFLIGHT.md](TESTFLIGHT.md) for current upload and availability evidence.
+Build16 uploaded on24 October at04:42:55PDT; build17 adds recovery of a stale
+connection-error label after a successful refresh. Upload alone does not establish
+external tester approval. The configured [TestFlight invitation](https://testflight.apple.com/join/paGggTvE)
+requires an approved build available to its tester group.
 
-Build 7 is directly installed and launched on both physical phones under the original development identifier, preserving both UUIDs, stores and final receipts (24 stored envelopes on iPhone 15 Pro Max; 23 on iPhone 16). The first phone also has the paid-bundle build 6 installed. TestFlight uses that separate paid-team identifier and therefore a separate local store; use one installation consistently during a demonstration.
+The overnight session did not install on physical phones: both paired devices were
+disconnected. The original development bundle `org.relay.prototype.ios` and paid
+bundle `com.nikilthalapaneni.relay` are separate apps with separate stores. Update
+in place; do not uninstall to troubleshoot. No cross-bundle data migration is claimed.
 
 ## Automated checks
 
@@ -229,7 +229,22 @@ Diagnostics report discovery interfaces, connection path interfaces/types, local
 
 ## Security and disaster-resilience limitations
 
-Synthetic data only. Wire traffic and SQLite are plaintext at the application layer. This prototype has **no TLS, end-to-end encryption, signed messages/receipts, authenticated organizational identities, enrollment, access controls, or secure device-ID key storage**. A nearby attacker can read, inject, impersonate, replay, forge ACKs/receipts, lie about inventory, exhaust quotas, or deny service. UUID matching is not identity proof. The forced-route switch is a cooperative test control, not a security boundary. Device IDs/roles are broadcast in discovery/handshake; logs expose test identifiers and endpoints.
+Synthetic demo data only. New main-workflow nearby requests use Apple's CryptoKit
+X25519/HKDF/ChaChaPoly and P256 sender signatures; their final receipts require the
+cached shelter signing key. The cloud uses HTTPS and Cognito membership checks.
+These changes do not authenticate Bonjour hellos, inventory advertisements or
+transport storage ACKs. Legacy chat and legacy shelter-code messages remain
+plaintext and their older receipts are unauthenticated. Never put private location
+or health data in those legacy tools.
+
+Device keys persist in an app-sandbox file with owner-only permissions and iOS file
+protection. They are not hardware-bound or independently audited. Decrypted
+requests, transcripts and keys are accessible to a compromised endpoint; SQLite
+itself is not application-encrypted. Offline sender identity is pending the server's
+registered-key check. Peer IDs and traffic metadata remain visible, and malicious
+peers can deny service or exhaust bounded queues. No production confidentiality,
+organizational certification, key-revocation system or disaster-resilience claim
+is made. See [the encrypted transport notes](cloud/docs/NEARBY_DELIVERY.md).
 
 Not a production emergency communication system. Delivery depends on foreground encounters, functioning radios, adequate power/storage, permissions, compatible OS behavior, and honest peers with usable clocks. No end-to-end route planning, redundancy guarantee, congestion control, background wake strategy, attachment transport, or failure-rate/energy/range characterization is provided. Physical tests and longer repeated-failure trials must precede any disaster-resilience claim.
 
@@ -237,74 +252,29 @@ Not a production emergency communication system. Delivery depends on foreground 
 
 Build 5 adds the optional `display_name` field to the version-1 hello packet. Old peers can ignore it; new peers accept legacy hellos without it. Names are trimmed single-line labels, limited to 40 characters / 160 UTF-8 bytes, with control characters rejected. Renaming reconnects active sessions so peers learn the new label; the device UUID and all message addresses remain unchanged. SQLite schema version 2 adds a nullable peer-name column and saves the local name in metadata. Existing stores migrate on first launch, retaining messages and receipts. Wire compatibility with older peers is tested; downgrading an upgraded app database is not supported.
 
-## Proposed product scope: shelters and cloud continuity
+## Current capabilities and next work
 
-This section describes the broader product plan. Build 6 implements a local shelter
-directory, structured help requests, durable drafts and a local receiving inbox as
-documented above. Transport still routes to the shelter's designated physical device
-UUID. Organizational accounts, staff workflows, resource reservations, cloud APIs/sync,
-ASR and Bedrock remain to be built and integrated.
+There are two implemented account roles: requester and shelter coordinator
+(`dispatcher` in the API). Backend membership controls access. A shelter ID and its
+enrolled receiving-device UUID are separate from display names and A/B/C lab roles.
+A cached directory supports one enrolled receiver per shelter. Carrying another
+person's encrypted request does not make it part of the carrier's personal inbox.
 
-A shelter is a persistent organizational inbox, with its own ID, display name,
-area/contact information, authorized receiving devices, and designated dispatchers.
-It is not a phone's display name or an A/B/C test role. For the first MVP, support one
-designated receiving device per shelter and retain separate shelter/device IDs so
-later device replacement and multiple receivers do not require changing message
-identity. Verified membership, directory updates, and address migration need explicit
-implementation. A device that carries a shelter-addressed envelope is not its final
-recipient and must not gain access to the shelter's personal inbox.
-
-The user selects a shelter or team from a saved directory even when it is not nearby.
-Online, the directory is refreshed from the backend. Offline, it must already be
-cached or explicitly imported, for example from a demo directory or contact code.
-An unknown distant shelter cannot be discovered magically without a connection.
-If no suitable encounter occurs, the message remains queued until receipt or expiry.
-
-| Proposed capability | Cloud reachable | Cloud/internet unavailable |
+| Capability | Cloud available | Cloud unavailable |
 |---|---|---|
-| Shelter/team directory | Fetch and update authorized entries | Use saved/imported entries with last-update time |
-| Shelter and person conversations | Authenticated cloud delivery and synchronization | Durable local queue and direct/store-carry-forward delivery when peers meet |
-| Supply requests | Submit item, quantity, location/area, stated urgency and notes | Create the same structured request locally and carry it later |
-| Dispatcher workspace | Shared request queue, inventory-backed proposals, approved assignments | Locally received requests, replies and acknowledgements; cloud-dependent assignments remain pending |
-| Inventory/capacity | Authoritative updates with transactional reservations | Last-known values labeled stale; no promise of globally available stock |
-| Voice input | ASR with editable transcript before submission | Text input initially; offline ASR and relayed audio are separate future features |
-| AI recommendations | Bedrock with actual request/inventory/procedure context | Unavailable without a separately implemented local model |
-| Recovery | Upload/fetch under the original request ID | Retain pending items and retry after actual API recovery |
+| Shelter directory | Refresh authorized entries and receiving keys | Use the previously cached receiver |
+| Help request | Submit one durable request ID | Save, encrypt and carry to the enrolled shelter during encounters |
+| Receipt | Cloud acceptance plus staff status | Signed destination persistence receipt can return through relays |
+| Speech / interpretation | Live Transcribe, editable text, Bedrock proposal | Typed fields; no offline ASR/LLM or audio relay |
+| Shelter inbox | Shared authorized queue and gateway ingest | Locally received requests; cloud identity check pending |
+| Inventory / staff replies | Transactional reservation, handover, release and reply history | Cached values only; no offline allocation or staff-history relay |
 
-Operational roles are requester, dispatcher, and responder. Backend authorization
-controls organizational access; choosing a display name or test role does not grant
-it. All roles may participate in transport. The existing native Mac app is the first
-dispatcher-console candidate because it can retain native offline networking.
+Remaining work: physical no-router tests on the two phones, microphone/GPS checks,
+longer failure/range/energy testing, background operation, offline staff replies,
+receiver/key rotation recovery, independently reviewed security, Android transport,
+and a supervised always-on origin. A responder/assignment role is not implemented.
+No AWS credentials are distributed in the app. No autonomous resource dispatch is
+implemented or implied by an AI proposal.
 
-Separate transport states (locally saved, relay stored, recipient received, cloud
-accepted) from workflow states (new, needs clarification, approved, assigned,
-accepted by responder, in progress, fulfilled/cancelled). A delivery receipt does not
-mean supplies arrived. Retries through different gateways must not duplicate cloud
-requests, reservations, or assignments. Expiry, stale updates, revisions, and offline
-conflicts must be handled explicitly. A cloud outage does not turn relay peers into
-Bedrock or ASR servers.
-
-Recommended implementation order:
-
-1. Shelter/contact directory, shelter inbox addressing, and structured supply requests
-   using the existing durable engine; synthetic demo identities are labeled as such.
-2. Local dispatcher/requester/responder views and a consistent status model.
-3. Coordinate the API contract with the separate AWS-access/backend work: authenticated
-   request submission, status, synchronization, and authorized relay gateways.
-4. Idempotent cloud recovery and reconciliation, then Bedrock recommendations and
-   baseline ASR with transcript review.
-5. Validate controlled physical relay delivery and scale to additional devices before
-   claiming range, background operation, or ten-device reliability. Add authenticated
-   identities and encrypted payloads before using private operational data.
-
-Use one app with role-appropriate views. Nearby/path diagnostics remain engineering
-tools; shelters, requests and conversations become the primary product navigation.
-
-### Build16 candidate work
-
-The current worktree adds live AWS Transcribe with partial text and retained-audio
-recovery, a plain accessible interface, and `https://relay.stepcheck.app` as the
-verified demo API hostname. See `cloud/docs/STREAMING.md`,
-`cloud/docs/DEMO_HOSTING.md`, and `DEMO_READINESS_PLAN.md` for actual evidence and
-remaining demo gates. The backend still runs on the Mac. This candidate has not
-yet been installed on physical phones or distributed through TestFlight.
+Use [MORNING_DEMO.md](MORNING_DEMO.md) for the exact rehearsal and
+[TEST_RESULTS.md](TEST_RESULTS.md) for actual software and physical test verdicts.

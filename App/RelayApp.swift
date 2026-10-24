@@ -44,6 +44,7 @@ final class RelayModel: ObservableObject {
             do {
                 let folder = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true).appendingPathComponent("RELAY", isDirectory: true)
                 let store = try RelayStore.open(path: folder.appendingPathComponent("relay.sqlite").path)
+                try store.enableSealedDelivery(DeviceIdentity.load(deviceID: store.deviceID, at: folder.appendingPathComponent("device-keys.json")))
                 let role = try store.setting("role").flatMap(TestRole.init(rawValue:)) ?? .relay
                 let forceRoute = try store.setting("force_route") == "true"
                 #if targetEnvironment(simulator)
@@ -229,6 +230,9 @@ final class RelayModel: ObservableObject {
             }
         }
     }
+    func kickNearby() {
+        queue.async { [weak self] in self?.engine?.tick(); self?.refresh() }
+    }
     func withStore<T>(_ action: @escaping (RelayStore) throws -> T) async throws -> T {
         let workQueue = queue
         return try await withCheckedThrowingContinuation { continuation in
@@ -349,6 +353,43 @@ struct ContentView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+        workspaceTabs
+            #if os(iOS)
+            .toolbar(.hidden, for: .tabBar)
+            #endif
+            #if os(iOS)
+                HStack(spacing: 0) {
+                    tabButton(cloud.isDispatcher ? "Inbox" : "Ask for help", symbol: cloud.isDispatcher ? "tray.fill" : "lifepreserver", tag: 3)
+                    tabButton(cloud.isDispatcher ? "Inventory" : "Requests", symbol: cloud.isDispatcher ? "shippingbox.fill" : "tray.fill", tag: 4)
+                    tabButton("Settings", symbol: "gearshape.fill", tag: 5)
+                }.padding(.top, 12).padding(.bottom, 4).background(.white)
+                    .overlay(alignment: .top) { Rectangle().fill(.black).frame(height: 1.5) }
+            #endif
+        }.tint(RelayTheme.accent)
+            .environmentObject(cloud)
+        .task(id: model.ready) { if model.ready { model.setNearby(active: true); Task { await cloud.attach(model) } } }
+        .onChange(of: nearbySnapshot) { _, _ in
+            Task { await cloud.reconcileNearby() }
+        }
+        .onChange(of: cloud.profile?.role) { _, _ in selectedTab = 3; requestPath = [] }
+            .alert("Couldn’t complete that action", isPresented: Binding(get: { !model.error.isEmpty }, set: { if !$0 { model.error = "" } })) {
+                Button("OK") { model.error = "" }
+            } message: { Text(model.error) }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active { model.setNearby(active: true) }
+                else if phase == .background { model.setNearby(active: false) }
+                #if os(iOS)
+                UIApplication.shared.isIdleTimerDisabled = phase == .active
+                #endif
+            }
+            #if os(macOS)
+            .frame(minWidth: 540, minHeight: 650)
+            #endif
+    }
+    private var nearbySnapshot: [String] {
+        model.messages.map { row in "\(row.id):\(row.finalReceiptID ?? ""):\(row.acceptedBy.count)" }
+    }
+    private var workspaceTabs: some View {
         TabView(selection: $selectedTab) {
             if cloud.isDispatcher {
                 NavigationStack { WorkflowRequestsView(model: model, staff: true) }
@@ -366,34 +407,6 @@ struct ContentView: View {
             NavigationStack { WorkflowSettings(model: model) }
                 .tabItem { Label("Settings", systemImage: "gearshape.fill") }.tag(5).modifier(HideNativeTabBar())
         }
-            #if os(iOS)
-            .toolbar(.hidden, for: .tabBar)
-            #endif
-            #if os(iOS)
-                HStack(spacing: 0) {
-                    tabButton(cloud.isDispatcher ? "Inbox" : "Ask for help", symbol: cloud.isDispatcher ? "tray.fill" : "lifepreserver", tag: 3)
-                    tabButton(cloud.isDispatcher ? "Inventory" : "Requests", symbol: cloud.isDispatcher ? "shippingbox.fill" : "tray.fill", tag: 4)
-                    tabButton("Settings", symbol: "gearshape.fill", tag: 5)
-                }.padding(.top, 12).padding(.bottom, 4).background(.white)
-                    .overlay(alignment: .top) { Rectangle().fill(.black).frame(height: 1.5) }
-            #endif
-        }.tint(RelayTheme.accent)
-            .environmentObject(cloud)
-        .task(id: model.ready) { if model.ready { model.setNearby(active: true); Task { await cloud.attach(model) } } }
-        .onChange(of: cloud.profile?.role) { _, _ in selectedTab = 3; requestPath = [] }
-            .alert("Couldn’t complete that action", isPresented: Binding(get: { !model.error.isEmpty }, set: { if !$0 { model.error = "" } })) {
-                Button("OK") { model.error = "" }
-            } message: { Text(model.error) }
-            .onChange(of: scenePhase) { _, phase in
-                if phase == .active { model.setNearby(active: true) }
-                else if phase == .background { model.setNearby(active: false) }
-                #if os(iOS)
-                UIApplication.shared.isIdleTimerDisabled = phase == .active
-                #endif
-            }
-            #if os(macOS)
-            .frame(minWidth: 540, minHeight: 650)
-            #endif
     }
     private func tabButton(_ title: String, symbol: String, tag: Int) -> some View {
         Button { selectedTab = tag } label: {

@@ -1,6 +1,124 @@
-# RELAY test results — updated 2026-10-24
+# RELAY test results — updated 24 October 2026
 
-**Verdict: implemented and tested as a software prototype; the controlled physical offline demonstration remains pending and unverified.** No physical wireless acceptance test is reported as a pass. Software evidence below does not establish disaster resilience.
+**Current verdict:** build17 is ready for a controlled phone rehearsal. Native
+software, real AWS services and separate-encounter relay controls pass. Physical
+router-free wireless acceptance is still **NOT TESTED**. The older dated sections
+below are historical; this checkpoint supersedes their feature/release status.
+
+## Final overnight checkpoint — builds16/17
+
+- **Builds PASS:** macOS, iOS Simulator, signed iOS archive and Apple upload.
+  Build16 uploaded04:42:55PDT; build17 uploaded05:25:17PDT and fixes an old network
+  error remaining after a successful inbox refresh. Apple reported processing;
+  external TestFlight availability/approval is **NOT VERIFIED**.
+- **62 Swift tests PASS**, including serialization, persistence/restart, duplicate
+  suppression, TTL/hops, inventory exchange, interrupted retry, encrypted envelopes,
+  signed receipts, tampering, durable device keys and late-state projection.
+  [Full core test log](docs/evidence/nearby-20261024/relay-isolated-core-tests.txt).
+  Fresh isolated scratch storage avoided file-provider build-cache timestamp errors.
+- **87 backend tests PASS**, with one dependency deprecation warning. Includes
+  enrolled-device ownership, shelter receiver revision, exact-byte signature checks,
+  authorization and direct/gateway deduplication.
+  [Backend log](docs/evidence/nearby-20261024/relay-nearby-backend-all.txt).
+  The final build17 change is confined to native UI error recovery/build numbering;
+  the tested shared core and backend sources did not change afterward.
+- **Native UI PASS:** plain reference theme, requester/coordinator navigation,
+  text sizes/high contrast, keyboard dismissal, review/send, request status and
+  inventory. Final build17 launched on Mac and iPhone17Pro simulator in place,
+  retaining saved messages and account/device identity. No physical installation
+  occurred in this final session; both paired phones were disconnected.
+- **Real online workflow PASS:** request `cd6c80c8-d2df-4cc5-bce3-131ac9e64701`
+  went from simulator form/Bedrock to Mac approval/reservation and recorded handover.
+  Synthetic water stock changed10→8 on hand, with0 reserved after fulfillment.
+  This records a synthetic ledger action, not physical resource delivery.
+  [UI rehearsal](docs/evidence/streaming-20261024/relay-ui-cloud-rehearsal.json).
+
+### Actual encrypted native encounter evidence
+
+Two native iPhone simulators and the native Mac used Bonjour/Network.framework on
+one host. Internet remained available to the host. Requester cloud delivery was
+paused explicitly; this is application route isolation, not radio isolation.
+
+1. Direct nearby/gateway test: request `3383e7c6-215b-484a-ab7a-c4b867c14fb1`,
+   signed receipt `15c9bea5-8727-48e7-8ad8-848f7f508918`. Mac decrypted and
+   persisted it, then ingested it under the original requester. Carrier records
+   excluded it from their personal cloud inbox. Wire payload did not expose text
+   or the explicitly synthetic coordinates1.23456,2.34567.
+   [Evidence](docs/evidence/nearby-20261024/relay-native-nearby-evidence.json).
+2. Separate encounters: request `efd8f38a-da48-45bc-9c0b-b0c411ba96e2` was
+   persisted at B while C was quit. B was terminated/relaunched. With A terminated,
+   B forwarded to C at hop2; C created receipt
+   `405b258c-0ef2-4009-b32c-35e17b8d8ed8`. C was quit; B was restarted again;
+   A received the returning receipt at hop2. A/C never ran together during this
+   sequence. Resuming source cloud reconciled the same request ID.
+   [Snapshots and actual logs](docs/evidence/nearby-20261024/1792841365.json).
+3. Controlled repeated failures: **3/3 loopback TCP trials PASS**, each with a
+   truncated frame, retry, duplicate suppression, two actual carrier-process
+   crashes/restarts and a reverse receipt. Trial durations1.360/0.979/0.932s are
+   whole software-test durations, not wireless latency or reliability estimates.
+   [IDs and results](docs/evidence/nearby-20261024/repeated-tcp-controls.json).
+
+Selected native logs (same-host software evidence):
+
+```
+11:21:16Z A STORAGE_ACK_RECEIVED id=efd8f38a-da48-45bc-9c0b-b0c411ba96e2 kind=RELAY_STORED ack_latency_ms=40
+11:21:55Z C PERSISTED id=efd8f38a-da48-45bc-9c0b-b0c411ba96e2 hops=2
+11:21:55Z C RECEIPT_CREATED id=405b258c-0ef2-4009-b32c-35e17b8d8ed8 original=efd8f38a-da48-45bc-9c0b-b0c411ba96e2
+11:23:57Z A FINAL_RECEIPT_RECOGNIZED id=405b258c-0ef2-4009-b32c-35e17b8d8ed8 original=efd8f38a-da48-45bc-9c0b-b0c411ba96e2
+```
+
+### AWS, domain and recovery evidence
+
+`https://relay.stepcheck.app` is verified TLS through Namecheap DNS / CloudFront /
+the existing HTTPS Quick Tunnel to this Mac. It forwards authorization/WebSockets
+and does not cache the API. No PC or managed compute deployment is claimed.
+
+Final preflight initially **FAILED503**: AWS workshop refresh credentials expired.
+The existing workshop session was renewed for the same account928489693154 and
+WSParticipantRole/Participant; API/worker restarted without resetting queues or
+budgets. Preflight, real live speech and real Bedrock processing then **PASSED**.
+This failure is evidence for running preflight shortly before presenting.
+
+- Renewed live stream `8849bf10-6116-4e58-9846-a2062e8c5919`: synthetic1.824s
+  WAV through native Swift/custom-domain WSS, ready991ms, first partial2145ms,
+  durable completion3857ms. Same-ID replay returned the saved result. “Shelter A”
+  was misheard as “Sheltering”; transcript review remains required. This is one
+  sample, not a noisy-speech/phone-microphone benchmark.
+  [Result](docs/evidence/nearby-20261024/relay-final16-stream-renewed.json).
+- Renewed worker request `75b80d2c-f5a9-4bfb-9ee8-7fecc5e57a53`: HTTP accepted,
+  same-ID replay deduplicated, real Bedrock returned water packs/2 ready for review
+  in2.697s; `allocation_authorized=false`. No stock was changed by this check.
+  [Result](docs/evidence/nearby-20261024/relay-final16-cloud-renewed.json).
+- App caps100 request/preview allocations and20 transcription allocations;
+  four simultaneous live sessions, one per account. Final observed counters24/8,
+  leaving76/12. Two earlier direct AWS probes ran outside application counters.
+  Account service quotas are documented separately in
+  [hosting](cloud/docs/DEMO_HOSTING.md); they are not performance guarantees.
+
+### Hardware, physical acceptance and remaining claims
+
+Host: Apple M3 Pro,18GiB, macOS26.6.2(25G83); Xcode26.1.1(17B100), Swift6.2.1,
+iOS/macOS26.1 SDKs. Simulator: iPhone17Pro and17ProMax, iOS26.1. Cached paired
+physical records: iPhone15ProMax/iOS27.0.1(24A446), iPhone16/iOS26.2(23C55),
+Developer Mode enabled. Phones were disconnected during final builds; prior
+installation/launch evidence below remains historical. Release signing used
+teamU4G9LV39GM; the original development bundle uses team3TUBL56UTY.
+
+| Required physical claim/test | Current result |
+|---|---|
+| A: direct offline P2P communication | **NOT TESTED** under controlled physical isolation |
+| B: three-device store-carry-forward | **NOT TESTED physically**; separate native simulator/Mac encounters PASS |
+| C: bidirectional receipt delivery | **NOT TESTED physically**; two-hop signed receipt software test PASS |
+| Infrastructure-independent wireless path | **NOT VERIFIED**; no controlled phone radio/no-router evidence |
+| D/E: duplicates and repeated unexpected failures | **NOT TESTED physically**;62 unit tests and3/3 TCP failure trials PASS |
+
+Physical discovery time, range, latency and failure rates were not measured. Run
+[TEST_PLAN.md](TEST_PLAN.md) A–E and [MORNING_DEMO.md](MORNING_DEMO.md) before
+claiming phone success. Further resilience work includes long carries, reboot/power
+loss, clock drift, congestion/ten peers, key rotation/revocation, noisy speech,
+battery/background behavior and security review. Nearby staff replies/inventory
+history and Android transport are not implemented. Foreground encounters and online
+pre-enrollment are required. This remains a synthetic-data engineering prototype.
 
 ## Build 15 — frontend redesign, 2026-10-24
 

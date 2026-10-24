@@ -11,6 +11,10 @@ public struct CloudShelter: Codable, Identifiable, Equatable {
     public let shelter_id: String
     public let incident_id: String
     public let display_name: String
+    public var receiver: ShelterReceiver? = nil
+    public init(shelter_id: String, incident_id: String, display_name: String, receiver: ShelterReceiver? = nil) {
+        self.shelter_id = shelter_id; self.incident_id = incident_id; self.display_name = display_name; self.receiver = receiver
+    }
     public var id: String { incident_id + ":" + shelter_id }
 }
 public struct CloudDirectory: Codable { public let items: [CloudShelter] }
@@ -131,6 +135,7 @@ public struct CloudQueueRecord: Codable, Identifiable {
     public var pendingEvent: CloudEventCommand?
     public var pendingInventory: InventoryCommand?
     public var reservation: RequestReservation?
+    public var nearbyState: String?
     public var id: String { submission.request_id }
     public init(scope: String, submission: CloudSubmission) { self.scope = scope; self.submission = submission }
     public mutating func failed(_ message: String, retryable: Bool, now: Date = Date()) {

@@ -12,7 +12,7 @@ public struct RelayConversation: Identifiable {
         var groups: [String: [StoredMessage]] = [:]
         for row in rows where row.message.messageType == .request {
             let m = row.message
-            if ShelterRequestCodec.isRequest(m) || LocalRequestUpdate.isUpdate(m) { continue }
+            if SealedDelivery.isSealed(m) || ShelterRequestCodec.isRequest(m) || LocalRequestUpdate.isUpdate(m) { continue }
             let peer: String
             if m.originID == deviceID && m.destinationID != deviceID { peer = m.destinationID }
             else if m.destinationID == deviceID && m.originID != deviceID { peer = m.originID }

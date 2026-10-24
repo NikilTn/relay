@@ -2,9 +2,9 @@
 
 **Current cloud/voice/location/coordinator-inventory procedure:** [MOBILE_TEST.md](MOBILE_TEST.md).
 Use the current role-specific interface. The older Cloud tab references below are
-historical; engineering controls now live in Settings → Developer tools.
+historical; engineering controls now live in Settings → Demo tools.
 
-For build 9's separate internet/cloud flow, follow [DEMO_HOSTING.md](DEMO_HOSTING.md).
+For the current internet/cloud flow, follow [DEMO_HOSTING.md](DEMO_HOSTING.md).
 Cloudflare hosting and AWS results do not satisfy any physical offline criterion
 below. Preserve separate evidence for native login, transcript review, request
 creation, dispatcher history, cloud reconnect and each offline radio encounter.
@@ -12,7 +12,7 @@ creation, dispatcher history, cloud reconnect and each offline radio encounter.
 Build 6 navigation: **Help → gear** opens Tools, and **Help → Nearby devices** opens
 discovery. References to Chats mean the Messages tab. All original A–E criteria apply.
 
-## Shelter request extension for build 6
+## Historical shelter-code test extension (build6)
 
 1. On receiver C, open Shelters → Create shelter on this device. Save a synthetic name
    and area. Open its entry, copy/share the code and import that exact code on A.
@@ -185,7 +185,9 @@ Record per-platform results; installation alone is not a physical UI test.
    before submitting. Require reviewed_transcript reference and same request ID.
 7. Verify signed-out and offline behavior. Cloud/AI failures must never fabricate a
    proposal, delivery receipt, allocation or fulfillment. A carried request is not
-   uploaded under the carrier's account; signed gateway ingestion is still pending.
+   uploaded under the carrier's account. The enrolled shelter gateway verifies the
+   original sender signature and submits under the original requester's ownership.
+   Verify direct/cloud replay remains one logical request.
 
 Separate CLI/fixture/AWS-loopback evidence from native device UI and physical radio
 tests. No public HTTPS or native cloud-flow PASS until those exact tests run.

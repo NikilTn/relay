@@ -1,28 +1,28 @@
-# RELAY interface direction — build 15
+# RELAY interface — build17
 
-The interface should feel like a working communication tool. The user rejected the
-previous large teal/navy banners, colored symbol tiles and repeated rounded cards.
-Use the actual work—writing, reading, replying and allocating supplies—as the
-visual center of each screen.
+The user's plain black/white Settings reference supersedes build15's serif theme.
+The interface uses system sans-serif type, bold headings, white surfaces, black
+primary actions, outlined secondary controls and a restrained brown active accent.
+There are no decorative AI sparkles, gradient banners or unrelated category icons.
 
-- Warm off-white canvas and dark text; charcoal in dark appearance. Restrained rust
-  accent for links and small highlights. Primary actions use the foreground color
-  with an inverse label. Maintain readable light/dark contrast.
-- System serif page titles, system sans-serif body text, small monospaced labels
-  and quantities. Use Dynamic Type styles rather than fixed body font sizes.
-- Flat sections, thin rules and consistent left alignment. Avoid decorative cards,
-  shadows, gradient banners, multicolor category icons and AI sparkle decoration.
-- Text labels carry meaning. Keep symbols for functional navigation when useful;
-  do not place a symbol in front of every heading. Tabs are text-only.
-- Requester: shelter destination, a large message-writing area, voice/extraction
-  actions, plain supply selection, quantities, optional location and one persistent
-  Review request action. Use concise copy and keep Done accessible.
-- Coordinator: chronological request rows with shelter, time, amount and explicit
-  workflow status. Inventory displays Available / Reserved / On hand in aligned
-  columns. Acknowledgement, staff approval and handover remain separate states.
-- The app icon is a simple R and small rust rule, generated from the checked-in
-  Swift source. No stock illustration, external fonts or image downloads.
+Public navigation: Ask for help, Requests, Settings. Coordinator navigation: Inbox,
+Inventory, Settings. Nearby device chat and test controls sit inside Settings.
+Users address a shelter; carrier phones are background transport participants.
 
-This is a presentation change. Nearby device conversations and cloud shelter
-requests remain separate. Do not imply completed routing, authentication or
-physical delivery based on visual presentation. Preserve all durable IDs and data.
+Controls grow with Dynamic Type. Normal respects the system text size; Large and
+Largest increase the minimum size without reducing an existing accessibility size.
+High contrast thickens form/button outlines. Primary navigation uses explicit
+accessible buttons with familiar functional symbols and text labels. The bottom
+review action has its own space above navigation. Text editors expose Done.
+
+The form separates description/voice, supplies, quantities, and optional location.
+Review precedes Send. A completed transcript does not send a request. AI details
+remain editable, and staff—not the model—approve inventory actions.
+
+Delivery status uses distinct language for local save, relay storage, verified
+shelter receipt, cloud acceptance, staff approval and recorded handover. An offline
+receipt does not promise that people or supplies are on their way.
+
+Verified on native iPhone17 Pro / Pro Max simulators and Mac. Large-text and
+keyboard checks are software UI evidence; physical phone readability, microphone,
+GPS and wireless acceptance still require the morning operator tests.

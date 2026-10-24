@@ -1,3 +1,41 @@
+# Current release — build17
+
+Build **0.1.0 (17)** was signed, archived and uploaded successfully at
+**05:25:17 PDT on24 October2026**. Apple reported **Uploaded package is processing**.
+External tester availability/approval is **NOT VERIFIED**; the App Store Connect
+browser session requires sign-in. Next unused build number:18.
+
+Build17 includes the plain reference UI, live speech, encrypted main-form nearby
+shelter requests, signed receipts and authenticated gateway ingest from16. It also
+clears an obsolete connection-error label after a successful inbox refresh while
+preserving unresolved queued-operation errors. See [morning demo](MORNING_DEMO.md).
+The Mac and simulator were updated in place; physical phones were disconnected.
+Upload is not external beta approval or a phone installation.
+
+# Previous release — build16
+
+Build **0.1.0 (16)** was signed, archived and uploaded successfully at
+**04:42:55 PDT on24 October2026**. Apple reported that the package was processing.
+External tester availability/approval is **not yet verified**. The browser session
+is at sign-in. Upload is not approval. Next unused build number:17.
+
+This build contains the plain reference UI, streaming speech, encrypted main-form
+nearby shelter requests, signed destination receipts, authenticated gateway ingest,
+and the custom API hostname. See [release evidence](docs/evidence/nearby-20261024/testflight-build16.json)
+and [morning instructions](MORNING_DEMO.md).
+
+The app uses Apple-provided CryptoKit, Security, and URLSession encryption. No
+third-party cryptographic implementation is linked into the native app. The
+existing `ITSAppUsesNonExemptEncryption = NO` declaration is retained for use of
+Apple operating-system cryptography; [Apple's export documentation](https://developer.apple.com/help/app-store-connect/reference/app-information/export-compliance-documentation-for-encryption)
+explains that category. This is not a production security or disaster-resilience claim.
+
+The TestFlight bundle and original USB-installed bundle remain separate apps with
+separate stores/identities. Do not uninstall the original app to troubleshoot an
+update. Its data has not been migrated into TestFlight.
+
+Older release records below are historical; the current build/status above takes precedence.
+
 # Frontend redesign — build 15
 
 Build **0.1.0 (15)** signed, archived and uploaded successfully at **02:45:16 PDT
@@ -78,8 +116,8 @@ Use the enrolled account already signed into Xcode; agreement acceptance, bundle
 # Set to the identifier actually registered under the enrolled team.
 export RELAY_TEAM_ID=U4G9LV39GM
 export RELAY_BUNDLE_ID=com.nikilthalapaneni.relay
-bash scripts/testflight.sh 14          # next unused build: signed archive only
-bash scripts/testflight.sh 14 --upload # next unused build: archive and upload
+bash scripts/testflight.sh 17          # next unused build: signed archive only
+bash scripts/testflight.sh 17 --upload # next unused build: archive and upload
 ```
 
 The script stores logs/archives in a fresh `/tmp/RELAY-testflight.*` directory, outside the file-provider-backed source directory. It uses automatic signing and never accepts a password/token. The script's signed archive path passed; its export/upload command was executed separately against that archive and passed. Use the next unused build number after each upload; the script does not silently change it. Check Apple's processing/review state after upload.

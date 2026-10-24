@@ -1,0 +1,87 @@
+{
+  "request_id": "efd8f38a-da48-45bc-9c0b-b0c411ba96e2",
+  "time": 1792840926.883518,
+  "scope": "Two native iPhone simulators and native Mac on one host; app-level encounter separation, not physical radio separation",
+  "devices": {
+    "C": {
+      "device_id": "fabb432e-244d-4be8-86eb-eb9ac6982d0f",
+      "messages": [
+        {
+          "id": "efd8f38a-da48-45bc-9c0b-b0c411ba96e2",
+          "type": "RESOURCE_REQUEST",
+          "origin": "e816be05-b366-4b44-a5dd-8b56ef7e5884",
+          "destination": "fabb432e-244d-4be8-86eb-eb9ac6982d0f",
+          "hop_count": 2,
+          "final_receipt": null
+        },
+        {
+          "id": "405b258c-0ef2-4009-b32c-35e17b8d8ed8",
+          "type": "DELIVERY_RECEIPT",
+          "origin": "fabb432e-244d-4be8-86eb-eb9ac6982d0f",
+          "destination": "e816be05-b366-4b44-a5dd-8b56ef7e5884",
+          "hop_count": 0,
+          "final_receipt": null
+        }
+      ],
+      "cloud_records": [],
+      "logs": [
+        "2026-10-24T11:21:55Z [fabb432e-244d-4be8-86eb-eb9ac6982d0f] PERSISTED id=efd8f38a-da48-45bc-9c0b-b0c411ba96e2 peer=985a586f-34e1-4331-ad31-24f032c78552 hops=2",
+        "2026-10-24T11:21:55Z [fabb432e-244d-4be8-86eb-eb9ac6982d0f] RECEIPT_CREATED id=405b258c-0ef2-4009-b32c-35e17b8d8ed8 original=efd8f38a-da48-45bc-9c0b-b0c411ba96e2",
+        "2026-10-24T11:21:55Z [fabb432e-244d-4be8-86eb-eb9ac6982d0f] STORAGE_ACK_SENT id=efd8f38a-da48-45bc-9c0b-b0c411ba96e2 kind=DESTINATION_STORED"
+      ]
+    },
+    "A": {
+      "device_id": "e816be05-b366-4b44-a5dd-8b56ef7e5884",
+      "messages": [
+        {
+          "id": "efd8f38a-da48-45bc-9c0b-b0c411ba96e2",
+          "type": "RESOURCE_REQUEST",
+          "origin": "e816be05-b366-4b44-a5dd-8b56ef7e5884",
+          "destination": "fabb432e-244d-4be8-86eb-eb9ac6982d0f",
+          "hop_count": 0,
+          "final_receipt": null
+        }
+      ],
+      "cloud_records": [
+        {
+          "state": "queued",
+          "nearby_state": "relay_saved",
+          "cloud_accepted": false,
+          "problem": null
+        }
+      ],
+      "logs": [
+        "2026-10-24T11:21:16Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] TRANSFER_ATTEMPT id=efd8f38a-da48-45bc-9c0b-b0c411ba96e2 peer=985a586f-34e1-4331-ad31-24f032c78552 hops=1 pending_retry=false",
+        "2026-10-24T11:21:16Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] STORAGE_ACK_RECEIVED id=efd8f38a-da48-45bc-9c0b-b0c411ba96e2 kind=RELAY_STORED peer=985a586f-34e1-4331-ad31-24f032c78552 ack_latency_ms=40"
+      ]
+    },
+    "B": {
+      "device_id": "985a586f-34e1-4331-ad31-24f032c78552",
+      "messages": [
+        {
+          "id": "efd8f38a-da48-45bc-9c0b-b0c411ba96e2",
+          "type": "RESOURCE_REQUEST",
+          "origin": "e816be05-b366-4b44-a5dd-8b56ef7e5884",
+          "destination": "fabb432e-244d-4be8-86eb-eb9ac6982d0f",
+          "hop_count": 1,
+          "final_receipt": null
+        },
+        {
+          "id": "405b258c-0ef2-4009-b32c-35e17b8d8ed8",
+          "type": "DELIVERY_RECEIPT",
+          "origin": "fabb432e-244d-4be8-86eb-eb9ac6982d0f",
+          "destination": "e816be05-b366-4b44-a5dd-8b56ef7e5884",
+          "hop_count": 1,
+          "final_receipt": null
+        }
+      ],
+      "cloud_records": [],
+      "logs": [
+        "2026-10-24T11:21:16Z [985a586f-34e1-4331-ad31-24f032c78552] PERSISTED id=efd8f38a-da48-45bc-9c0b-b0c411ba96e2 peer=e816be05-b366-4b44-a5dd-8b56ef7e5884 hops=1",
+        "2026-10-24T11:21:16Z [985a586f-34e1-4331-ad31-24f032c78552] STORAGE_ACK_SENT id=efd8f38a-da48-45bc-9c0b-b0c411ba96e2 kind=RELAY_STORED",
+        "2026-10-24T11:21:55Z [985a586f-34e1-4331-ad31-24f032c78552] TRANSFER_ATTEMPT id=efd8f38a-da48-45bc-9c0b-b0c411ba96e2 peer=fabb432e-244d-4be8-86eb-eb9ac6982d0f hops=2 pending_retry=false",
+        "2026-10-24T11:21:55Z [985a586f-34e1-4331-ad31-24f032c78552] STORAGE_ACK_RECEIVED id=efd8f38a-da48-45bc-9c0b-b0c411ba96e2 kind=DESTINATION_STORED peer=fabb432e-244d-4be8-86eb-eb9ac6982d0f ack_latency_ms=13"
+      ]
+    }
+  }
+}

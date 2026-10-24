@@ -23,8 +23,13 @@ import RelayCore
     @Published var inventoryBusy = false
     @Published var staffShelterID = ""
     @Published var pendingAdjustment = false
+    @Published var nearbyProblem = ""
+    @Published var cloudPaused = UserDefaults.standard.bool(forKey: "relay.demo.cloudPaused") {
+        didSet { UserDefaults.standard.set(cloudPaused, forKey: "relay.demo.cloudPaused") }
+    }
     var pollingPaused = false
     var focusedRequestID: String?
+    private var reconcilingNearby = false
     private var lastInboxRefresh = Date.distantPast
     private let auth = CloudAuth()
     private weak var model: RelayModel?
@@ -32,7 +37,7 @@ import RelayCore
     private var scope: String?
     private var epoch = UUID()
     private var timer: Task<Void, Never>?
-    var canUseCloud: Bool { profile != nil && api != nil && auth.hasSession }
+    var canUseCloud: Bool { !cloudPaused && profile != nil && api != nil && auth.hasSession }
     var isDispatcher: Bool { profile?.role == "dispatcher" }
 
     func attach(_ model: RelayModel) async {
@@ -54,16 +59,19 @@ import RelayCore
             }
             staffShelterID = directory.first?.shelter_id ?? ""
             busy = false
-            await connect(signIn: false)
+            await reconcileNearby()
+            if !cloudPaused { await connect(signIn: false) }
         }
         timer = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(10))
                 guard !Task.isCancelled else { break }
                 if self?.pollingPaused == true { continue }
+                await self?.reconcileNearby()
                 await self?.sync()
                 if let self, self.canUseCloud, self.focusedRequestID == nil, Date().timeIntervalSince(self.lastInboxRefresh) > 20 {
                     self.lastInboxRefresh = Date()
+                    await self.refreshDirectory()
                     await self.loadInbox(shelterID: self.isDispatcher ? self.staffShelterID : nil)
                 }
             }
@@ -71,6 +79,7 @@ import RelayCore
     }
     func connect(signIn: Bool) async {
         guard !busy, let model else { return }
+        guard !cloudPaused else { problem = "Resume cloud delivery in Settings before signing in or refreshing setup."; return }
         busy = true; defer { busy = false }; problem = ""
         do {
             let originalURL = try CloudCodec.apiURL(endpoint)
@@ -80,7 +89,23 @@ import RelayCore
             if signIn { try await auth.signIn() }
             let token = try await auth.accessToken()
             let verified: CloudProfile = try await client.call("v1/me", token: token)
-            let shelters: CloudDirectory = try await client.call("v1/shelters", token: token)
+            var shelters: CloudDirectory = try await client.call("v1/shelters", token: token)
+            nearbyProblem = ""
+            do {
+                let address = try await model.withStore { store -> ShelterReceiver in
+                    guard let identity = store.sealedIdentity else { throw RelayError.invalid("Device keys are not ready") }
+                    return identity.address
+                }
+                let registration = ["device_id": address.device_id, "signing_key": address.signing_key, "encryption_key": address.encryption_key]
+                let _: [String: String] = try await client.call("v1/devices", token: token, method: "POST", body: CloudCodec.encode(registration))
+                #if os(macOS)
+                if verified.role == "dispatcher", let shelter = shelters.items.first, shelter.receiver == nil {
+                    let command = ReceiverCommand(device_id: address.device_id, expected_revision: 0)
+                    let _: ShelterReceiver = try await client.call("v1/shelters/\(shelter.shelter_id)/receiver", token: token, method: "PUT", body: CloudCodec.encode(command))
+                    shelters = try await client.call("v1/shelters", token: token)
+                }
+                #endif
+            } catch { nearbyProblem = "Nearby setup: " + error.localizedDescription }
             let key = CloudCodec.scope(baseURL: url, subject: verified.subject)
             if originalURL != url {
                 let previous = CloudCodec.scope(baseURL: originalURL, subject: verified.subject)
@@ -105,6 +130,7 @@ import RelayCore
         } catch { problem = error.localizedDescription; status = "Cloud unavailable; nearby delivery still works" }
     }
     func signOut() {
+        cloudPaused = false; nearbyProblem = ""
         epoch = UUID(); auth.signOut(); profile = nil; api = nil; scope = nil
         records = []; directory = []; bindings = []; audioJob = nil; transcript = ""; draft = RequestDraft(); interpretation = nil; inventory = nil; signInNeedsCode = false; status = "Signed out"
     }
@@ -141,7 +167,7 @@ import RelayCore
         } catch { problem = error.localizedDescription }
     }
     func sync() async {
-        guard !busy, let api, let scope, let model, profile != nil else { return }
+        guard !cloudPaused, !busy, let api, let scope, let model, profile != nil else { return }
         busy = true; defer { busy = false }
         let generation = epoch
         do {
@@ -155,7 +181,16 @@ import RelayCore
                 do {
                     let result: CloudResult
                     if record.state == "queued" {
-                        result = try await api.call("v1/requests", token: token, method: "POST", body: CloudCodec.encode(record.submission))
+                        if record.nearbyState == "received" {
+                            let id = record.id
+                            let signed = try await model.withStore { store -> SignedNearbyRequest in
+                                guard let value = try store.nearbyRequests().first(where: { try $0.verifiedBody().submission.request_id == id }) else { throw RelayError.invalid("Carried request proof is unavailable") }
+                                return value
+                            }
+                            result = try await api.call("v1/relay/requests", token: token, method: "POST", body: CloudCodec.encode(signed))
+                        } else {
+                            result = try await api.call("v1/requests", token: token, method: "POST", body: CloudCodec.encode(record.submission))
+                        }
                     } else { result = try await api.call("v1/requests/" + record.id, token: token) }
                     guard result.request_id == record.id, result.submission == record.submission, result.cloud_state == "accepted" else { throw RelayError.invalid("Cloud response does not match the saved request") }
                     record.result = result; record.state = "accepted"; record.problem = nil
@@ -186,8 +221,9 @@ import RelayCore
         } catch { problem = error.localizedDescription; status = "Cloud unavailable · queued requests retained" }
     }
     func loadInbox(shelterID: String? = nil) async {
-        guard !busy, let api, let scope, let model else { return }
+        guard !cloudPaused, !busy, let api, let scope, let model else { return }
         busy = true; defer { busy = false }; let generation = epoch
+        let previousProblem = problem
         do {
             let token = try await auth.accessToken()
             var cursor: String?
@@ -201,6 +237,7 @@ import RelayCore
                 for result in page.items.sorted(by: { $0.submission.created_at > $1.submission.created_at }) {
                     var record = records.first { $0.id == result.id } ?? CloudQueueRecord(scope: scope, submission: result.submission)
                     record.result = result; record.state = "accepted"
+                    if record.pendingEvent == nil && record.pendingInventory == nil { record.problem = nil }
                     let terminal = ["completed", "cancelled", "rejected"].contains(record.history?.status ?? "new")
                     if let history = result.history {
                         record.history = history; record.reservation = result.reservation
@@ -215,6 +252,9 @@ import RelayCore
                 cursor = page.next_cursor
                 await reload()
             } while cursor != nil && records.count < 1000
+            // A successful inbox refresh resolves its old connection error. Keep
+            // a newer error raised by another task while this request was in flight.
+            if generation == epoch && problem == previousProblem { problem = "" }
         } catch { problem = error.localizedDescription }
     }
     func sendEvent(_ id: String, text: String, status: String?) async {
@@ -263,6 +303,7 @@ import RelayCore
         }
     }
     func previewRequest() async {
+        guard !cloudPaused else { problem = "Cloud delivery is paused for this demo. Enter the request details manually."; return }
         guard !interpreting, let api, let scope, let model,
               let shelter = directory.first(where: { $0.shelter_id == draft.shelterID }) else { problem = "Choose a shelter first."; return }
         let text = draft.text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -301,13 +342,19 @@ import RelayCore
         submitting = true; defer { submitting = false }; problem = ""
         do {
             let snapshot = draft
-            let record = try await model.withStore { try $0.submitCloudDraft(snapshot, scope: scope, shelter: shelter) }
+            let subject = profile?.subject
+            let record = try await model.withStore { store -> CloudQueueRecord in
+                var record = try store.submitCloudDraft(snapshot, scope: scope, shelter: shelter, receiver: shelter.receiver, senderSubject: subject)
+                if shelter.receiver != nil { record.nearbyState = "queued"; try store.saveCloudRecord(record) }
+                return record
+            }
+            model.kickNearby()
             draft = RequestDraft(); draft.shelterID = shelter.shelter_id; interpretation = nil
             await reload(); Task { await self.sync() }; return record.id
         } catch { problem = error.localizedDescription; return nil }
     }
     func refreshInventory() async {
-        guard isDispatcher, !staffShelterID.isEmpty, !inventoryBusy, let api, let model, let scope else { return }
+        guard !cloudPaused, isDispatcher, !staffShelterID.isEmpty, !inventoryBusy, let api, let model, let scope else { return }
         inventoryBusy = true; defer { inventoryBusy = false }
         let generation = epoch, shelter = staffShelterID
         do {
@@ -318,7 +365,7 @@ import RelayCore
         } catch { problem = error.localizedDescription }
     }
     func adjustInventory(item: String, amount: Int, note: String) async {
-        guard isDispatcher, !inventoryBusy, let api, let scope, let model else { return }
+        guard !cloudPaused, isDispatcher, !inventoryBusy, let api, let scope, let model else { return }
         inventoryBusy = true; defer { inventoryBusy = false }; problem = ""
         let generation = epoch, shelter = staffShelterID, key = "inventory_adjustment:" + scope + ":" + staffShelterID
         do {
@@ -341,6 +388,7 @@ import RelayCore
         }
     }
     func inventoryAction(_ id: String, action: String, item: String? = nil, quantity: Int? = nil) async {
+        guard !cloudPaused else { problem = "Inventory approval requires a cloud connection."; return }
         guard !busy, var record = records.first(where: { $0.id == id }), let model else { return }
         guard record.pendingInventory == nil else { await retry(id); return }
         busy = true
@@ -371,6 +419,7 @@ import RelayCore
         try await model.withStore { try $0.setSetting("cloud_audio:" + scope, String(decoding: data, as: UTF8.self)) }
     }
     func transcribe() async {
+        guard !cloudPaused else { problem = "Resume cloud delivery before transcribing. The recording stays saved."; return }
         guard !audioBusy, var job = audioJob, let api else { return }
         audioBusy = true; defer { audioBusy = false }; let generation = epoch
         do {
@@ -415,7 +464,74 @@ import RelayCore
         model.helpDraft.transcriptionIncident = job.incidentID
         model.persistHelpDraft(); audioStatus = "Copied to Help. Choose a shelter, complete the fields, then review and submit."
     }
+    func refreshDirectory() async {
+        guard !cloudPaused, !busy, let api, let model, let scope else { return }
+        busy = true; defer { busy = false }; let generation = epoch
+        do {
+            let token = try await auth.accessToken()
+            let value: CloudDirectory = try await api.call("v1/shelters", token: token)
+            guard generation == epoch else { return }
+            if value.items != directory {
+                directory = value.items
+                try await model.withStore { try $0.setSetting("cloud_directory:" + scope, String(decoding: try CloudCodec.encode(value.items), as: UTF8.self)) }
+            }
+        } catch { /* Cached receiving addresses remain usable during an outage. */ }
+    }
+    private struct ReceiverCommand: Codable { let device_id: String; let expected_revision: Int }
+    var selectedReceiver: ShelterReceiver? { directory.first { $0.shelter_id == (isDispatcher ? staffShelterID : draft.shelterID) }?.receiver }
+    var receivesHere: Bool { selectedReceiver?.device_id == model?.deviceID && selectedReceiver?.account_subject == profile?.subject }
+    func useThisDeviceForShelter() async {
+        guard !busy, isDispatcher, let api, let model, let scope, !staffShelterID.isEmpty else { return }
+        busy = true; defer { busy = false }
+        let generation = epoch
+        do {
+            let token = try await auth.accessToken()
+            let command = ReceiverCommand(device_id: model.deviceID, expected_revision: selectedReceiver?.revision ?? 0)
+            let _: ShelterReceiver = try await api.call("v1/shelters/\(staffShelterID)/receiver", token: token, method: "PUT", body: CloudCodec.encode(command))
+            let value: CloudDirectory = try await api.call("v1/shelters", token: token)
+            guard generation == epoch else { return }
+            directory = value.items
+            try await model.withStore { try $0.setSetting("cloud_directory:" + scope, String(decoding: try CloudCodec.encode(value.items), as: UTF8.self)) }
+            nearbyProblem = ""
+        } catch { nearbyProblem = error.localizedDescription }
+    }
+    /// Application projection follows the durable receipt transaction. Unknown
+    /// offline sender identities remain pending backend verification, never staff approval.
+    func reconcileNearby() async {
+        guard !reconcilingNearby, let model, let scope, let profile else { return }
+        reconcilingNearby = true; defer { reconcilingNearby = false }
+        let generation = epoch
+        do {
+            try await model.withStore { store in
+                var rows = try store.cloudRecords(scope: scope)
+                if profile.role == "dispatcher" {
+                    for signed in try store.nearbyRequests() {
+                        let value = try signed.verifiedBody(), submission = value.submission
+                        guard value.receiver_subject == profile.subject,
+                              submission.incident_id == profile.incident_id,
+                              profile.shelter_ids.contains(submission.destination_shelter_id) else { continue }
+                        if let existing = rows.first(where: { $0.id == submission.request_id }) {
+                            guard existing.submission == submission else { throw RelayError.invalid("Nearby/cloud content conflict") }
+                            continue
+                        }
+                        var record = CloudQueueRecord(scope: scope, submission: submission)
+                        record.nearbyState = "received"
+                        try store.saveCloudRecord(record); rows.append(record)
+                    }
+                }
+                let summaries = try store.summaries()
+                for var record in rows where record.submission.origin_device_id == store.deviceID {
+                    guard let nearby = summaries.first(where: { $0.id == record.id && SealedDelivery.isSealed($0.message) }) else { continue }
+                    let state = nearby.finalReceiptID != nil ? "shelter_saved" : !nearby.acceptedBy.isEmpty ? "relay_saved" : "queued"
+                    if record.nearbyState != state { record.nearbyState = state; try store.saveCloudRecord(record) }
+                }
+            }
+            guard generation == epoch else { return }; await reload()
+        } catch { nearbyProblem = error.localizedDescription }
+    }
+
     func liveSpeechContext() async throws -> LiveSpeechContext {
+        guard !cloudPaused else { throw RelayError.invalid("Resume cloud delivery before using live transcription. You can still type an offline request.") }
         guard let api, let profile, let scope else { throw RelayError.invalid("Sign in before live transcription") }
         let generation = epoch, token = try await auth.accessToken()
         guard generation == epoch else { throw RelayError.invalid("Account changed; start again") }
