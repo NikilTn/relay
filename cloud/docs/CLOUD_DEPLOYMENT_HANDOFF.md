@@ -156,6 +156,16 @@ Use test-requester-a / test-dispatcher-a for shelter-a, or the corresponding -b 
 
 Open only the needed actor privately and use its enrolled account and software authenticator in the app. The file is mode 0600 in a mode-0700 directory. Do not reset MFA, paste the record into chat/source/screenshots, or put private test token files into the mobile app. Synthetic .invalid emails cannot receive recovery mail. No passwords, tokens, AWS credentials, seeds or signed upload URLs appear in this handoff.
 
+## Final native integration handoff
+
+Recorded **2026-10-24T08:59:05.193471+00:00**. The native task reports its final implementation/evidence pushed as **d6a2cf521e378bca2334e416e7fef300a130db45** on feature/cloud-integration in [PR #2](https://github.com/NikilTn/relay/pull/2). All 14 backend files in that committed tree match this task's current source. The running API was restarted from ad565d4 earlier; this final app/evidence commit does not imply another server restart or a Lambda deployment.
+
+The native task reports build 13 installed on both phones with 32 messages preserved on each, requester/coordinator roles prepared, and internal TestFlight Testing with notes saved. Physical microphone, GPS and radio/gateway limitations remain documented in the native handoff; installation and prepared roles do not establish those tests. This AWS task did not independently repeat phone installation or TestFlight checks.
+
+The native task stopped the isolated fixture API on 18788 and its worker, retaining API 61517, AWS worker 54245 and tunnel 44716. This is its cleanup report; no runtime process was changed by this final documentation update. Last independently read limits remain 19/30 analysis slots and 4/5 audio allocations at 08:52 UTC. No further AWS writes or agent-run audio tests are requested; preserve the remaining allocation for the user and recheck actual usage before any later test.
+
+Managed Lambda/API Gateway hosting still requires the scoped organizer role/PassRole and a newly coordinated package from the current integration source. No older artifact should overwrite this final source.
+
 ## Sanitized evidence
 
 - evidence/inbox-batch-rollout-readonly.json: independent health/source-file checks and attributed native authenticated HTTP timings.
