@@ -326,3 +326,29 @@ Evidence: [release record](evidence/testflight-upload-build-6.json),
 [successful upload](evidence/testflight-upload-build-6.txt),
 [source hashes](evidence/source-sha256-testflight-build-6.txt),
 [saved tester notes](evidence/testflight-test-notes-build-6.txt).
+
+### Build 6 physical installation — 2026-10-23 PDT
+
+Updated the original `org.relay.prototype.ios` installations using their existing
+Personal Team signing identity, preserving the app containers. The first phone
+(iPhone 15 Pro Max, iOS 27.0.1 / 24A446) was connected by USB; the iPhone 16
+(iOS 26.2 / 23C55) was also reachable through existing pairing. The first phone
+already had a separate `com.nikilthalapaneni.relay` build 6 installed; that copy was
+not replaced or deleted. Use the original copies launched by this update consistently
+when testing so their existing device UUIDs remain the intended addresses.
+
+Signed device build and strict code-signature verification **PASS**. Install and
+launch **PASS on both phones**. Before upgrading, stopped the original app processes
+and copied their SQLite directories outside the repository. After launching, copied
+the updated stores and verified SQLite integrity, schema 3, stable identities, all
+old message IDs/immutable contents and all prior final-receipt fields. First phone:
+**19 → 19** envelopes, UUID `d8024643-427c-43dd-a991-7db89543bf19`. Second phone:
+**16 → 16**, UUID `4e328dc5-51a9-4e37-92d6-833a81c32078`.
+
+This was installation/data-preservation verification, not a physical delivery test.
+Cellular/router/radio isolation was not configured or measured. A–E remain
+**NOT TESTED** under the required conditions. No user payloads or databases were
+added to evidence. [Installation record](evidence/physical-build6-install.json),
+[signed device build](evidence/build-shelters-ios-signed.txt),
+[first-phone launch](evidence/physical-build6-a-launch.txt),
+[second-phone launch](evidence/physical-build6-b-launch.txt).
