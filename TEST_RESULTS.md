@@ -469,3 +469,71 @@ Evidence: [Swift tests](evidence/automated-tests-build-8.txt),
 Follow-up: Apple processed build 8; RELAY Development explicitly shows **Testing**.
 What to Test notes were saved and confirmed. External build 2 remains Waiting for
 Review. No public beta approval or TestFlight build-8 phone installation is inferred.
+
+## 2026-10-24 — build 9 and temporary HTTPS hosting
+
+User authorized Cloudflare hosting after alternatives were checked. The temporary
+endpoint is `https://resumes-investigated-striking-mba.trycloudflare.com`, forwarding
+through cloudflared 2025.11.1/QUIC to the AWS-mode API on Mac loopback port 8788.
+The Python API/worker are on the Mac; this is not an AWS Lambda deployment. A private
+configuration copy sets the public URL; the original worker/configuration remain
+intact. Internet and ordinary infrastructure were available during these checks.
+
+| Check | Actual result |
+|---|---|
+| Swift automated suite | **PASS: 43 tests** |
+| Backend automated suite | **PASS: 35 tests**, one existing test-client deprecation warning |
+| Native Mac and signed iOS builds | **PASS**, Xcode 26.1.1 / SDK 26.1 |
+| Public HTTPS health and authorized profile/request reads | **PASS**, including a read after the API restarted with its public-URL config |
+| Missing/invalid-token rejection | **PASS**, HTTP 401 on `/v1/me` |
+| Private credential filename through public tunnel | **PASS**, HTTP 404; helper is a separate loopback-only server |
+| Original-bundle phone upgrade and launch | **PASS** on both, build 9; A 28/28 and B 27/27 prior messages preserved, including exact final-receipt links/shelters/identities |
+| TestFlight archive/upload | **PASS**, upload accepted at 00:32:50 PDT; processing completed, build 9 Testing in RELAY Development, test notes Saved; external build 2 still Waiting for Review |
+| Native Cognito login | Login page opened with PKCE; **NOT TESTED to completion**, awaiting operator sign-in/MFA |
+| Native microphone/WAV picker, phone cloud UI, native refresh/recovery | **NOT TESTED**; implementation/builds are not end-to-end UI evidence |
+| Public HTTPS Swift client → real AWS writes/audio | **PASS**, text and reviewed-text requests, WAV upload/Transcribe, Bedrock proposals, lost-response replay and idempotent dispatcher updates |
+| Independent DynamoDB readback | **PASS**, both new results and three-event histories; counts 17 requests / 3 audio jobs |
+| Inventory reservation/decrement/transfer | **NOT IMPLEMENTED**; reported completion is a human progress event |
+| Physical offline A–E, separate encounters, return receipt, router-independent path and repeated-failure metrics | **NOT TESTED** in this update |
+
+Hardware remains iPhone 15 Pro Max / iOS 27.0.1 (24A446), iPhone 16 / iOS 26.2
+(23C55), M3 Pro Mac. The previously tested AWS request
+`2774002c-8238-4311-871c-cf820d3a2c92` remained `ready_for_review` over public HTTPS.
+No discovery or wireless-latency metric was measured. Initial requester-B read
+returned 401 because its token was expired; that observation does not establish
+cross-account isolation with a valid token.
+
+Follow-up by the existing AWS task refreshed requester-B through its existing MFA
+and held the token in memory: B profile/directory 200, A's request/history 404,
+dispatcher inbox access 403. Those valid-token isolation checks passed with no
+shared token/configuration changes or new paid inference. See
+[public HTTPS isolation evidence](evidence/https-isolation-build-9.json).
+
+Subsequent public-URL Swift HTTP tests created typed request
+`23187afa-d2a5-4f7c-9677-8c17db31e59b`, transcription
+`fea5049d-a3c9-493b-ba7d-8830fbd23d0c`, and explicitly reviewed-text request
+`8aecd834-416a-4b7d-9f12-7914eee8b1e6`. The raw synthetic transcript again said
+“Sheltering needs 2 water packs.” The agent explicitly corrected it to
+“Shelter A needs 2 water packs.” Both Bedrock proposals identified water_packs,
+quantity 2, unit pack, allocation_authorized false. Replayed acceptance and three
+dispatcher event commands retained one logical request and three history events.
+Independent DynamoDB reads confirmed these records and updated counters **17/30
+requests, 3/5 transcriptions**. This remains shared-client CLI evidence, not native
+browser sign-in, microphone, reviewed-text UI or physical-phone evidence.
+
+New evidence: [public HTTPS text/audio](evidence/swift-https-aws-build-9.json),
+[reviewed submission](evidence/swift-https-reviewed-aws-build-9.json),
+[durable AWS readback](evidence/aws-readback-build-9.json).
+
+Build 9 adds the bundled HTTPS address and validated WAV import (mono PCM16,
+8/16 kHz, ≤60 seconds, ≤2 MiB); macOS uses user-selected read-only file access.
+A private local helper displays existing synthetic credentials/current MFA for
+the operator without logging them; it is not exposed through the tunnel. It
+expires after two hours. No credentials or raw phone databases are committed.
+
+Reproduction and current runtime limits: [DEMO_HOSTING.md](DEMO_HOSTING.md).
+Evidence: [HTTPS checks](evidence/https-tunnel-build-9.json),
+[phone preservation](evidence/physical-build9-install.json),
+[Swift tests](evidence/automated-tests-build-9.txt),
+[backend tests](evidence/backend-tests-build-9.txt),
+[upload](evidence/testflight-upload-build-9.json).

@@ -1,5 +1,10 @@
 # RELAY physical acceptance plan
 
+For build 9's separate internet/cloud flow, follow [DEMO_HOSTING.md](DEMO_HOSTING.md).
+Cloudflare hosting and AWS results do not satisfy any physical offline criterion
+below. Preserve separate evidence for native login, transcript review, request
+creation, dispatcher history, cloud reconnect and each offline radio encounter.
+
 Build 6 navigation: **Help → gear** opens Tools, and **Help → Nearby devices** opens
 discovery. References to Chats mean the Messages tab. All original A–E criteria apply.
 

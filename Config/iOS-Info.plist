@@ -42,7 +42,7 @@
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Record a short request, then review its cloud transcript before sending.</string>
 	<key>RELAYCloudAPIURL</key>
-	<string></string>
+	<string>https://resumes-investigated-striking-mba.trycloudflare.com</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

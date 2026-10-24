@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 import RelayCore
 
 struct CloudView: View {
@@ -168,6 +169,7 @@ struct VoiceInputView: View {
     @EnvironmentObject private var cloud: CloudModel
     @FocusState private var editing: Bool
     @StateObject private var recorder = VoiceRecorder()
+    @State private var importingWAV = false
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -177,6 +179,7 @@ struct VoiceInputView: View {
                     if recorder.recording { recorder.stop() }
                     else { Task { await recorder.start { url in Task { await cloud.saveRecording(url: url) } } } }
                 }.buttonStyle(.borderedProminent).disabled(cloud.audioBusy)
+                Button("Import WAV recording") { importingWAV = true }.disabled(recorder.recording || cloud.audioBusy)
                 if recorder.recording { Label("Recording…", systemImage: "record.circle").foregroundStyle(.red) }
                 if !recorder.problem.isEmpty { Text(recorder.problem).foregroundStyle(.orange) }
                 if cloud.audioJob != nil {
@@ -192,6 +195,13 @@ struct VoiceInputView: View {
                 Text("Recording does not submit a request. Saved recordings stay on this device; this build does not forward audio over nearby connections.").font(.caption).foregroundStyle(.secondary)
             }.padding(20).frame(maxWidth: 680).frame(maxWidth: .infinity)
         }.navigationTitle("Voice input")
+            .fileImporter(isPresented: $importingWAV, allowedContentTypes: [.wav]) { result in
+                do {
+                    let source = try result.get()
+                    let copy = try VoiceRecorder.importWAV(source)
+                    Task { await cloud.saveRecording(url: copy) }
+                } catch { cloud.problem = error.localizedDescription }
+            }
             .toolbar { ToolbarItem(placement: .primaryAction) { if editing { Button("Done") { editing = false } } } }
             .onDisappear { if recorder.recording { recorder.stop() } }
     }

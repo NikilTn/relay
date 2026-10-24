@@ -1,10 +1,11 @@
-# Native cloud integration — build 8
+# Native cloud integration — build 9
 
-Build 8 adds a native cloud client and request conversations. The tested AWS API
-runs on this Mac at `http://127.0.0.1:8788`. **No hosted HTTPS API exists yet.**
-Phones require an HTTPS endpoint; the production app refuses HTTP endpoints and
-never sends AWS credentials. See cloud/docs/CLOUD_DEPLOYMENT_HANDOFF.md for the
-organizer role/PassRole blocker. A localhost URL on an iPhone addresses the iPhone.
+Build 8 added the native cloud client and request conversations. Build 9 bundles
+the temporary HTTPS endpoint in [DEMO_HOSTING.md](DEMO_HOSTING.md), forwarding to
+the AWS-mode API on this Mac at `http://127.0.0.1:8788`. Public authenticated reads
+and authorization rejection pass. This is Mac hosting, not Lambda deployment.
+The app refuses HTTP endpoints and never sends AWS credentials. The organizer
+role/PassRole blocker still applies to permanent AWS hosting.
 
 ## Implemented
 
@@ -34,12 +35,15 @@ organizer role/PassRole blocker. A localhost URL on an iPhone addresses the iPho
   explicit **Use reviewed text in Help**. Recording never submits a request.
   Recording/job reference stays on device for retry. Returned S3 grants never
   receive the API bearer token. Raw audio is not forwarded by the P2P text engine.
+- Build 9 also imports mono PCM16 WAV at 8/16 kHz, up to 60 seconds/2 MiB,
+  through the system file picker, copying it into app storage before upload.
 - Clear Done controls for new text fields, readable cloud errors, request IDs and
   retry state. The existing messages, shelters, drafts and receipts are retained.
 
-## Configuration after hosting
+## Configuration
 
-1. Organizer provisions the dedicated role and scoped PassRole from
+1. For the current temporary demo use [DEMO_HOSTING.md](DEMO_HOSTING.md). For
+   permanent AWS hosting, the organizer provisions the dedicated role and scoped PassRole from
    cloud/docs/ORGANIZER_REQUEST.md. Deploy the tested integration commit, not the
    older backend PR snapshot. Current API/worker packaging and deployment files are
    in cloud/infra and cloud/scripts. Validate actual HTTPS/auth/worker behavior.
@@ -63,7 +67,7 @@ organizer role/PassRole blocker. A localhost URL on an iPhone addresses the iPho
 ## Verification and boundaries
 
 43 Swift tests and 35 backend tests pass. The actual Swift URLSession client passed
-fixture HTTP and real Cognito/DynamoDB/Bedrock/S3/Transcribe checks on the Mac:
+fixture HTTP and real Cognito/DynamoDB/Bedrock/S3/Transcribe checks on the Mac through loopback and public HTTPS:
 text, lost-response replay, duplicate progress commands, WAV transcription, explicit
 corrected-transcript submission and independent DynamoDB readback. See TEST_RESULTS.
 This uses the same DTOs/HTTP client as the app but **does not test native browser
@@ -75,7 +79,7 @@ build 8 and retained all previous data. Physical no-router tests remain unverifi
 
 Remaining limits:
 
-- No public HTTPS hosting yet; native account login/refresh, microphone capture,
+- Native account login/refresh, microphone capture,
   real phone cloud recovery, account-switch and sign-out race behavior need device
   verification after hosting. A full hosted failure/recovery test is required.
 - Only an origin's own requests upload under its account. **A carrier cannot upload

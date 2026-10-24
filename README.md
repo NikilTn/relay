@@ -1,23 +1,28 @@
 # RELAY — offline store-carry-forward prototype
 
-Buildable SwiftUI iOS and macOS apps sharing a Swift/Network.framework/SQLite engine. The relay remains local and uses no third-party runtime dependencies or external radio hardware. Build 8 also includes an optional authenticated AWS cloud client; its backend is currently hosted on this Mac only.
+Buildable SwiftUI iOS and macOS apps sharing a Swift/Network.framework/SQLite engine. The relay remains local and uses no third-party runtime dependencies or external radio hardware. Build 9 includes an optional authenticated AWS cloud client, with a temporary HTTPS tunnel to the API on this Mac.
 
 **Current verdict:** automated protocol tests, separate-process TCP loopback experiments, and native Mac ↔ iOS Simulator Bonjour control exchanges pass. **Physical iPhone A → iPhone B → Mac C and infrastructure-independent wireless delivery have NOT been verified.** See [TEST_RESULTS.md](TEST_RESULTS.md) for evidence and blockers. A simulator is not a radio test.
 
-## Build 8: request conversations and optional cloud
+## Build 9: temporary HTTPS demo and reviewed voice
 
-Both phones now have build 8. Request details support nearby replies and reported
+Both original development apps now have build 9. Request details support nearby replies and reported
 progress. The Cloud tab adds secure sign-in, explicit shelter mapping, durable
 outbox, authorized dispatcher inbox, validated Bedrock proposals, reply history,
 and reviewed voice input. Help review can atomically queue the same request for
 cloud; nearby delivery continues independently.
 
-**Hosting is blocked:** the organizer execution role/PassRole grant and public
-HTTPS API are absent. The real Swift-client-to-AWS flow passed through the Mac
-loopback API, including Transcribe and reviewed text. Phone cloud login, microphone
-capture and end-to-end cloud UI are not yet verified. Carrier-to-cloud ingestion,
+**Temporary hosting is running:** a Cloudflare Quick Tunnel exposes the Mac API
+over HTTPS, retaining Cognito authorization. Public health, authenticated reads,
+and missing/invalid-token rejection pass. Permanent Lambda/API Gateway deployment
+still needs the organizer execution role/PassRole grant. The real Swift-client-to-AWS
+flow passed through both loopback and public HTTPS, including Transcribe and reviewed text.
+Phone cloud login, microphone capture and end-to-end cloud UI are not yet verified.
+Build 9 also accepts a validated WAV file for reproducible voice testing.
+Carrier-to-cloud ingestion,
 signed origin proof, inventory allocation and automated dispatch are not implemented.
-Read [CLOUD_INTEGRATION.md](CLOUD_INTEGRATION.md) for setup and precise boundaries.
+Read [DEMO_HOSTING.md](DEMO_HOSTING.md) for the live endpoint and presentation setup,
+and [CLOUD_INTEGRATION.md](CLOUD_INTEGRATION.md) for precise boundaries.
 
 ## Build and install
 

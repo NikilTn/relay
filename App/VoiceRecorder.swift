@@ -12,6 +12,25 @@ import SwiftUI
         try FileManager.default.createDirectory(at: path, withIntermediateDirectories: true)
         return path
     }
+    static func importWAV(_ source: URL) throws -> URL {
+        let accessed = source.startAccessingSecurityScopedResource()
+        defer { if accessed { source.stopAccessingSecurityScopedResource() } }
+        let size = try source.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+        guard source.pathExtension.lowercased() == "wav", size > 44, size <= 2_097_152 else {
+            throw NSError(domain: "RELAY", code: 2, userInfo: [NSLocalizedDescriptionKey: "Choose a WAV recording up to 2 MiB."])
+        }
+        let audio = try AVAudioFile(forReading: source)
+        let format = audio.fileFormat
+        guard format.channelCount == 1, [8000.0, 16000.0].contains(format.sampleRate),
+              format.streamDescription.pointee.mFormatID == kAudioFormatLinearPCM,
+              format.streamDescription.pointee.mBitsPerChannel == 16,
+              audio.length > 0, Double(audio.length) / format.sampleRate <= 60 else {
+            throw NSError(domain: "RELAY", code: 3, userInfo: [NSLocalizedDescriptionKey: "Use mono PCM16 WAV at 8 or 16 kHz, up to 60 seconds."])
+        }
+        let destination = try folder().appendingPathComponent(UUID().uuidString.lowercased() + ".wav")
+        try FileManager.default.copyItem(at: source, to: destination)
+        return destination
+    }
     func start(done: @escaping (URL) -> Void) async {
         guard !recording else { return }
         let allowed: Bool
