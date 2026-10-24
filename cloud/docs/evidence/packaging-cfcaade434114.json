@@ -1,0 +1,77 @@
+{
+  "repository": "https://github.com/NikilTn/relay",
+  "source_commit": "cfcaade434114ca584de406c9104de21e0b64008",
+  "functional_build_8_commit": "7d043b7832ebaf7541bca62c33da1f4dc396c3be",
+  "source_branch": "feature/cloud-integration",
+  "packaged_at": "2026-10-24T07:15:46.944518+00:00",
+  "target_runtime": "python3.13",
+  "target_architecture": "arm64",
+  "requirements_lock_sha256": "e9657330c337f7b9b9ddedb1c5dc09f61b8f24436ce309d73142bb08af47942c",
+  "backend_files_sha256": {
+    "relay_backend/__init__.py": "3aa409fd7a80269df395f02738212d9dd4bcf27e006482e8531a8fc748da07a4",
+    "relay_backend/__main__.py": "a799014eb44cd308e259f811cf569a081295b83b772f3767abd31b758a8eab98",
+    "relay_backend/analysis.py": "94cfece7f04f94132c76281dc8e5da516947a6fd04652de6575e75004450b503",
+    "relay_backend/api.py": "441b1ba0082373b7ddcd754ca65be89ee83e92b17f2fc4dc8f94cce5737e9161",
+    "relay_backend/auth.py": "d469351d9d769bdd2a6a7a5f16cc926d02333467b5f6fc8ae92d128e85046497",
+    "relay_backend/config.py": "d2f5eeb934d324f3a1bd274a6140e04c017b89a7104df18706ff8b10b03409be",
+    "relay_backend/lambda_handlers.py": "19cb01cb26907aa2088740cd8c2f1200a542f10fd466f1aae6b78f6244e77e14",
+    "relay_backend/models.py": "598047db9585ba16679d8762a4fb95ecf8c3d3d4def001c821e64e62d1af1029",
+    "relay_backend/providers.py": "b1f3934a69df01afda1ebfe704c48387d9bffa5236be8f1fa2268abebde271ca",
+    "relay_backend/service.py": "45d66f4a2b24b4894fe10f7de057859f4f87908de51ab6bb2563dba6bad91361",
+    "relay_backend/store.py": "745cb1cad948d1cca0d6a2b4e18814649b92223e98bcbb64147bae3eb5ff73b9"
+  },
+  "contains_runtime_credentials": false,
+  "artifact_filename": "relay-lambda-cfcaade434114.zip",
+  "artifact_sha256_hex": "6cfa11535759387a579f9bb9889827cf0e8ae9085890e65137466d006f5de349",
+  "expected_lambda_CodeSha256_base64": "bPoRU1dZOHpXn5u5iJgnzw6K6QhYkOZRN0ZtAG9d40k=",
+  "artifact_bytes": 31944281,
+  "uncompressed_bytes": 69902120,
+  "backend_file_count": 11,
+  "elf_binaries": [
+    {
+      "path": "_awscrt.abi3.so",
+      "elf_machine": 183,
+      "architecture": "AArch64"
+    },
+    {
+      "path": "_cffi_backend.cpython-313-aarch64-linux-gnu.so",
+      "elf_machine": 183,
+      "architecture": "AArch64"
+    },
+    {
+      "path": "cryptography/hazmat/bindings/_rust.abi3.so",
+      "elf_machine": 183,
+      "architecture": "AArch64"
+    },
+    {
+      "path": "pydantic_core/_pydantic_core.cpython-313-aarch64-linux-gnu.so",
+      "elf_machine": 183,
+      "architecture": "AArch64"
+    },
+    {
+      "path": "yaml/_yaml.cpython-313-aarch64-linux-gnu.so",
+      "elf_machine": 183,
+      "architecture": "AArch64"
+    }
+  ],
+  "template_sha256": "b448aa3ede9806a354eccb016e3a5b766b7aa1a0839c02069181330b201c09dd",
+  "parameters_sha256": "77eca86f1203d3b7d377c674d9506ce29f2137ffcaabd64ff8ee0d2f3492443a",
+  "api_environment_bytes": 1025,
+  "future_code_bucket": "relay-artifacts-928489693154-use1",
+  "future_code_key": "cloud-mvp-v1/deploy/cfcaade434114ca584de406c9104de21e0b64008/relay-lambda.zip",
+  "uploaded_to_s3": false,
+  "deployed": false,
+  "checks": {
+    "exact_git_backend_match": "PASS",
+    "zip_integrity_and_paths": "PASS",
+    "linux_arm64_binary_headers": "PASS",
+    "python_source_syntax": "PASS",
+    "size_and_environment_limits": "PASS",
+    "parameters_exclude_credential_paths": "PASS",
+    "backend_fixture_tests": "PASS \u2014 35",
+    "api_gateway_v2_adapter_fixture_checks": "PASS \u2014 17 HTTP operations plus one fixture worker analysis",
+    "linux_lambda_runtime_execution": "NOT TESTED \u2014 Docker daemon unavailable",
+    "hosted_aws_runtime": "NOT TESTED \u2014 execution role/hosting absent"
+  },
+  "configuration_followup": "public_base_url remains the current localhost value; update to the real HTTPS endpoint after hosting. It is not evidence of a deployed URL."
+}

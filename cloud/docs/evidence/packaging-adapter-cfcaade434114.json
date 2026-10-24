@@ -1,0 +1,116 @@
+{
+  "status": "PASS",
+  "observed_at": "2026-10-24T07:14:12.677858+00:00",
+  "source_revision": "cfcaade434114ca584de406c9104de21e0b64008",
+  "execution_environment": "macOS Python 3.13; exact-source Lambda entrypoints with Mangum; fixture providers",
+  "linux_lambda_runtime": "NOT TESTED",
+  "real_aws_calls": 0,
+  "http_api_v2_requests": 17,
+  "checks": [
+    {
+      "method": "GET",
+      "path": "/v1/health",
+      "expected_status": 200,
+      "actual_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/v1/me",
+      "expected_status": 401,
+      "actual_status": 401
+    },
+    {
+      "method": "GET",
+      "path": "/v1/me",
+      "expected_status": 200,
+      "actual_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/v1/shelters",
+      "expected_status": 200,
+      "actual_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/v1/requests",
+      "expected_status": 201,
+      "actual_status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/v1/requests",
+      "expected_status": 200,
+      "actual_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/v1/requests",
+      "expected_status": 409,
+      "actual_status": 409
+    },
+    {
+      "method": "GET",
+      "path": "/v1/requests/3e835fd5-5af1-4f82-96fc-6a2ea29dbf29",
+      "expected_status": 200,
+      "actual_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/v1/requests/3e835fd5-5af1-4f82-96fc-6a2ea29dbf29/history",
+      "expected_status": 200,
+      "actual_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/v1/requests/3e835fd5-5af1-4f82-96fc-6a2ea29dbf29/events",
+      "expected_status": 200,
+      "actual_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/v1/requests/3e835fd5-5af1-4f82-96fc-6a2ea29dbf29/events",
+      "expected_status": 200,
+      "actual_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/v1/requests/3e835fd5-5af1-4f82-96fc-6a2ea29dbf29/events",
+      "expected_status": 200,
+      "actual_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/v1/requests/3e835fd5-5af1-4f82-96fc-6a2ea29dbf29/events",
+      "expected_status": 200,
+      "actual_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/v1/requests/3e835fd5-5af1-4f82-96fc-6a2ea29dbf29/events",
+      "expected_status": 200,
+      "actual_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/v1/requests/3e835fd5-5af1-4f82-96fc-6a2ea29dbf29/events",
+      "expected_status": 200,
+      "actual_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/v1/requests/3e835fd5-5af1-4f82-96fc-6a2ea29dbf29/history",
+      "expected_status": 404,
+      "actual_status": 404
+    },
+    {
+      "method": "GET",
+      "path": "/v1/requests/3e835fd5-5af1-4f82-96fc-6a2ea29dbf29/history",
+      "expected_status": 200,
+      "actual_status": 200
+    }
+  ],
+  "worker_fixture_analyses": 1,
+  "history_revision": 3,
+  "unique_history_events": 3
+}
