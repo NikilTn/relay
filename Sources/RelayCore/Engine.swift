@@ -107,6 +107,12 @@ public final class RelayEngine {
             disconnect?(connectionID)
         }
     }
+    @discardableResult public func submitHelpRequest(_ draft: HelpRequestDraft, now: Date = Date()) throws -> RelayMessage {
+        let message = try store.submitHelpDraft(draft, now: now)
+        event("HELP_REQUEST_SAVED id=\(message.id) shelter=\(draft.shelterID) destination=\(message.destinationID)", now: now)
+        offerAll(now: now)
+        return message
+    }
     public static func isBlocked(_ a: Peer, _ b: Peer) -> Bool {
         (a.role == .sender && b.role == .receiver) || (a.role == .receiver && b.role == .sender)
     }

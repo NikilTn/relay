@@ -24,6 +24,7 @@ def configs(key, settings):
         ids.append(obj(f'{key}-{name}','XCBuildConfiguration',name=name,buildSettings=bs))
     return obj(f'{key}-configs','XCConfigurationList',buildConfigurations=ids,defaultConfigurationIsVisible=0,defaultConfigurationName='Release')
 source=obj('source','PBXFileReference',lastKnownFileType='sourcecode.swift',path='App/RelayApp.swift',sourceTree='<group>')
+shelterSource=obj('shelter-source','PBXFileReference',lastKnownFileType='sourcecode.swift',path='App/ShelterViews.swift',sourceTree='<group>')
 assets=obj('assets','PBXFileReference',lastKnownFileType='folder.assetcatalog',path='App/Assets.xcassets',sourceTree='<group>')
 package=obj('package','XCLocalSwiftPackageReference',relativePath='.')
 products=[]; targets=[]
@@ -32,14 +33,15 @@ for platform in ['iOS','macOS']:
     product=obj(name+'-app','PBXFileReference',explicitFileType='wrapper.application',includeInIndex=0,path=name+'.app',sourceTree='BUILT_PRODUCTS_DIR'); products.append(product)
     dep=obj(name+'-dependency','XCSwiftPackageProductDependency',package=package,productName='RelayCore')
     sourceBuild=obj(name+'-source','PBXBuildFile',fileRef=source)
+    shelterBuild=obj(name+'-shelter-source','PBXBuildFile',fileRef=shelterSource)
     libBuild=obj(name+'-lib','PBXBuildFile',productRef=dep)
-    srcPhase=obj(name+'-sources','PBXSourcesBuildPhase',buildActionMask=2147483647,files=[sourceBuild],runOnlyForDeploymentPostprocessing=0)
+    srcPhase=obj(name+'-sources','PBXSourcesBuildPhase',buildActionMask=2147483647,files=[sourceBuild,shelterBuild],runOnlyForDeploymentPostprocessing=0)
     libPhase=obj(name+'-frameworks','PBXFrameworksBuildPhase',buildActionMask=2147483647,files=[libBuild],runOnlyForDeploymentPostprocessing=0)
     assetBuild=obj(name+'-assets','PBXBuildFile',fileRef=assets)
     resPhase=obj(name+'-resources','PBXResourcesBuildPhase',buildActionMask=2147483647,files=[assetBuild],runOnlyForDeploymentPostprocessing=0)
     settings=dict(PRODUCT_NAME='$(TARGET_NAME)', PRODUCT_BUNDLE_IDENTIFIER=f'org.relay.prototype.{platform.lower()}',
                   INFOPLIST_FILE=f'Config/{platform}-Info.plist',GENERATE_INFOPLIST_FILE='NO',SWIFT_VERSION='5.0',
-                  CODE_SIGN_STYLE='Automatic',DEVELOPMENT_TEAM='',CURRENT_PROJECT_VERSION=5,MARKETING_VERSION='0.1.0',
+                  CODE_SIGN_STYLE='Automatic',DEVELOPMENT_TEAM='',CURRENT_PROJECT_VERSION=6,MARKETING_VERSION='0.1.0',
                   LD_RUNPATH_SEARCH_PATHS='$(inherited) @executable_path/Frameworks', ASSETCATALOG_COMPILER_APPICON_NAME='AppIcon')
     if platform=='iOS': settings.update(PRODUCT_BUNDLE_IDENTIFIER='com.nikilthalapaneni.relay',DEVELOPMENT_TEAM='U4G9LV39GM',SDKROOT='iphoneos',SUPPORTED_PLATFORMS='iphoneos iphonesimulator',IPHONEOS_DEPLOYMENT_TARGET='17.0',TARGETED_DEVICE_FAMILY='1,2',SUPPORTS_MACCATALYST='NO')
     else: settings.update(SDKROOT='macosx',SUPPORTED_PLATFORMS='macosx',MACOSX_DEPLOYMENT_TARGET='14.0',CODE_SIGN_IDENTITY='-',CODE_SIGN_ENTITLEMENTS='Config/macOS.entitlements',ENABLE_HARDENED_RUNTIME='YES',LD_RUNPATH_SEARCH_PATHS='$(inherited) @executable_path/../Frameworks')
@@ -57,7 +59,7 @@ for platform in ['iOS','macOS']:
     out=ROOT/'RELAY.xcodeproj/xcshareddata/xcschemes'/f'{name}.xcscheme'; out.parent.mkdir(parents=True,exist_ok=True)
     ET.indent(scheme); ET.ElementTree(scheme).write(out,encoding='UTF-8',xml_declaration=True)
 productGroup=obj('products','PBXGroup',children=products,name='Products',sourceTree='<group>')
-main=obj('main','PBXGroup',children=[source,assets,productGroup],sourceTree='<group>')
+main=obj('main','PBXGroup',children=[source,shelterSource,assets,productGroup],sourceTree='<group>')
 project=obj('project','PBXProject',attributes=dict(BuildIndependentTargetsInParallel='YES',LastUpgradeCheck=2610),buildConfigurationList=configs('project',dict(CLANG_ENABLE_MODULES='YES',SWIFT_VERSION='5.0',SWIFT_STRICT_CONCURRENCY='minimal')),compatibilityVersion='Xcode 14.0',developmentRegion='en',hasScannedForEncodings=0,knownRegions=['en','Base'],mainGroup=main,productRefGroup=productGroup,projectDirPath='',projectRoot='',targets=targets,packageReferences=[package])
 (ROOT/'RELAY.xcodeproj/project.pbxproj').write_text('// !$*UTF8*$!\n'+dump(dict(archiveVersion=1,classes={},objectVersion=56,objects=objects,rootObject=project))+'\n')
 for platform in ['iOS','macOS']:

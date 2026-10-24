@@ -1,5 +1,32 @@
 # RELAY physical acceptance plan
 
+Build 6 navigation: **Help → gear** opens Tools, and **Help → Nearby devices** opens
+discovery. References to Chats mean the Messages tab. All original A–E criteria apply.
+
+## Shelter request extension for build 6
+
+1. On receiver C, open Shelters → Add shelter → Receive here. Save a synthetic name
+   and area. Open its entry, copy/share the code and import that exact code on A.
+   Confirm the shelter ID and receiving UUID match; B needs neither directory entry
+   nor staff permission to carry the envelope. These labels are not authenticated.
+2. On A, tap Request help here, enter synthetic details, quantity/unit and location.
+   Leave people blank and confirm review says Unknown. Leave networking paused.
+3. Wait for Draft saved on this device, terminate/relaunch A, and verify the same
+   fields return. Review and save. Record the generated request UUID. Verify the
+   form resets only after saving and the request says Locally saved — queued.
+4. Execute the isolated A/B, B restart, B/C, B/A encounters from tests B/C below.
+   The message's destination UUID remains C; its content also records the shelter ID.
+5. C's Requests → Device inbox contains one request. B's My requests/Device inbox
+   and all personal chats exclude this carried request. C creates one receipt.
+6. A displays Final destination receipt received only after the return receipt
+   arrives. Staff progress remains No staff update recorded. Do not count a receipt
+   as assignment or fulfillment. Repeat D/E with the structured request.
+7. Retry an import of the same code (one directory entry); a conflicting code with
+   the same shelter ID must fail without changing its receiving-device address.
+8. Repeat with largest text and keyboard visible; verify Done, review, save, and a
+   second request remain usable. No cloud, verified staff roles, or production
+   confidentiality is implied by these controls.
+
 Record each result as **PASS / FAIL / NOT TESTED**, never infer wireless success from compilation, simulator behavior, a common LAN, or loopback. The actual execution record is [TEST_RESULTS.md](TEST_RESULTS.md). This plan has not been physically executed in the current session.
 
 ## Preparation and evidence sheet

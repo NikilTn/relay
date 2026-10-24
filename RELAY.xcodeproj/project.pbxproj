@@ -11,6 +11,12 @@
 			"path" = "App/RelayApp.swift";
 			"sourceTree" = "<group>";
 		};
+		"ACA121621EE9060EF33BCD98" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "App/ShelterViews.swift";
+			"sourceTree" = "<group>";
+		};
 		"8BF729FFE074CAEE622C0292" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "folder.assetcatalog";
@@ -37,6 +43,10 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "41CF6794BA4200B839C53531";
 		};
+		"FE92AEBBBDDB0062762FDC91" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "ACA121621EE9060EF33BCD98";
+		};
 		"659A3C7E6AAE7CA39206BF01" = {
 			"isa" = "PBXBuildFile";
 			"productRef" = "22398C40D049A2328866A1EA";
@@ -46,6 +56,7 @@
 			"buildActionMask" = "2147483647";
 			"files" = (
 				"F10DC058B7E60D294CAFF873",
+				"FE92AEBBBDDB0062762FDC91",
 			);
 			"runOnlyForDeploymentPostprocessing" = "0";
 		};
@@ -80,7 +91,7 @@
 				"SWIFT_VERSION" = "5.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"DEVELOPMENT_TEAM" = "U4G9LV39GM";
-				"CURRENT_PROJECT_VERSION" = "5";
+				"CURRENT_PROJECT_VERSION" = "6";
 				"MARKETING_VERSION" = "0.1.0";
 				"LD_RUNPATH_SEARCH_PATHS" = "$(inherited) @executable_path/Frameworks";
 				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
@@ -106,7 +117,7 @@
 				"SWIFT_VERSION" = "5.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"DEVELOPMENT_TEAM" = "U4G9LV39GM";
-				"CURRENT_PROJECT_VERSION" = "5";
+				"CURRENT_PROJECT_VERSION" = "6";
 				"MARKETING_VERSION" = "0.1.0";
 				"LD_RUNPATH_SEARCH_PATHS" = "$(inherited) @executable_path/Frameworks";
 				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
@@ -164,6 +175,10 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "41CF6794BA4200B839C53531";
 		};
+		"5EBDD26D84B2010AEB00F705" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "ACA121621EE9060EF33BCD98";
+		};
 		"839D06DE750983B0A20B7E90" = {
 			"isa" = "PBXBuildFile";
 			"productRef" = "D4EA55F50AF854A1499554EF";
@@ -173,6 +188,7 @@
 			"buildActionMask" = "2147483647";
 			"files" = (
 				"550A6842FF943A6365333A4D",
+				"5EBDD26D84B2010AEB00F705",
 			);
 			"runOnlyForDeploymentPostprocessing" = "0";
 		};
@@ -207,7 +223,7 @@
 				"SWIFT_VERSION" = "5.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"DEVELOPMENT_TEAM" = "";
-				"CURRENT_PROJECT_VERSION" = "5";
+				"CURRENT_PROJECT_VERSION" = "6";
 				"MARKETING_VERSION" = "0.1.0";
 				"LD_RUNPATH_SEARCH_PATHS" = "$(inherited) @executable_path/../Frameworks";
 				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
@@ -234,7 +250,7 @@
 				"SWIFT_VERSION" = "5.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"DEVELOPMENT_TEAM" = "";
-				"CURRENT_PROJECT_VERSION" = "5";
+				"CURRENT_PROJECT_VERSION" = "6";
 				"MARKETING_VERSION" = "0.1.0";
 				"LD_RUNPATH_SEARCH_PATHS" = "$(inherited) @executable_path/../Frameworks";
 				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
@@ -290,6 +306,7 @@
 			"isa" = "PBXGroup";
 			"children" = (
 				"41CF6794BA4200B839C53531",
+				"ACA121621EE9060EF33BCD98",
 				"8BF729FFE074CAEE622C0292",
 				"0A3E27B8CA818264D75C8D81",
 			);

@@ -29,6 +29,9 @@ final class RelayModel: ObservableObject {
     @Published var sending = false
     @Published var notice = ""
     @Published var chatDrafts: [String: String] = [:]
+    @Published var shelters: [ShelterContact] = []
+    @Published var helpDraft = HelpRequestDraft()
+    @Published var draftSaveState = "Draft stays on this device"
     private let queue = DispatchQueue(label: "org.relay.engine")
     private var engine: RelayEngine?
     private var transport: NetworkTransport?
@@ -52,6 +55,7 @@ final class RelayModel: ObservableObject {
                 let displayName = try Peer.normalizedName(store.setting("display_name") ?? "\(deviceKind) \(store.deviceID.prefix(4).uppercased())")
                 try store.setSetting("display_name", displayName)
                 let engine = RelayEngine(store: store, role: role, forceRelayRoute: forceRoute, displayName: displayName)
+                let helpDraft = try store.helpDraft() ?? HelpRequestDraft()
                 self.engine = engine
                 let transport = NetworkTransport(engine: engine, queue: self.queue); self.transport = transport
                 engine.onEvent = { print($0) }
@@ -59,7 +63,7 @@ final class RelayModel: ObservableObject {
                 transport.onDiscovery = { [weak self] peers in DispatchQueue.main.async { self?.discovered = peers } }
                 transport.onState = { [weak self] state in DispatchQueue.main.async { self?.networkState = state } }
                 DispatchQueue.main.async {
-                    self.deviceID = store.deviceID; self.displayName = displayName; self.role = role; self.forceRoute = forceRoute; self.storagePath = store.path; self.ready = true
+                    self.deviceID = store.deviceID; self.displayName = displayName; self.role = role; self.forceRoute = forceRoute; self.storagePath = store.path; self.helpDraft = helpDraft; self.ready = true
                 }
                 engine.event("APP_OPEN device=\(store.deviceID) os=\(ProcessInfo.processInfo.operatingSystemVersionString) durable_store=\(store.path)")
                 self.refresh()
@@ -75,11 +79,13 @@ final class RelayModel: ObservableObject {
         guard let e = engine, let t = transport else { return }
         do {
             let messages = try e.store.summaries(), known = try e.store.knownPeers(), logs = try e.store.logs(limit: 300)
+            let shelters = try e.store.shelters()
             let connected = Array(Set(e.connectedPeers.values.map(\.deviceID))).sorted().compactMap { id in e.connectedPeers.values.first { $0.deviceID == id } }
             let paths = t.paths.values.sorted(), running = t.running, armed = t.interruptNextMessage
             DispatchQueue.main.async {
                 self.messages = messages; self.known = known; self.logs = logs; self.connected = connected
                 self.paths = paths; self.active = running; self.armed = armed
+                self.shelters = shelters
             }
         } catch { report(error) }
     }
@@ -153,6 +159,51 @@ final class RelayModel: ObservableObject {
             self?.refresh()
         }
     }
+    func saveShelter(_ shelter: ShelterContact, done: @escaping () -> Void) {
+        queue.async { [weak self] in
+            guard let self, let engine = self.engine else { return }
+            do {
+                try engine.store.saveShelter(shelter)
+                engine.event("SHELTER_SAVED id=\(shelter.id) receiver=\(shelter.receivingDeviceID) identity=UNVERIFIED")
+                self.refresh(); DispatchQueue.main.async { done() }
+            } catch { self.report(error) }
+        }
+    }
+    func persistHelpDraft() {
+        guard ready else { return }
+        let draft = helpDraft
+        draftSaveState = "Saving draft…"
+        queue.async { [weak self] in
+            guard let self, let engine = self.engine else { return }
+            do {
+                try engine.store.saveHelpDraft(draft)
+                DispatchQueue.main.async {
+                    if self.helpDraft == draft { self.draftSaveState = "Draft saved on this device" }
+                }
+            } catch {
+                self.report(error)
+                DispatchQueue.main.async { self.draftSaveState = "Draft could not be saved" }
+            }
+        }
+    }
+    func submitHelp(_ draft: HelpRequestDraft, done: @escaping (String) -> Void) {
+        guard !sending else { return }; sending = true
+        queue.async { [weak self] in
+            guard let self else { return }
+            do {
+                guard let engine = self.engine else { throw RelayError.database("Store not ready") }
+                let request = try engine.submitHelpRequest(draft)
+                self.refresh()
+                DispatchQueue.main.async {
+                    self.sending = false
+                    if self.helpDraft == draft { self.helpDraft = HelpRequestDraft() }
+                    done(request.id)
+                }
+            } catch {
+                self.report(error); DispatchQueue.main.async { self.sending = false }
+            }
+        }
+    }
     func armInterrupt() {
         queue.async { [weak self] in
             self?.transport?.interruptNextMessage = true
@@ -178,7 +229,7 @@ final class RelayModel: ObservableObject {
     }
 }
 
-private enum RelayTheme {
+enum RelayTheme {
     static let accent = Color("RelayAccent")
     static let action = Color(red: 0.02, green: 0.46, blue: 0.42)
     static var incoming: Color {
@@ -197,7 +248,7 @@ private enum RelayTheme {
     }
 }
 
-private func copyText(_ value: String) {
+func copyText(_ value: String) {
     #if os(iOS)
     UIPasteboard.general.string = value
     #else
@@ -206,7 +257,7 @@ private func copyText(_ value: String) {
     #endif
 }
 
-private struct RelayCard<Content: View>: View {
+struct RelayCard<Content: View>: View {
     @ViewBuilder var content: Content
     var body: some View {
         VStack(alignment: .leading, spacing: 16) { content }
@@ -216,7 +267,7 @@ private struct RelayCard<Content: View>: View {
     }
 }
 
-private struct PrimaryButton: ButtonStyle {
+struct PrimaryButton: ButtonStyle {
     @Environment(\.isEnabled) private var enabled
     func makeBody(configuration: Configuration) -> some View {
         configuration.label.font(.headline).frame(maxWidth: .infinity).padding(.vertical, 15)
@@ -239,7 +290,8 @@ private struct StatusPill: View {
 
 struct ContentView: View {
     @ObservedObject var model: RelayModel
-    @State private var selectedTab = 0
+    @State private var selectedTab = 3
+    @State private var requestPath: [String] = []
     @State private var chatPath: [String] = []
     @State private var choosingPeer = false
     @State private var pendingPeer: String?
@@ -248,6 +300,18 @@ struct ContentView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
+            NavigationStack {
+                HelpHomeView(model: model, openChat: openChat) { id in
+                    selectedTab = 4; requestPath = [id]
+                } chooseShelter: { selectedTab = 5 }
+            }.tabItem { Label("Help", systemImage: "hands.sparkles.fill") }.tag(3)
+            NavigationStack(path: $requestPath) {
+                HelpRequestsView(model: model)
+                    .navigationDestination(for: String.self) { id in HelpRequestDetail(model: model, requestID: id) }
+            }.tabItem { Label("Requests", systemImage: "tray.full.fill") }.tag(4)
+            NavigationStack { ShelterDirectoryView(model: model) { id in
+                model.helpDraft.shelterID = id; model.persistHelpDraft(); selectedTab = 3
+            } }.tabItem { Label("Shelters", systemImage: "house.fill") }.tag(5)
             NavigationStack(path: $chatPath) {
                 VStack(spacing: 0) {
                     HStack(alignment: .center) {
@@ -290,12 +354,7 @@ struct ContentView: View {
                     .navigationDestination(for: String.self) { peerID in
                         ConversationView(model: model, peerID: peerID) { choosingPeer = true }
                     }
-            }.tabItem { Label("Chats", systemImage: "bubble.left.and.bubble.right.fill") }.tag(0)
-            NavigationStack {
-                NearbyView(model: model) { id in openChat(id) }
-            }.tabItem { Label("Nearby", systemImage: "antenna.radiowaves.left.and.right") }.tag(1)
-            NavigationStack { ToolsView(model: model) }
-                .tabItem { Label("Tools", systemImage: "slider.horizontal.3") }.tag(2)
+            }.tabItem { Label("Messages", systemImage: "bubble.left.and.bubble.right.fill") }.tag(0)
         }.tint(RelayTheme.accent)
             .sheet(isPresented: $choosingPeer, onDismiss: {
                 if let id = pendingPeer { pendingPeer = nil; openChat(id) }
@@ -363,7 +422,7 @@ private extension StoredMessage {
     }
 }
 
-private struct ConnectionCard: View {
+struct ConnectionCard: View {
     @ObservedObject var model: RelayModel
     var body: some View {
         HStack(spacing: 12) {
@@ -603,7 +662,7 @@ private struct DeliveryBadge: View {
     }
 }
 
-private struct NearbyView: View {
+struct NearbyView: View {
     @ObservedObject var model: RelayModel
     let compose: (String) -> Void
     private var remembered: [Peer] { model.known.filter { p in !model.connected.contains { $0.deviceID == p.deviceID } } }
@@ -760,7 +819,7 @@ private struct DeviceNameView: View {
     }
 }
 
-private struct ToolsView: View {
+struct ToolsView: View {
     @ObservedObject var model: RelayModel
     @State private var copiedID = false
     @State private var showDiagnostics = false

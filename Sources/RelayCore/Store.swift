@@ -64,6 +64,7 @@ public final class RelayStore {
             attempts INTEGER NOT NULL DEFAULT 0, acceptance TEXT, PRIMARY KEY(message_id,peer_id));
         CREATE TABLE IF NOT EXISTS events(seq INTEGER PRIMARY KEY AUTOINCREMENT, line TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS peers(id TEXT PRIMARY KEY, role TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS shelters(id TEXT PRIMARY KEY, body TEXT NOT NULL);
         """
         guard sqlite3_exec(handle, schema, nil, nil, nil) == SQLITE_OK else {
             throw RelayError.database("schema initialization")
@@ -76,7 +77,7 @@ public final class RelayStore {
             if let p = sqlite3_column_text(columns, 1), String(cString: p) == "display_name" { hasName = true }
         }
         sqlite3_finalize(columns)
-        let migration = hasName ? "PRAGMA user_version=2;" : "BEGIN IMMEDIATE; ALTER TABLE peers ADD COLUMN display_name TEXT; PRAGMA user_version=2; COMMIT;"
+        let migration = hasName ? "PRAGMA user_version=3;" : "BEGIN IMMEDIATE; ALTER TABLE peers ADD COLUMN display_name TEXT; PRAGMA user_version=3; COMMIT;"
         guard sqlite3_exec(handle, migration, nil, nil, nil) == SQLITE_OK else { throw RelayError.database("peer name migration") }
         var stmt: OpaquePointer?
         guard sqlite3_prepare_v2(handle, "SELECT value FROM metadata WHERE key='device_id'", -1, &stmt, nil) == SQLITE_OK else { throw RelayError.database("identity query") }
@@ -127,6 +128,52 @@ public final class RelayStore {
     public func setSetting(_ key: String, _ value: String) throws {
         try execute("INSERT INTO metadata(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", [key, value])
     }
+    public func shelters() throws -> [ShelterContact] {
+        try rows("SELECT body FROM shelters ORDER BY id").map {
+            try WireCodec.decode(ShelterContact.self, from: Data($0[0]!.utf8))
+        }.sorted { $0.name == $1.name ? $0.id < $1.id : $0.name < $1.name }
+    }
+    public func saveShelter(_ entry: ShelterContact) throws {
+        try entry.validate()
+        if let existing = try shelters().first(where: { $0.id == entry.id }) {
+            // A pasted code must not silently redirect an existing organizational inbox.
+            guard existing == entry else { throw RelayError.invalid("This shelter ID already has different details. Device replacement needs an explicit directory migration.") }
+            return
+        }
+        guard try shelters().count < 100 else { throw RelayError.invalid("Prototype directory limit is 100 shelters.") }
+        try execute("INSERT INTO shelters(id,body) VALUES(?,?)", [entry.id, String(decoding: try WireCodec.encode(entry), as: UTF8.self)])
+    }
+    public func helpDraft() throws -> HelpRequestDraft? {
+        guard let body = try setting("help_draft") else { return nil }
+        return try WireCodec.decode(HelpRequestDraft.self, from: Data(body.utf8))
+    }
+    public func saveHelpDraft(_ draft: HelpRequestDraft) throws {
+        guard ShelterContact.isID(draft.requestID) else { throw RelayError.invalid("Draft identity") }
+        // A queued autosave from the old form cannot resurrect a submitted draft.
+        guard try message(draft.requestID) == nil else { return }
+        let body = try WireCodec.encode(draft)
+        guard body.count <= 24_000 else { throw RelayError.invalid("Draft is too large") }
+        try setSetting("help_draft", String(decoding: body, as: UTF8.self))
+    }
+    public func submitHelpDraft(_ draft: HelpRequestDraft, now: Date) throws -> RelayMessage {
+        guard let shelter = try shelters().first(where: { $0.id == draft.shelterID }), shelter.receivingDeviceID != deviceID else {
+            throw RelayError.invalid("Choose a shelter received by another device.")
+        }
+        let request = try draft.request(to: shelter)
+        let text = try ShelterRequestCodec.encode(request)
+        return try transaction {
+            if let existing = try message(draft.requestID) {
+                guard existing.originID == deviceID, existing.payload.text == text else { throw RelayError.invalid("Request ID content conflict") }
+                return existing
+            }
+            let message = RelayMessage(messageID: draft.requestID, originID: deviceID,
+                destinationID: shelter.receivingDeviceID, payload: Payload(text: text), createdAt: WireCodec.second(now))
+            try message.validate(now: now)
+            try insert(message)
+            if try helpDraft()?.requestID == draft.requestID { try execute("DELETE FROM metadata WHERE key='help_draft'") }
+            return message
+        }
+    }
     public func remember(_ peer: Peer) throws {
         if let name = peer.displayName { _ = try Peer.normalizedName(name) }
         try execute("INSERT INTO peers(id,role,display_name) VALUES(?,?,NULLIF(?,'')) ON CONFLICT(id) DO UPDATE SET role=excluded.role,display_name=COALESCE(excluded.display_name,peers.display_name)", [peer.deviceID, peer.role.rawValue, peer.displayName ?? ""])
@@ -156,6 +203,7 @@ public final class RelayStore {
     }
     public func receive(_ message: RelayMessage, now: Date) throws -> ReceiveResult {
         try message.validate(now: now)
+        if ShelterRequestCodec.isRequest(message) { _ = try ShelterRequestCodec.decode(message) }
         guard message.hopCount > 0 else { throw RelayError.invalid("received hop must be positive") }
         return try transaction {
             let previous = try self.message(message.id)

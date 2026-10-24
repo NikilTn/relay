@@ -247,3 +247,56 @@ can build/test from the repository contents without the original working tree's
 ignored files. [Actual clean-export output](evidence/repository-export-tests.txt).
 No application/protocol code changed, no new app build was deployed, and no physical
 wireless or cloud behavior was verified during repository preparation.
+
+## Build 6 — first shelter request workflow, 2026-10-23 PDT
+
+Implemented a local shelter directory with separate shelter/receiving-device IDs,
+copy/share/import codes, structured requests, a draft saved during editing, review
+before submit, atomic draft-to-message submission, My requests and a separate Device
+inbox. Public navigation is Help / Requests / Shelters / Messages. Tools is under
+Help's gear and discovery under Help → Nearby devices. Existing chat and relay data
+remain; structured requests are excluded from personal chat and carried requests do
+not appear in a relay's request inbox.
+
+These are synthetic local setup/views, not authenticated staff roles. No backend,
+Bedrock, ASR, inventory reservation, assignment, or fulfillment action is implemented.
+The final-destination receipt still means durable receipt at a device only. Shelter
+entries are unverified; storage/transport remain plaintext. Encoded sharing codes
+prevent keyboard smart-quote corruption but provide no confidentiality.
+
+| Check | Actual result |
+|---|---|
+| Core unit/integration suite | **32 tests, 0 failures** (25 existing + 7 shelter cases) |
+| New tests | Directory/code round trip and redirect collision; durable draft/restart; atomic idempotent submit; failed-save rollback; legacy schema/data preservation; old-codec payload preservation/destination binding; structured A→B→C→B→A simulated encounters with interruption, B restart, duplicates, receipt and inbox isolation |
+| Three-process Network.framework TCP control | **PASS**; actual partial frame, process kill/restart, duplicates and return receipt on loopback. Software control only |
+| iOS Simulator, macOS and unsigned iOS device SDK builds | **PASS**, Xcode 26.1.1 (17B100), iOS/macOS 26.1 SDKs, Mac host macOS 26.6.2 (25G83) |
+| Mac shelter creation and simulator code import | **PASS** through actual UI; same shelter and receiving-device IDs |
+| Help draft restart recovery | **PASS**; simulator process terminated/relaunched before submit, same draft ID, destination, quantity/unit, details and location retained |
+| Review and submission | **PASS** after fixing a first-sheet stale state issue. Review shows selected shelter, 20 Packs and People Unknown. Save opens the locally queued request; Help provides a fresh form |
+| Mac→simulator control infrastructure | Both endpoints run on this Mac. Normal network configuration unchanged; no isolation attempted. This cannot establish a physical wireless path |
+| Simulator request → Mac inbox → simulator return receipt | **PASS** through Bonjour/Network.framework; Mac inbox displayed one request; sender displayed separate final receipt |
+| Existing Mac store preservation | **PASS**; all 18 pre-update envelopes, immutable bodies, receipt fields and device UUID compared against a pre-update SQLite snapshot and preserved |
+| Physical iPhone build 6 installs/signing, A–E tests | **NOT TESTED** this session; existing physical devices were not updated |
+| Build 6 TestFlight upload | **NOT PERFORMED**; earlier distribution status does not imply build 6 availability |
+
+Actual UI-control shelter ID: `d870da24-4cff-42b9-a95e-78fa81018c3e`.
+Request: `9a0b709d-552f-4453-9e18-ffccdc80c819`; simulator origin:
+`e816be05-b366-4b44-a5dd-8b56ef7e5884`; Mac destination:
+`fabb432e-244d-4be8-86eb-eb9ac6982d0f`; return receipt:
+`06e6a40a-134d-464c-8599-926221788c82`. Both apps were paused after the control.
+
+Evidence: [32 tests](evidence/automated-tests-build-6.txt),
+[TCP control](evidence/tcp-control-build-6.txt),
+[UI control record](evidence/ui-build6-shelters.json),
+[sender events](evidence/ui-build6-simulator-events.txt),
+[receiver events](evidence/ui-build6-mac-events.txt),
+[actual simulator receipt screen](evidence/ui-build6-request-receipt.png),
+[simulator build](evidence/build-shelters-ios-simulator.txt),
+[Mac build](evidence/build-shelters-macos.txt),
+[unsigned device build](evidence/build-shelters-ios-unsigned.txt).
+
+Separate physical verdicts remain unchanged: direct offline transfer **unverified**;
+physical three-device carry/forward **unverified**; physical return receipt route
+**unverified**; router-independent path **unverified**; repeated-failure behavior
+**tested in software controls only**. Execute the new shelter extension in TEST_PLAN.md
+on physical devices before promoting any of these claims.

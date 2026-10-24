@@ -39,7 +39,42 @@ For stable macOS Local Network permission behavior across rebuilds, use your own
 
 The project is checked in. `python3 scripts/generate_project.py` deterministically regenerates its two app targets, shared schemes, and plists using only Python's standard library. It resets signing changes to the project defaults: enrolled team U4G9LV39GM / com.nikilthalapaneni.relay for iOS, ad hoc signing for macOS. Override DEVELOPMENT_TEAM and PRODUCT_BUNDLE_IDENTIFIER on the command line when using another team.
 
-## Chat interface (build 5)
+## Shelter requests (build 6)
+
+The current interface has **Help, Requests, Shelters, Messages**. Help's gear opens
+Settings/Tools; **Help → Nearby devices** opens discovery and peer messaging.
+The existing Chats interface is retained under Messages.
+
+- **Shelters:** create a synthetic shelter received by this device, configure a
+  different device's UUID, or import a shared `RELAY-SHELTER-1:` code. The code is
+  base64-encoded JSON, not encryption. A shelter UUID is separate from its receiving
+  device UUID. Entries persist in SQLite and cannot silently redirect an existing ID.
+- **Help:** choose a saved shelter even when absent, enter need, details, quantity/unit,
+  optional people count, and location/landmark. Blank quantity/people mean unknown.
+  The draft persists while editing and survives restart. Review precedes submission.
+- **Requests:** My requests shows sent requests; Device inbox shows help requests
+  addressed to this device. These are local test views, **not authenticated staff roles**.
+  Carried copies are excluded from both views and from personal chat.
+- Submission atomically inserts the immutable message and clears that submitted
+  draft. Its ID is reused on retry. A new form remains available after sending.
+  Delivery details keep local save, relay ACK, destination receipt and staff progress
+  separate. Staff assignments, fulfillment, inventory, authentication and cloud sync
+  are not implemented in this build.
+- Structured help content is versioned JSON inside a reserved `payload.text` prefix
+  (`RELAY-HELP-1` followed by a newline), preserving the v1 transport envelope and
+  byte-for-byte forwarding through older relay codecs. Older apps can carry it but
+  do not provide the new request UI. All participating demo endpoints should use build 6.
+- SQLite schema 3 adds a shelter directory and durable draft metadata. Existing
+  device identities, message bodies, peers and receipt state are preserved.
+
+To try it: on C, **Shelters → Add shelter → Receive here**. Save a synthetic name/area,
+open the entry and share/copy its code. On A, **Shelters → Add shelter → Import code**,
+then open the entry and tap **Request help here**. Review/save while connections are
+paused. Start nearby connections for A/B, then B/C in separate encounters as described
+in TEST_PLAN.md. On C, open **Requests → Device inbox**. Return B to A for the receipt.
+Shelter setup is local and unverified; use synthetic data only.
+
+## Chat interface (retained from build 5)
 
 - **Chats:** conversations grouped by the other device, with an always-visible New chat button in the list. Open a chat to see incoming/outgoing bubbles, timestamps, and delivery state. The bottom input stays available after sending; send repeatedly without opening another sheet. Done dismisses the keyboard. Drafts are retained in memory per conversation while the app runs, but unsaved drafts are not durable.
 - **New chat:** choose a connected or previously encountered device, or enter its full UUID. Selecting an existing peer opens the same conversation. Invalid/self destinations cannot open a new chat.
@@ -147,11 +182,11 @@ Build 5 adds the optional `display_name` field to the version-1 hello packet. Ol
 
 ## Proposed product scope: shelters and cloud continuity
 
-This section is a product plan, not a list of implemented capabilities. The current
-build addresses physical device UUIDs. It already supports known/manual destinations
-that are absent, durable queued messages, and future relay encounters; nearby chat is
-only the current presentation of that engine. Shelters, organizational accounts,
-structured resource workflows, cloud APIs/sync, ASR, and Bedrock are still to be built.
+This section describes the broader product plan. Build 6 implements a local shelter
+directory, structured help requests, durable drafts and a local receiving inbox as
+documented above. Transport still routes to the shelter's designated physical device
+UUID. Organizational accounts, staff workflows, resource reservations, cloud APIs/sync,
+ASR and Bedrock remain to be built and integrated.
 
 A shelter is a persistent organizational inbox, with its own ID, display name,
 area/contact information, authorized receiving devices, and designated dispatchers.
