@@ -6,6 +6,25 @@ software, real AWS services and separate-encounter relay controls pass. Physical
 router-free wireless acceptance is still **NOT TESTED**. The older dated sections
 below are historical; this checkpoint supersedes their feature/release status.
 
+## Fresh resident demonstration setup —24October2026,10:33PDT
+
+Created one new synthetic Cognito resident with MFA preserved, requester-only
+ShelterA membership and no outgoing email. Existing10memberships retained;11total.
+Public authentication/directory/history checks passed; new request history was empty.
+Reloaded only API as30322; worker27162/tunnel12053 retained. Public preflight PASS.
+
+Preloaded the original iPhone15ProMax build22 through its existing DEBUG one-use
+session importer and relaunched it. The import file was consumed; its new account
+scope cached ShelterA and receiving keys, with zero local requests. Existing53
+messages, prior receipts, cloud submissions, device ID and keys preserved; SQLite
+quick_check=ok. Mac and iPhone16 accounts were unchanged. Welcome Skip steps and
+physical voice/demo execution are still operator actions, not claimed tests.
+
+Read-only stock check: ShelterA water packs on_hand1/reserved0/available1; other
+stock0. Created no requests, AI calls or inventory mutations for preparation.
+Accounts/credentials remain private outside Git. See [two-minute script](MORNING_DEMO.md#fast-resident-presentation--about-two-minutes)
+and [sanitized evidence](docs/evidence/resident-demo-20261024).
+
 ## Build22 — local avatar, selected profile sharing and cleaner home/login
 
 24 October2026, approximately10:00–10:28PDT. Mac M3Pro/macOS26.6.2(25G83),

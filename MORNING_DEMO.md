@@ -8,6 +8,43 @@ inventory ledger are behind the Mac-hosted API. The hostname is stable, but this
 Mac, its internet connection, API, worker and current tunnel must stay running for
 cloud features. See [hosting](cloud/docs/DEMO_HOSTING.md).
 
+## Fast resident presentation — about two minutes
+
+Prepared24October2026 at10:33PDT: the original build22 app on the **iPhone15ProMax**
+now has a new isolated synthetic resident account, zero request history and cached
+ShelterA setup. The existing account's records remain saved. iPhone16 and the Mac's
+coordinator account were not switched. Open the original RELAY app; tap **Skip for
+now**, then **Skip tour**. No profile typing or login is needed during this demo.
+This preparation uses the owned development app's one-use session importer; the
+import file was consumed. It is not guest access or a TestFlight authentication bypass.
+
+Keep the Mac and phone online for this first flow. ShelterA had **one water pack
+available** at preparation; verify stock before repeating approval/handover.
+
+| What you do | What you say |
+|---|---|
+| Show Ask for help, ShelterA selected | “A resident can ask a shelter for help without navigating a dashboard.” |
+| Speak → Start recording | Say into the microphone: “This is a demo. We need one water pack for two people at the north entrance of the demo hall. It is urgent.” |
+| Stop recording; show the transcript; Use this text | “AWS Transcribe turns speech into text. I can correct it before sending.” |
+| Wait for Reading request to finish; show the fields | “Bedrock extracts the item, quantity, people, urgency and landmark. I review the suggestion; it does not allocate supplies.” |
+| Verify Water packs,1pack,2people,Urgent and landmark; optionally Use my location | “The shelter receives a structured request and the location I choose to provide.” |
+| Review request; leave personal sharing off; Send request | “The request is saved first. Delivery and staff approval have separate statuses.” |
+| Mac Inbox: open the new request | “The coordinator sees the same request and its context.” |
+| Optional Mac: Approve and reserve1pack, then send a synthetic reply | “A person approves stock. The resident sees the update.” |
+| Return to the phone's open request detail | “The resident can follow progress in the same conversation.” |
+
+If location extraction is blank, choose Use my location or type a short fictional
+landmark; don't wait on repeated AI calls. If speech stalls, type the same sentence.
+One successful run is enough; repeated speech uses the demo transcription allowance.
+Do not claim fulfillment merely from reservation. Record handover only as an explicit
+synthetic test; that reduces on-hand stock and requires replenishing demo stock before
+repeating. No synthetic request or stock change was made while preparing this account.
+
+For the optional offline second act, use Demo2/Demo3 below with a new **typed**
+request. Speech/Bedrock need internet. A software cloud pause demonstrates fallback
+routing; it does not establish physical router independence. Current staff replies
+and inventory changes still need cloud connectivity.
+
 ## Before presenting
 
 1. Check Settings → Demo tools → Build22 on each app. Check TestFlight availability
