@@ -45,6 +45,7 @@ class Settings(BaseModel):
     max_transcriptions: int = Field(default=5, ge=1, le=100)
     lease_seconds: int = Field(default=120, ge=60, le=600)
     upload_ttl_seconds: int = Field(default=300, ge=60, le=900)
+    max_live_streams: int = Field(default=4, ge=1, le=8)
     max_audio_bytes: int = 2_097_152
     max_audio_seconds: int = 60
     transcription_timeout_seconds: int = 900

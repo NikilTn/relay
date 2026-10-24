@@ -50,6 +50,6 @@
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>RELAYCloudAPIURL</key>
-	<string>https://resumes-investigated-striking-mba.trycloudflare.com</string>
+	<string>https://relay.stepcheck.app</string>
 </dict>
 </plist>

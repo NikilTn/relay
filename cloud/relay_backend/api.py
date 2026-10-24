@@ -18,6 +18,7 @@ from .models import (ErrorResponse, RequestSubmission, StartTranscription, Trans
 from .providers import AWSProviders, FixtureProviders, ProviderError
 from .service import APIError, Service
 from .store import DynamoStore, SQLiteStore
+from .speech import install_speech_routes
 
 
 def build_service(settings):
@@ -44,6 +45,7 @@ def create_app(settings: Settings, service=None):
                   servers=[{"url": settings.public_base_url}],
                   responses={n: {"model": ErrorResponse} for n in (400, 401, 403, 404, 409, 410, 413, 422, 429, 503)})
     app.state.service = service
+    install_speech_routes(app, service, auth)
     bearer = HTTPBearer(auto_error=False)
 
     def principal(credentials: HTTPAuthorizationCredentials | None = Depends(bearer)):

@@ -73,13 +73,19 @@ import RelayCore
         guard !busy, let model else { return }
         busy = true; defer { busy = false }; problem = ""
         do {
-            let url = try CloudCodec.apiURL(endpoint)
+            let originalURL = try CloudCodec.apiURL(endpoint)
+            let oldDemoURL = "https://resumes-investigated-striking-mba.trycloudflare.com"
+            let url = try CloudCodec.apiURL(originalURL.absoluteString == oldDemoURL ? "https://relay.stepcheck.app" : originalURL.absoluteString)
             let client = try CloudHTTPClient(baseURL: url)
             if signIn { try await auth.signIn() }
             let token = try await auth.accessToken()
             let verified: CloudProfile = try await client.call("v1/me", token: token)
             let shelters: CloudDirectory = try await client.call("v1/shelters", token: token)
             let key = CloudCodec.scope(baseURL: url, subject: verified.subject)
+            if originalURL != url {
+                let previous = CloudCodec.scope(baseURL: originalURL, subject: verified.subject)
+                try await model.withStore { try $0.copyCloudScope(from: previous, to: key) }
+            }
             try auth.rememberProfile(verified)
             let directoryData = try CloudCodec.encode(shelters.items)
             try await model.withStore { try $0.setSetting("cloud_directory:" + key, String(decoding: directoryData, as: UTF8.self)) }
@@ -93,6 +99,7 @@ import RelayCore
             draft = try await model.withStore { try $0.requestDraft(scope: key) }
             if draft.shelterID.isEmpty { draft.shelterID = shelters.items.first?.shelter_id ?? "" }
             staffShelterID = shelters.items.first?.shelter_id ?? ""
+            endpoint = url.absoluteString
             UserDefaults.standard.set(url.absoluteString, forKey: "relay.cloud.endpoint")
             status = "Signed in · \(verified.role.capitalized)"
         } catch { problem = error.localizedDescription; status = "Cloud unavailable; nearby delivery still works" }
@@ -141,7 +148,7 @@ import RelayCore
             let token = try await auth.accessToken()
             let pending = try await model.withStore { try $0.cloudRecords(scope: scope) }
             for var record in pending.filter({ row in
-                let active = (focusedRequestID == nil || focusedRequestID == row.id) && !["completed", "cancelled", "rejected"].contains(row.history?.status ?? "new")
+                let active = focusedRequestID == row.id && !["completed", "cancelled", "rejected"].contains(row.history?.status ?? "new")
                 return row.retryAt <= Date() && row.state != "needs_attention" && (row.state == "queued" || row.pendingEvent != nil || row.pendingInventory != nil || active || row.retryAt == .distantPast)
             }).sorted { ($0.pendingInventory != nil || $0.pendingEvent != nil || $0.state == "queued" ? 0 : 1, $0.retryAt) < ($1.pendingInventory != nil || $1.pendingEvent != nil || $1.state == "queued" ? 0 : 1, $1.retryAt) }.prefix(5) {
                 guard generation == epoch else { return }
@@ -159,9 +166,10 @@ import RelayCore
                     if let event = record.pendingEvent {
                         record.history = try await api.call("v1/requests/\(record.id)/events", token: token, method: "POST", body: CloudCodec.encode(event))
                         record.pendingEvent = nil
-                    } else { record.history = try await api.call("v1/requests/\(record.id)/history", token: token) }
+                    }
                     let reservation: ReservationResult = try await api.call("v1/requests/\(record.id)/inventory", token: token)
                     record.reservation = reservation.reservation
+                    record.history = reservation.history ?? record.history
                     record.retryAt = Date().addingTimeInterval(20)
                 } catch {
                     let http = error as? CloudHTTPError
@@ -172,6 +180,7 @@ import RelayCore
                 }
                 guard generation == epoch else { return }
                 try await model.withStore { try $0.saveCloudRecord(record) }
+                await reload()
             }
             await reload(); if problem == "cancelled" { problem = "" }; status = "Cloud checked \(Date().formatted(date: .omitted, time: .shortened))"
         } catch { problem = error.localizedDescription; status = "Cloud unavailable · queued requests retained" }
@@ -182,7 +191,7 @@ import RelayCore
         do {
             let token = try await auth.accessToken()
             var cursor: String?
-            var historyBudget = 5
+            var historyBudget = 1
             repeat {
                 var query = [URLQueryItem(name: "view", value: shelterID == nil ? "mine" : "shelter"), .init(name: "limit", value: "50")]
                 if let shelterID { query.append(.init(name: "shelter_id", value: shelterID)) }
@@ -193,7 +202,10 @@ import RelayCore
                     var record = records.first { $0.id == result.id } ?? CloudQueueRecord(scope: scope, submission: result.submission)
                     record.result = result; record.state = "accepted"
                     let terminal = ["completed", "cancelled", "rejected"].contains(record.history?.status ?? "new")
-                    if historyBudget > 0 && !terminal {
+                    if let history = result.history {
+                        record.history = history; record.reservation = result.reservation
+                        if record.pendingEvent == nil && record.pendingInventory == nil { record.retryAt = Date().addingTimeInterval(20) }
+                    } else if historyBudget > 0 && !terminal {
                         let reservation: ReservationResult = try await api.call("v1/requests/\(record.id)/inventory", token: token)
                         record.reservation = reservation.reservation; record.history = reservation.history
                         historyBudget -= 1
@@ -365,6 +377,15 @@ import RelayCore
             let token = try await auth.accessToken()
             let url = try VoiceRecorder.folder().appendingPathComponent(job.fileName)
             let data = try Data(contentsOf: url)
+            if job.source == "streaming" {
+                let live: CloudTranscription = try await api.call("v1/transcriptions/\(job.id)", token: token)
+                if live.status == "completed", let text = live.transcript {
+                    job.transcript = text; try await persistAudio(job); audioJob = job; transcript = text; audioStatus = "Review the recovered live transcript"; return
+                }
+                guard live.status == "failed" else { throw RelayError.invalid("The live session is still finishing. Try again shortly.") }
+                job = CloudAudioJob(fileName: job.fileName, incidentID: job.incidentID, data: data)
+                try await persistAudio(job); audioJob = job
+            }
             audioStatus = "Preparing private upload…"
             var result: CloudTranscription = try await api.call("v1/transcriptions", token: token, method: "POST", body: job.allocation())
             if let grant = result.upload { try await api.upload(grant, wav: data, token: token) }
@@ -394,4 +415,20 @@ import RelayCore
         model.helpDraft.transcriptionIncident = job.incidentID
         model.persistHelpDraft(); audioStatus = "Copied to Help. Choose a shelter, complete the fields, then review and submit."
     }
+    func liveSpeechContext() async throws -> LiveSpeechContext {
+        guard let api, let profile, let scope else { throw RelayError.invalid("Sign in before live transcription") }
+        let generation = epoch, token = try await auth.accessToken()
+        guard generation == epoch else { throw RelayError.invalid("Account changed; start again") }
+        return LiveSpeechContext(baseURL: api.baseURL, token: token, subject: profile.subject,
+                                 incident: profile.incident_id, scope: scope, generation: generation)
+    }
+    func retainLiveSpeech(context: LiveSpeechContext, identifier: String, text: String?, url: URL) async throws {
+        guard context.generation == epoch, context.scope == scope, context.subject == profile?.subject else { return }
+        let data = try Data(contentsOf: url)
+        var job = CloudAudioJob(fileName: url.lastPathComponent, incidentID: context.incident, data: data, id: identifier, source: "streaming")
+        job.transcript = text; try await persistAudio(job)
+        audioJob = job; transcript = text ?? ""
+        audioStatus = text == nil ? "Recording retained. Retry checks the original live session first." : "Live transcript saved. Review names and quantities before sending."
+    }
+
 }

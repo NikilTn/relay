@@ -89,6 +89,8 @@ public struct CloudResult: Codable, Identifiable {
     public let analysis_state: String
     public let result: CloudValidatedResult?
     public let error: CloudErrorDetail?
+    public let history: CloudHistory?
+    public let reservation: RequestReservation?
     public var id: String { request_id }
 }
 public struct CloudPage: Codable { public let items: [CloudResult]; public let next_cursor: String? }

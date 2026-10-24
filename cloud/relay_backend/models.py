@@ -137,11 +137,6 @@ class RequestResult(StrictModel):
     fulfillment_state: Literal["not_implemented", "not_fulfilled", "fulfilled"]
 
 
-class RequestPage(StrictModel):
-    items: list[RequestResult]
-    next_cursor: str | None
-
-
 class UploadAuthorization(StrictModel):
     method: Literal["POST", "PUT"]
     url: str
@@ -302,3 +297,13 @@ class RequestInventory(StrictModel):
     request_id: UUID
     reservation: Reservation | None
     history: RequestHistory
+
+
+class InboxRequestResult(RequestResult):
+    history: RequestHistory
+    reservation: Reservation | None
+
+
+class RequestPage(StrictModel):
+    items: list[InboxRequestResult]
+    next_cursor: str | None

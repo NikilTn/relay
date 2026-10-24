@@ -1,22 +1,16 @@
 import SwiftUI
 import RelayCore
 
-// A restrained field notebook: type, spacing and rules carry the hierarchy.
+// Plain, high-contrast controls with the same hierarchy on phone and Mac.
 struct WorkflowHeader: View {
     let eyebrow: String
     let title: String
     let subtitle: String
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("RELAY").font(.system(.caption, design: .monospaced).weight(.bold)).tracking(2)
-                Spacer()
-                Text(eyebrow.uppercased()).font(.system(.caption2, design: .monospaced)).tracking(1).foregroundStyle(.secondary)
-            }
-            Rectangle().fill(RelayTheme.accent).frame(width: 26, height: 3).accessibilityHidden(true)
-            Text(title).font(.system(.largeTitle, design: .serif).weight(.medium)).tracking(-0.5)
+            Text(title).font(.largeTitle.weight(.heavy))
                 .fixedSize(horizontal: false, vertical: true)
-            if !subtitle.isEmpty { Text(subtitle).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
+            if !subtitle.isEmpty { Text(subtitle).font(.body).foregroundStyle(RelayTheme.secondary).fixedSize(horizontal: false, vertical: true) }
         }.frame(maxWidth: .infinity, alignment: .leading).padding(.top, 8).padding(.bottom, 14)
     }
 }
@@ -26,24 +20,26 @@ struct WorkflowSection: View {
     var subtitle: String? = nil
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
-            Text(title).font(.headline.weight(.semibold))
-            if let subtitle { Text(subtitle).font(.caption).foregroundStyle(.secondary) }
+            Text(title).font(.title3.bold())
+            if let subtitle { Text(subtitle).font(.caption).foregroundStyle(RelayTheme.secondary) }
         }.frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 struct WorkflowInput: TextFieldStyle {
+    @AppStorage("relay.highContrast") private var highContrast = false
     func _body(configuration: TextField<Self._Label>) -> some View {
         configuration.font(.body).padding(.horizontal, 12).padding(.vertical, 13).frame(minHeight: 46)
-            .background(RelayTheme.incoming, in: RoundedRectangle(cornerRadius: 7))
-            .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(.primary.opacity(0.13)))
+            .background(RelayTheme.incoming, in: RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.black, lineWidth: highContrast ? 3 : 1.5))
     }
 }
 struct WorkflowSecondaryButton: ButtonStyle {
+    @AppStorage("relay.highContrast") private var highContrast = false
     @Environment(\.isEnabled) private var enabled
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label.font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 46)
+        configuration.label.font(.body.weight(.bold)).multilineTextAlignment(.center).padding(.horizontal, 12).padding(.vertical, 12).frame(maxWidth: .infinity, minHeight: 52)
             .foregroundStyle(enabled ? Color.primary : .secondary)
-            .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(.primary.opacity(enabled ? 0.25 : 0.08)))
+            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.black.opacity(enabled ? 1 : 0.15), lineWidth: highContrast ? 3 : 1.5))
             .opacity(configuration.isPressed ? 0.55 : 1)
     }
 }
@@ -71,7 +67,7 @@ struct WorkflowField: View {
     var focus: FocusState<Bool>.Binding
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
-            Text(title).font(.caption).foregroundStyle(.secondary)
+            Text(title).font(.headline)
             TextField(placeholder, text: $text).textFieldStyle(WorkflowInput()).focused(focus).accessibilityLabel(title)
         }
     }
@@ -85,20 +81,20 @@ struct WorkflowRequestCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline) {
-                Text(shelter.uppercased()).font(.system(.caption2, design: .monospaced)).tracking(0.5).foregroundStyle(.secondary)
+                Text(shelter.uppercased()).font(.system(.caption2, design: .monospaced)).tracking(0.5).foregroundStyle(RelayTheme.secondary)
                 Spacer()
-                Text(record.submission.created_at, format: .dateTime.month().day().hour().minute()).font(.caption2).foregroundStyle(.secondary)
+                Text(record.submission.created_at, format: .dateTime.month().day().hour().minute()).font(.caption2).foregroundStyle(RelayTheme.secondary)
             }
             HStack(alignment: .firstTextBaseline) {
                 Text(InventoryItem.title(item)).font(.title3.weight(.semibold))
                 Spacer(minLength: 12)
                 if let quantity { Text(quantity).font(.system(.title2, design: .monospaced).weight(.medium)) }
             }
-            Text(record.submission.original_text).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
+            Text(record.submission.original_text).font(.subheadline).foregroundStyle(RelayTheme.secondary).lineLimit(2)
             HStack {
                 WorkflowBadge(text: WorkflowRequestsView.progress(record), color: closed ? .secondary : RelayTheme.accent)
                 Spacer()
-                Image(systemName: "arrow.up.right").font(.caption).foregroundStyle(.secondary).accessibilityHidden(true)
+                Image(systemName: "arrow.up.right").font(.caption).foregroundStyle(RelayTheme.secondary).accessibilityHidden(true)
             }
             Divider().padding(.top, 10)
         }.padding(.top, 14).multilineTextAlignment(.leading).contentShape(Rectangle())
@@ -120,5 +116,18 @@ struct WorkflowFilter: View {
             }
             Spacer(minLength: 0)
         }.overlay(alignment: .bottom) { Rectangle().fill(.primary.opacity(0.10)).frame(height: 0.5) }
+    }
+}
+
+struct WorkflowFact: View {
+    let title: String
+    let value: String
+    init(_ title: String, value: String) { self.title = title; self.value = value }
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 18) {
+            Text(title).foregroundStyle(RelayTheme.secondary)
+            Spacer(minLength: 8)
+            Text(value).fontWeight(.semibold).foregroundStyle(.black).multilineTextAlignment(.trailing)
+        }.fixedSize(horizontal: false, vertical: true).accessibilityElement(children: .combine)
     }
 }

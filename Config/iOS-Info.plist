@@ -46,7 +46,7 @@
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Record a short request, then review its cloud transcript before sending.</string>
 	<key>RELAYCloudAPIURL</key>
-	<string>https://resumes-investigated-striking-mba.trycloudflare.com</string>
+	<string>https://relay.stepcheck.app</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

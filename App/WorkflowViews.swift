@@ -10,7 +10,7 @@ struct AccountSignInView: View {
     var body: some View {
         RelayCard {
             Text("Sign in").font(.title2.weight(.medium))
-            Text("Sign in once to send requests or coordinate your shelter. Your account opens the right workspace.").foregroundStyle(.secondary)
+            Text("Sign in once to send requests or coordinate your shelter. Your account opens the right workspace.").foregroundStyle(RelayTheme.secondary)
             if cloud.signInNeedsCode {
                 TextField("Six-digit authenticator code", text: $code).textFieldStyle(WorkflowInput()).focused($editing)
                     .accessibilityIdentifier("loginCode")
@@ -33,7 +33,7 @@ struct AccountSignInView: View {
             if cloud.signInNeedsCode { Button("Use another account") { cloud.cancelLogin(); code = "" } }
             if cloud.busy { ProgressView() }
             if !cloud.problem.isEmpty { Text(cloud.problem).font(.callout).foregroundStyle(.orange) }
-            Text("Use your RELAY test account, not your Apple or AWS console login. The demo organizer provides accounts.").font(.caption).foregroundStyle(.secondary)
+            Text("Use your RELAY test account, not your Apple or AWS console login. The demo organizer provides accounts.").font(.caption).foregroundStyle(RelayTheme.secondary)
             if editing { Button("Done") { editing = false } }
         }
     }
@@ -45,7 +45,7 @@ struct WorkflowStatus: View {
             Rectangle().fill(.secondary).frame(width: 4, height: 4).accessibilityHidden(true)
             Text(cloud.status.contains("unavailable") ? "Waiting to reconnect · your request stays saved" : "Saved locally · sent when cloud is available")
                 .font(.caption)
-        }.foregroundStyle(.secondary).padding(.horizontal, 4)
+        }.foregroundStyle(RelayTheme.secondary).padding(.horizontal, 4)
     }
 }
 struct LocationFacts: View {
@@ -54,7 +54,7 @@ struct LocationFacts: View {
         VStack(alignment: .leading, spacing: 5) {
             Text(location.precision == "approximate" ? "Approximate location" : "Location attached").font(.subheadline.weight(.medium))
             Text(String(format: "%.5f, %.5f · accuracy ±%.0f m", location.latitude, location.longitude, location.horizontal_accuracy)).font(.caption.monospaced())
-            Text("Captured \(location.captured_at.formatted(date: .abbreviated, time: .shortened))").font(.caption).foregroundStyle(.secondary)
+            Text("Captured \(location.captured_at.formatted(date: .abbreviated, time: .shortened))").font(.caption).foregroundStyle(RelayTheme.secondary)
             if Date().timeIntervalSince(location.captured_at) > 300 { Text("This is an earlier location snapshot. Refresh if you have moved.").font(.caption).foregroundStyle(.orange) }
             if let url = URL(string: "https://maps.apple.com/?ll=\(location.latitude),\(location.longitude)&q=Request%20location") { Link("Open location in Maps", destination: url).font(.subheadline) }
         }
@@ -70,11 +70,11 @@ struct PublicHelpView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                WorkflowHeader(eyebrow: "New request", title: "Get help.", subtitle: "Send a request to your shelter.")
+                WorkflowHeader(eyebrow: "New request", title: "Ask for help", subtitle: "Tell your shelter what you need.")
                 if cloud.profile == nil { AccountSignInView() }
                 else {
                     HStack {
-                        Text("To").font(.subheadline).foregroundStyle(.secondary)
+                        Text("Send to").font(.headline)
                         Spacer()
                         Picker("Shelter", selection: $cloud.draft.shelterID) {
                             Text("Choose shelter").tag("")
@@ -84,11 +84,11 @@ struct PublicHelpView: View {
                     Divider()
                     VStack(alignment: .leading, spacing: 12) {
                         TextField("What do you need?", text: $cloud.draft.text, axis: .vertical)
-                            .font(.title3).lineLimit(4...8).textFieldStyle(.plain).padding(.vertical, 8)
+                            .font(.body).lineLimit(3...6).textFieldStyle(WorkflowInput())
                             .focused($editing).accessibilityLabel("Describe your request").accessibilityIdentifier("requestText")
                         HStack {
-                            NavigationLink { VoiceInputView() } label: { Text("Record voice").underline() }
-                                .font(.subheadline).disabled(cloud.audioBusy).frame(minHeight: 44)
+                            NavigationLink { VoiceInputView() } label: { Label("Speak", systemImage: "mic.fill") }
+                                .buttonStyle(WorkflowSecondaryButton()).disabled(cloud.audioBusy)
                             Spacer()
                             Button { editing = false; Task { await cloud.previewRequest() } } label: {
                                 HStack(spacing: 7) { if cloud.interpreting { ProgressView().controlSize(.small) }; Text(cloud.interpreting ? "Reading request…" : "Extract details") }
@@ -98,25 +98,25 @@ struct PublicHelpView: View {
                         if let result = cloud.interpretation, cloud.draft.interpretationText == cloud.draft.text.trimmingCharacters(in: .whitespacesAndNewlines) {
                             VStack(alignment: .leading, spacing: 6) {
                                 Text("AI suggestion — check the details below.").font(.caption.weight(.medium))
-                                Text(result.result?.proposal?.summary ?? "Review your request details.").font(.subheadline).foregroundStyle(.secondary)
+                                Text(result.result?.proposal?.summary ?? "Review your request details.").font(.subheadline).foregroundStyle(RelayTheme.secondary)
                                 ForEach(result.result?.review_reasons ?? [], id: \.self) { WorkflowNotice(text: $0) }
                             }.padding(.vertical, 8)
                         }
                     }
                     Divider()
                     VStack(alignment: .leading, spacing: 14) {
-                        Text("Supplies").font(.subheadline.weight(.semibold))
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 135), spacing: 10)], spacing: 10) {
+                        Text("What do you need?").font(.title2.bold())
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 10)], spacing: 10) {
                             ForEach(["water_packs", "food_packs", "blankets", "other"], id: \.self) { item in
                                 Button { cloud.draft.item = item } label: {
                                     HStack {
-                                        Text(InventoryItem.title(item)).font(.subheadline)
+                                        Text(InventoryItem.title(item)).font(.body.bold())
                                         Spacer(minLength: 4)
                                         if cloud.draft.item == item { Text("✓").font(.subheadline.weight(.medium)) }
-                                    }.padding(.horizontal, 13).frame(maxWidth: .infinity, minHeight: 47)
+                                    }.padding(.horizontal, 13).padding(.vertical, 12).frame(maxWidth: .infinity, minHeight: 60)
                                         .foregroundStyle(cloud.draft.item == item ? RelayTheme.onAction : .primary)
-                                        .background(cloud.draft.item == item ? RelayTheme.action : .clear, in: RoundedRectangle(cornerRadius: 6))
-                                        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(.primary.opacity(cloud.draft.item == item ? 0 : 0.18)))
+                                        .background(cloud.draft.item == item ? RelayTheme.action : .clear, in: RoundedRectangle(cornerRadius: 16))
+                                        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(.black, lineWidth: 2))
                                 }.buttonStyle(.plain).accessibilityAddTraits(cloud.draft.item == item ? .isSelected : [])
                             }
                         }
@@ -128,7 +128,7 @@ struct PublicHelpView: View {
                     Divider().padding(.top, 4)
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
-                            Text("Location").font(.subheadline.weight(.semibold))
+                            Text("Location").font(.title2.bold())
                             Spacer()
                             Button(locator.busy ? "Locating…" : cloud.draft.location == nil ? "Use my location" : "Update") {
                                 editing = false; locator.capture { cloud.draft.location = $0; cloud.persistDraft() }
@@ -158,7 +158,7 @@ struct PublicHelpView: View {
                     }.frame(maxWidth: 660).frame(maxWidth: .infinity).background(RelayTheme.canvas)
                 }
             }
-            .toolbar { ToolbarItem(placement: .primaryAction) { if editing { Button("Done") { editing = false } } else { NavigationLink("Settings") { WorkflowSettings(model: model) }.font(.caption) } } }
+            .toolbar { ToolbarItem(placement: .primaryAction) { if editing { Button("Done") { editing = false } } } }
             .onChange(of: cloud.draft) { _, _ in cloud.persistDraft() }
             .sheet(isPresented: $reviewing) { WorkflowReview { id in reviewing = false; sent(id) } }
             #if os(iOS)
@@ -177,23 +177,23 @@ struct WorkflowReview: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    Text("Before you send.").font(.system(.largeTitle, design: .serif).weight(.medium))
+                    Text("Review request").font(.largeTitle.bold())
                     Text(cloud.draft.text)
-                    LabeledContent("Shelter", value: cloud.directory.first(where: { $0.shelter_id == cloud.draft.shelterID })?.display_name ?? "Unknown")
-                    LabeledContent("Item", value: InventoryItem.title(cloud.draft.item))
-                    LabeledContent("Amount", value: cloud.draft.quantity.isEmpty ? "Unknown" : "\(cloud.draft.quantity) \(cloud.draft.unit)")
-                    LabeledContent("People", value: cloud.draft.people.isEmpty ? "Unknown" : cloud.draft.people)
+                    WorkflowFact("Shelter", value: cloud.directory.first(where: { $0.shelter_id == cloud.draft.shelterID })?.display_name ?? "Unknown")
+                    WorkflowFact("Item", value: InventoryItem.title(cloud.draft.item))
+                    WorkflowFact("Amount", value: cloud.draft.quantity.isEmpty ? "Unknown" : "\(cloud.draft.quantity) \(cloud.draft.unit)")
+                    WorkflowFact("People", value: cloud.draft.people.isEmpty ? "Unknown" : cloud.draft.people)
                     if !cloud.draft.landmark.isEmpty { Text("Landmark: " + cloud.draft.landmark) }
                     if let location = cloud.draft.location { LocationFacts(location: location) }
-                    else { Text("No device location attached").foregroundStyle(.secondary) }
+                    else { Text("No device location attached").foregroundStyle(RelayTheme.secondary) }
                     if let error = validation { Text(error).foregroundStyle(.orange) }
-                    Text("Your request is saved first and sent automatically when the cloud is reachable. Staff will review availability before approving supplies.").font(.subheadline).foregroundStyle(.secondary)
+                    Text("Your request is saved first and sent automatically when the cloud is reachable. Staff will review availability before approving supplies.").font(.subheadline).foregroundStyle(RelayTheme.secondary)
                     Button(cloud.submitting ? "Saving…" : "Send request") {
                         Task { if let id = await cloud.submitRequest() { sent(id) } }
                     }.buttonStyle(PrimaryButton()).disabled(cloud.submitting || validation != nil).accessibilityIdentifier("sendReviewedRequest")
                     if !cloud.problem.isEmpty { Text(cloud.problem).foregroundStyle(.orange) }
                 }.padding(24).frame(maxWidth: 620).frame(maxWidth: .infinity)
-            }.navigationTitle("Review")
+            }.navigationTitle("")
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Edit") { dismiss() }.disabled(cloud.submitting) } }
         }.interactiveDismissDisabled(cloud.submitting)
             #if os(macOS)
@@ -221,7 +221,7 @@ struct WorkflowRequestsView: View {
                         if staff {
                             Picker("Shelter", selection: $cloud.staffShelterID) { ForEach(cloud.directory) { Text($0.display_name).tag($0.shelter_id) } }
                                 .onChange(of: cloud.staffShelterID) { _, value in Task { await cloud.loadInbox(shelterID: value) } }
-                        } else { Text("\(rows.count) saved request\(rows.count == 1 ? "" : "s")").font(.subheadline).foregroundStyle(.secondary) }
+                        } else { Text("\(rows.count) saved request\(rows.count == 1 ? "" : "s")").font(.subheadline).foregroundStyle(RelayTheme.secondary) }
                         Spacer()
                         Button { Task { await cloud.loadInbox(shelterID: staff ? cloud.staffShelterID : nil) } } label: { Image(systemName: "arrow.clockwise").frame(width: 44, height: 44) }
                             .buttonStyle(.plain).disabled(cloud.busy).accessibilityLabel("Refresh requests")
@@ -273,13 +273,13 @@ struct WorkflowRequestDetail: View {
                         Text(InventoryItem.title(record.submission.structured_fields?.item_id ?? record.result?.result?.proposal?.item_id ?? "other")).font(.title2.bold())
                         Text(record.submission.original_text)
                         if let fields = record.submission.structured_fields {
-                            LabeledContent("Item", value: InventoryItem.title(fields.item_id ?? "other"))
-                            LabeledContent("Amount", value: fields.quantity.map { "\($0) \(fields.unit ?? "")" } ?? "Unknown")
-                            LabeledContent("People", value: fields.people.map(String.init) ?? "Unknown")
+                            WorkflowFact("Item", value: InventoryItem.title(fields.item_id ?? "other"))
+                            WorkflowFact("Amount", value: fields.quantity.map { "\($0) \(fields.unit ?? "")" } ?? "Unknown")
+                            WorkflowFact("People", value: fields.people.map(String.init) ?? "Unknown")
                             if !fields.landmark.isEmpty { Text("Landmark: " + fields.landmark) }
                         }
                         if let location = record.submission.location { LocationFacts(location: location) }
-                        DisclosureGroup("Request reference") { Text(record.id).font(.caption.monospaced()).foregroundStyle(.secondary).textSelection(.enabled) }.font(.caption)
+                        DisclosureGroup("Request reference") { Text(record.id).font(.caption.monospaced()).foregroundStyle(RelayTheme.secondary).textSelection(.enabled) }.font(.caption)
                         Button("Refresh / retry") { Task { await cloud.retry(id); if cloud.isDispatcher { await cloud.refreshInventory() } } }.buttonStyle(WorkflowSecondaryButton()).disabled(cloud.busy)
                     }
                     if let proposal = record.result?.result?.proposal {
@@ -288,7 +288,7 @@ struct WorkflowRequestDetail: View {
                             Text(proposal.summary)
                             Text("\(InventoryItem.title(proposal.item_id ?? "other")) · \(proposal.quantity.map(String.init) ?? "Unknown") \(proposal.unit ?? "")")
                             ForEach(record.result?.result?.review_reasons ?? [], id: \.self) { Text($0).font(.caption).foregroundStyle(.orange) }
-                            Text("Staff approval controls inventory. AI cannot allocate supplies.").font(.caption).foregroundStyle(.secondary)
+                            Text("Staff approval controls inventory. AI cannot allocate supplies.").font(.caption).foregroundStyle(RelayTheme.secondary)
                         }
                     }
                     if cloud.isDispatcher, record.result != nil { approval(record) }
@@ -304,7 +304,7 @@ struct WorkflowRequestDetail: View {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(event.author_role == "dispatcher" ? "Shelter coordinator" : "Requester").font(.caption.bold())
                                 if !event.text.isEmpty { Text(event.text) }
-                                if let status = event.status { Text(status.replacingOccurrences(of: "_", with: " ")).font(.caption).foregroundStyle(.secondary) }
+                                if let status = event.status { Text(status.replacingOccurrences(of: "_", with: " ")).font(.caption).foregroundStyle(RelayTheme.secondary) }
                             }.padding(.vertical, 10).frame(maxWidth: .infinity, alignment: .leading).overlay(alignment: .bottom) { Divider() }
                         }
                         TextField("Write a reply…", text: $reply, axis: .vertical).lineLimit(2...5).textFieldStyle(WorkflowInput()).focused($editing)
@@ -352,7 +352,7 @@ struct WorkflowRequestDetail: View {
                 if let stock = cloud.inventory?.items.first(where: { $0.id == item }) { Text("Available: \(stock.available) \(stock.unit) · already reserved: \(stock.reserved)").font(.subheadline) }
                 Button("Approve and reserve") { editing = false; Task { await cloud.inventoryAction(id, action: "reserve", item: item, quantity: Int(amount)) } }
                     .buttonStyle(PrimaryButton()).disabled(cloud.busy || cloud.inventoryBusy || record.pendingInventory != nil || (Int(amount) ?? 0) <= 0 || cloud.inventory == nil)
-                Text("Approval reserves stock. Handover deducts it. Concurrent approvals cannot overbook available supplies.").font(.caption).foregroundStyle(.secondary)
+                Text("Approval reserves stock. Handover deducts it. Concurrent approvals cannot overbook available supplies.").font(.caption).foregroundStyle(RelayTheme.secondary)
             }
         }
     }
@@ -382,26 +382,26 @@ struct InventoryView: View {
                         HStack(alignment: .firstTextBaseline) {
                             Text(row.title).font(.title3.weight(.medium))
                             Spacer()
-                            Text(row.unit.uppercased()).font(.system(.caption2, design: .monospaced)).foregroundStyle(.secondary)
+                            Text(row.unit.uppercased()).font(.system(.caption2, design: .monospaced)).foregroundStyle(RelayTheme.secondary)
                         }
                         HStack(alignment: .firstTextBaseline) {
                             VStack(alignment: .leading, spacing: 5) {
                                 Text("\(row.available)").font(.system(.largeTitle, design: .monospaced).weight(.regular)).monospacedDigit()
-                                Text("Available").font(.caption).foregroundStyle(.secondary)
+                                Text("Available").font(.caption).foregroundStyle(RelayTheme.secondary)
                             }.frame(maxWidth: .infinity, alignment: .leading)
                             VStack(alignment: .leading, spacing: 5) {
                                 Text("\(row.reserved)").font(.system(.title3, design: .monospaced)).monospacedDigit()
-                                Text("Reserved").font(.caption).foregroundStyle(.secondary)
+                                Text("Reserved").font(.caption).foregroundStyle(RelayTheme.secondary)
                             }.frame(maxWidth: .infinity, alignment: .leading)
                             VStack(alignment: .leading, spacing: 5) {
                                 Text("\(row.on_hand)").font(.system(.title3, design: .monospaced)).monospacedDigit()
-                                Text("On hand").font(.caption).foregroundStyle(.secondary)
+                                Text("On hand").font(.caption).foregroundStyle(RelayTheme.secondary)
                             }.frame(maxWidth: .infinity, alignment: .leading)
                         }
                         Divider()
                     }.padding(.vertical, 12)
                 }
-                Text("Approval reserves supplies. Handover deducts stock.").font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
+                Text("Approval reserves supplies. Handover deducts stock.").font(.caption).foregroundStyle(RelayTheme.secondary).padding(.horizontal, 4)
                 RelayCard {
                     DisclosureGroup(isExpanded: $editingStock) {
                         VStack(alignment: .leading, spacing: 12) {
@@ -411,7 +411,7 @@ struct InventoryView: View {
                             Button(cloud.pendingAdjustment ? "Retry saved stock change" : "Save stock change") {
                                 editing = false; Task { await cloud.adjustInventory(item: item, amount: Int(amount) ?? 0, note: note); if !cloud.pendingAdjustment && cloud.problem.isEmpty { amount = "" } }
                             }.buttonStyle(PrimaryButton()).disabled(cloud.inventoryBusy || (!cloud.pendingAdjustment && (Int(amount) ?? 0) == 0))
-                            Text("Use synthetic stock for this demonstration.").font(.caption).foregroundStyle(.secondary)
+                            Text("Use synthetic stock for this demonstration.").font(.caption).foregroundStyle(RelayTheme.secondary)
                         }.padding(.top, 12)
                     } label: { Text("Adjust stock").font(.headline) }
                 }
@@ -419,48 +419,78 @@ struct InventoryView: View {
                 if !cloud.problem.isEmpty { WorkflowNotice(text: cloud.problem) }
             }.padding(.horizontal, 24).padding(.vertical, 16).frame(maxWidth: 700).frame(maxWidth: .infinity)
         }.background(RelayTheme.canvas).navigationTitle("")
-            .toolbar { ToolbarItem(placement: .primaryAction) { if editing { Button("Done") { editing = false } } else { NavigationLink("Settings") { WorkflowSettings(model: model) }.font(.caption) } } }
+            .toolbar { ToolbarItem(placement: .primaryAction) { if editing { Button("Done") { editing = false } } } }
             .task { await cloud.refreshInventory(); if cloud.pendingAdjustment { editingStock = true } }
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             .scrollDismissesKeyboard(.interactively)
             #endif
     }
-    private func stat(_ title: String, value: Int) -> some View { HStack(spacing: 7) { Text(title).font(.caption).foregroundStyle(.secondary); Text("\(value)").font(.subheadline.bold()).monospacedDigit() } }
+    private func stat(_ title: String, value: Int) -> some View { HStack(spacing: 7) { Text(title).font(.caption).foregroundStyle(RelayTheme.secondary); Text("\(value)").font(.subheadline.bold()).monospacedDigit() } }
 }
 struct WorkflowSettings: View {
     @ObservedObject var model: RelayModel
     @EnvironmentObject private var cloud: CloudModel
+    @AppStorage("relay.readingSize") private var readingSize = "Normal"
+    @AppStorage("relay.highContrast") private var highContrast = false
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                RelayCard {
-                    Text("Account").font(.headline)
+            VStack(alignment: .leading, spacing: 26) {
+                WorkflowHeader(eyebrow: "Preferences", title: "Settings", subtitle: "")
+                VStack(alignment: .leading, spacing: 18) {
+                    Text("Text size").font(.title2.bold())
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: 10) { sizeChoices }
+                        VStack(spacing: 10) { sizeChoices }
+                    }
+                }
+                Toggle(isOn: $highContrast) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("High contrast").font(.title3.bold())
+                        Text("Black text on white, with thicker outlines.").font(.body)
+                    }
+                }.toggleStyle(.switch).tint(.black).padding(18)
+                    .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(.black, lineWidth: highContrast ? 3 : 1.5))
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Your workspace").font(.title2.bold())
                     if let profile = cloud.profile {
-                        Text(profile.role == "dispatcher" ? "Shelter coordinator" : "Public requester")
-                        Text(profile.incident_id).font(.caption).foregroundStyle(.secondary)
-                        Text("Switch accounts here to test the other workspace. Saved requests stay with the account that created them.").font(.subheadline)
-                        Button("Sign out / switch account") { cloud.signOut() }.disabled(cloud.busy || cloud.audioBusy || cloud.interpreting || cloud.submitting)
+                        Text(profile.role == "dispatcher" ? "Shelter coordinator" : "Public requester").font(.headline)
+                        Button("Sign out / switch account") { cloud.signOut() }
+                            .buttonStyle(WorkflowSecondaryButton()).disabled(cloud.busy || cloud.audioBusy || cloud.interpreting || cloud.submitting)
                     } else { AccountSignInView() }
                 }
-                RelayCard {
-                    Text("Nearby messaging").font(.headline)
-                    Text("Nearby discovery runs while the app is open. Existing messages and receipts remain saved. Cloud requests with location currently use authenticated cloud delivery.").font(.subheadline)
-                    NavigationLink("Nearby devices") { NearbyView(model: model, compose: { _ in }) }
-                    NavigationLink("Saved offline requests") { HelpRequestsView(model: model) }
-                }
-                DisclosureGroup("Developer tools") {
-                    VStack(alignment: .leading, spacing: 16) {
+                Divider()
+                NavigationLink { NearbyMessagesView(model: model) } label: {
+                    HStack { Text("Nearby messages").font(.headline); Spacer(); Image(systemName: "chevron.right") }
+                        .padding(.vertical, 12)
+                }.foregroundStyle(.primary)
+                Text("Phones can carry requests while RELAY is open. Wi-Fi radios must stay enabled.")
+                    .font(.subheadline).foregroundStyle(RelayTheme.secondary)
+                DisclosureGroup("Demo tools") {
+                    VStack(alignment: .leading, spacing: 20) {
                         NavigationLink("Diagnostics and test routes") { ToolsView(model: model) }
                         NavigationLink("Offline shelter directory") { ShelterDirectoryView(model: model, choose: { _ in }) }
+                        NavigationLink("Saved offline requests") { HelpRequestsView(model: model) }
                         NavigationLink("Offline request form") { HelpHomeView(model: model, openChat: { _ in }, sent: { _ in }, chooseShelter: {}) }
                         NavigationLink("Cloud configuration") { CloudView(model: model) }
-                        Text("Build \(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "?") · precise locations are not added to plaintext nearby messages.").font(.caption).foregroundStyle(.secondary)
-                    }.padding(.vertical, 12)
-                }
-            }.padding(20).frame(maxWidth: 650).frame(maxWidth: .infinity)
-        }.navigationTitle("Settings").background(RelayTheme.canvas)
-            .onAppear { cloud.pollingPaused = true }
-            .onDisappear { cloud.pollingPaused = false }
+                        Text("Build \(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "?")").font(.caption)
+                    }.padding(.vertical, 16)
+                }.font(.headline)
+            }.padding(.horizontal, 24).padding(.vertical, 16).frame(maxWidth: 650).frame(maxWidth: .infinity)
+        }.navigationTitle("").background(RelayTheme.canvas)
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+    }
+    private var sizeChoices: some View {
+        ForEach(["Normal", "Large", "Largest"], id: \.self) { value in
+            Button { readingSize = value } label: {
+                VStack(spacing: 12) {
+                    Text("Aa").font(.system(size: value == "Normal" ? 26 : value == "Large" ? 32 : 38, weight: .bold))
+                    Text(value).font(.body.bold()).fixedSize()
+                }.frame(maxWidth: .infinity, minHeight: 112).padding(.horizontal, 10)
+                    .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(.black, lineWidth: readingSize == value ? 4 : highContrast ? 3 : 1.5))
+            }.buttonStyle(.plain).accessibilityAddTraits(readingSize == value ? .isSelected : [])
+        }
     }
 }

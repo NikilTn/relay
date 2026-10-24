@@ -299,3 +299,12 @@ Recommended implementation order:
 
 Use one app with role-appropriate views. Nearby/path diagnostics remain engineering
 tools; shelters, requests and conversations become the primary product navigation.
+
+### Build16 candidate work
+
+The current worktree adds live AWS Transcribe with partial text and retained-audio
+recovery, a plain accessible interface, and `https://relay.stepcheck.app` as the
+verified demo API hostname. See `cloud/docs/STREAMING.md`,
+`cloud/docs/DEMO_HOSTING.md`, and `DEMO_READINESS_PLAN.md` for actual evidence and
+remaining demo gates. The backend still runs on the Mac. This candidate has not
+yet been installed on physical phones or distributed through TestFlight.

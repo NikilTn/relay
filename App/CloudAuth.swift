@@ -2,6 +2,7 @@ import Foundation
 import SwiftUI
 import AuthenticationServices
 import Security
+import CryptoKit
 import RelayCore
 
 struct CloudTokens: Codable {
@@ -25,7 +26,9 @@ struct CloudTokens: Codable {
     private var key: [String: Any] {
         #if os(macOS) && DEBUG
         // Ad-hoc Mac binaries have changing code requirements. Keep each build's test session separate.
-        let service = (Bundle.main.bundleIdentifier ?? "relay") + ".cloud.native.debug." + (Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0")
+        let signature = Bundle.main.bundleURL.appendingPathComponent("Contents/_CodeSignature/CodeResources")
+        let build = (try? Data(contentsOf: signature)).map { SHA256.hash(data: $0).map { String(format: "%02x", $0) }.joined() } ?? "unsigned"
+        let service = (Bundle.main.bundleIdentifier ?? "relay") + ".cloud.native.debug." + build
         #elseif os(macOS)
         let service = (Bundle.main.bundleIdentifier ?? "relay") + ".cloud.native"
         #else

@@ -625,3 +625,59 @@ Evidence: [HTTPS checks](evidence/https-tunnel-build-9.json),
 [Swift tests](evidence/automated-tests-build-9.txt),
 [backend tests](evidence/backend-tests-build-9.txt),
 [upload](evidence/testflight-upload-build-9.json).
+
+## 2026-10-24 — build16 candidate: plain UI, streaming speech and demo hostname
+
+This checkpoint is software/online testing, **not physical offline wireless
+verification**. Physical phones were locked and were not updated in this session.
+
+- Swift tests: **55 passed**; backend tests: **78 passed**, one dependency warning.
+  Added eventstream CRC/framing, authenticated live session, final persistence,
+  cached replay, cancellation/malformed audio/disconnect, session limits and crash
+  expiry, partial replacement, retained WAV, old audio-job decode, and endpoint
+  migration preservation/conflict tests.
+- Native iOS Simulator and macOS Debug targets built. The plain UI uses bold
+  system type, white backgrounds, outlined controls and a brown active accent.
+  Text-size and contrast preferences are functional; request drafts survived a
+  simulator restart. Final layout review remains in progress with this checkpoint.
+- Actual native Swift→custom HTTPS hostname→Mac→AWS Transcribe synthetic streaming
+  **PASS**. ID`9aa0fc7a-a639-4b7e-9896-02b535b56688`; input1.824s; first partial
+ 2108ms; durable completion3663ms; same-ID replay used the persisted result.
+  These are one sample, not physical mic/noise/radio or reliability measurements.
+- HTTPS`relay.stepcheck.app` **PASS**: valid TLS, both enrolled account roles and
+  subjects correct, no-store / CloudFront cache misses, anonymous request401.
+  Original website/mail DNS preserved. Backend still depends on this Mac and its
+  live Quick Tunnel; no PC or Lambda deployment is claimed.
+- Application caps preserved usage and increased to100 requests/20 audio jobs;
+  four concurrent live streams, one per account. Actual AWS quota report is
+  retained separately from these application caps.
+- Unified encrypted cloud/nearby shelter requests and the two-requester/Mac
+  rehearsal are still pending at this checkpoint. Existing plaintext chat is
+  not made confidential by this streaming/HTTPS work.
+
+Raw safe evidence: `docs/evidence/streaming-20261024/`. Private enrollment files,
+AWS credentials, signed URLs and raw private account data are excluded.
+
+Follow-up verification in the same build16 worktree:
+
+- Phone-size UI verified at Normal and Largest text sizes; high-contrast preference
+  changes outlines. Primary buttons/tabs are accessible, keyboard focus has an
+  explicit Done action, and the final bottom bar does not cover Review request.
+- Real online UI rehearsal: iPhone17 Pro simulator → custom HTTPS API → Mac
+  coordinator. Synthetic request`cd6c80c8-d2df-4cc5-bce3-131ac9e64701` received a
+  Bedrock preview (water packs, quantity2), was sent, and appeared in the Mac inbox.
+  Coordinator reserved2, requester showed approval, coordinator confirmed handover,
+  requester showed fulfillment. Mac stock changed from10 available/0 reserved/10
+  on hand to8/0/8. This is a synthetic ledger workflow, not actual aid delivery.
+- Inbox responses now include authorized history/reservation snapshots in the
+  existing batch read. Native sync focuses on queued mutations and the open request;
+  it no longer rotates through every old open request. Full78 backend and55 Swift
+  tests passed after this change; the focused batch projection test also passed
+  after adding history/reservation assertions.
+- Loopback TCP experiment **PASS**, including interrupted transfer/retry, duplicate
+  control, two real carrier process restarts and reverse receipt. Message
+ `34eb83bb-00ee-424f-828f-bf7a61b6cb64`, receipt
+ `fc2147cd-6423-44d7-b5a5-9e21b1d7a5e2`. Physical A–E remain **NOT TESTED** here.
+- AWS login credentials refreshed automatically via the login provider (observed
+  expiry advanced from10:44 to10:54 UTC). No console credential bypass or new IAM
+  access was used. API listener is now PID77564; worker75645/tunnel44716 remain.

@@ -6,12 +6,14 @@ let package = Package(
     products: [.library(name: "RelayCore", targets: ["RelayCore"]),
                .executable(name: "RelayLab", targets: ["RelayLab"]),
                .executable(name: "RelayCloudCheck", targets: ["RelayCloudCheck"]),
-               .executable(name: "RelayWorkflowCheck", targets: ["RelayWorkflowCheck"])],
+               .executable(name: "RelayWorkflowCheck", targets: ["RelayWorkflowCheck"]),
+               .executable(name: "RelaySpeechCheck", targets: ["RelaySpeechCheck"])],
     targets: [
         .target(name: "RelayCore", linkerSettings: [.linkedLibrary("sqlite3")]),
         .executableTarget(name: "RelayLab", dependencies: ["RelayCore"]),
         .executableTarget(name: "RelayCloudCheck", dependencies: ["RelayCore"]),
         .executableTarget(name: "RelayWorkflowCheck", dependencies: ["RelayCore"]),
+        .executableTarget(name: "RelaySpeechCheck", dependencies: ["RelayCore"]),
         .testTarget(name: "RelayCoreTests", dependencies: ["RelayCore"])
     ],
     swiftLanguageModes: [.v5]

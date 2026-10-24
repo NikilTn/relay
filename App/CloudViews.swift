@@ -22,7 +22,7 @@ struct CloudView: View {
                             .textInputAutocapitalization(.never).keyboardType(.URL)
                             #endif
                         Button("Sign in securely") { Task { await cloud.connect(signIn: true) } }.buttonStyle(.borderedProminent).disabled(cloud.busy || cloud.endpoint.isEmpty)
-                        Text("An enrolled account and hosted API are required. Nearby messages and saved requests work without signing in.").font(.caption).foregroundStyle(.secondary)
+                        Text("An enrolled account and hosted API are required. Nearby messages and saved requests work without signing in.").font(.caption).foregroundStyle(RelayTheme.secondary)
                     } else {
                         Text("\(cloud.profile!.role.capitalized) · \(cloud.profile!.incident_id)").font(.caption)
                         HStack {
@@ -36,7 +36,7 @@ struct CloudView: View {
                 if cloud.profile != nil {
                     RelayCard {
                         Text("Link a saved shelter").font(.headline)
-                        Text("Choose which authorized cloud inbox corresponds to a shelter saved on this device. Existing peer addresses stay the same.").font(.subheadline).foregroundStyle(.secondary)
+                        Text("Choose which authorized cloud inbox corresponds to a shelter saved on this device. Existing peer addresses stay the same.").font(.subheadline).foregroundStyle(RelayTheme.secondary)
                         Picker("Saved on this device", selection: $localID) {
                             Text("Choose local shelter").tag("")
                             ForEach(model.shelters) { Text($0.name).tag($0.id) }
@@ -61,7 +61,7 @@ struct CloudView: View {
                             Button("Load shelter requests") { Task { await cloud.loadInbox(shelterID: inboxID) } }.disabled(inboxID.isEmpty || cloud.busy)
                         }
                         Button("Load my cloud requests") { Task { await cloud.loadInbox() } }.disabled(cloud.busy)
-                        Text("Local requests can be queued from Requests → request → Cloud delivery. Future requests offer cloud delivery during review.").font(.caption).foregroundStyle(.secondary)
+                        Text("Local requests can be queued from Requests → request → Cloud delivery. Future requests offer cloud delivery during review.").font(.caption).foregroundStyle(RelayTheme.secondary)
                     }
                     ForEach(cloud.records.sorted { $0.submission.created_at > $1.submission.created_at }) { record in
                         NavigationLink { CloudRequestDetail(id: record.id) } label: {
@@ -88,7 +88,7 @@ struct CloudRequestPanel: View {
                 Text(record.result == nil ? "Queued on this device" : "Accepted by cloud")
                 NavigationLink("Open analysis and replies") { CloudRequestDetail(id: message.id) }
             } else {
-                Text("Nearby delivery and cloud acceptance are tracked separately.").font(.caption).foregroundStyle(.secondary)
+                Text("Nearby delivery and cloud acceptance are tracked separately.").font(.caption).foregroundStyle(RelayTheme.secondary)
                 Button("Queue this request for cloud") { Task { await cloud.queue(message) } }.disabled(!cloud.canUseCloud)
             }
             if !cloud.problem.isEmpty { Text(cloud.problem).font(.caption).foregroundStyle(.orange) }
@@ -123,7 +123,7 @@ struct CloudRequestDetail: View {
                             }
                             ForEach(result.result?.review_reasons ?? [], id: \.self) { Text($0).font(.caption).foregroundStyle(.orange) }
                             if let error = result.error { Text(error.message).font(.caption) }
-                            Text("A proposal does not reserve supplies or authorize an assignment.").font(.caption).foregroundStyle(.secondary)
+                            Text("A proposal does not reserve supplies or authorize an assignment.").font(.caption).foregroundStyle(RelayTheme.secondary)
                         }
                         RelayCard {
                             Text("Request conversation").font(.headline)
@@ -133,7 +133,7 @@ struct CloudRequestDetail: View {
                                     Text(event.author_role.capitalized).font(.caption.bold())
                                     if let status = event.status { Text(status.replacingOccurrences(of: "_", with: " ")).font(.subheadline.bold()) }
                                     if !event.text.isEmpty { Text(event.text) }
-                                    Text(event.created_at, format: .dateTime.hour().minute()).font(.caption).foregroundStyle(.secondary)
+                                    Text(event.created_at, format: .dateTime.hour().minute()).font(.caption).foregroundStyle(RelayTheme.secondary)
                                 }.padding(.vertical, 6)
                             }
                             TextField("Reply about this request", text: $reply, axis: .vertical).lineLimit(2...5).textFieldStyle(.roundedBorder).focused($editing)
@@ -156,7 +156,7 @@ struct CloudRequestDetail: View {
                                     Button("Discard unsent update and refresh") { Task { await cloud.discardConflictingEvent(id) } }
                                 }
                             }
-                            Text("Progress is reported by people. Inventory allocation and independent fulfillment verification are not implemented.").font(.caption).foregroundStyle(.secondary)
+                            Text("Progress is reported by people. Inventory allocation and independent fulfillment verification are not implemented.").font(.caption).foregroundStyle(RelayTheme.secondary)
                         }
                     }
                 }.padding(20).frame(maxWidth: 720).frame(maxWidth: .infinity)
@@ -169,42 +169,51 @@ struct VoiceInputView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var cloud: CloudModel
     @FocusState private var editing: Bool
-    @StateObject private var recorder = VoiceRecorder()
+    @StateObject private var live = LiveSpeechRecorder()
     @State private var importingWAV = false
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                WorkflowHeader(eyebrow: "Voice", title: "Say what you need.", subtitle: "Review the transcript before sending.")
+            VStack(alignment: .leading, spacing: 18) {
+                WorkflowHeader(eyebrow: "Voice", title: "Record a request", subtitle: "Words appear while you speak. Review them before sending.")
                 RelayCard {
-                    WorkflowSection(title: "1. Record your request", symbol: "mic.fill", subtitle: "Up to 60 seconds · English · internet needed")
+                    Text("Live transcription").font(.title3.bold())
+                    Text("English · up to 60 seconds · internet required").font(.subheadline).foregroundStyle(RelayTheme.secondary)
                     Button {
-                        if recorder.recording { recorder.stop() }
-                        else { Task { await recorder.start { url in Task { await cloud.saveRecording(url: url) } } } }
-                    } label: { Text(recorder.recording ? "Stop recording" : "Start recording") }
-                        .buttonStyle(PrimaryButton()).disabled(cloud.audioBusy)
-                    Button("Import WAV recording") { importingWAV = true }.buttonStyle(WorkflowSecondaryButton()).disabled(recorder.recording || cloud.audioBusy)
-                    if recorder.recording { Text("RECORDING").font(.system(.caption, design: .monospaced)).foregroundStyle(RelayTheme.accent) }
-                    if !recorder.problem.isEmpty { WorkflowNotice(text: recorder.problem) }
-                }
-                if cloud.audioJob != nil {
-                    RelayCard {
-                        WorkflowSection(title: "2. Turn speech into text", symbol: "text.quote", subtitle: "Processed by Amazon Transcribe")
-                        Button { Task { await cloud.transcribe() } } label: {
-                            HStack { if cloud.audioBusy { ProgressView().controlSize(.small) }; Text(cloud.audioBusy ? "Transcribing…" : "Transcribe / resume") }
-                        }.buttonStyle(WorkflowSecondaryButton()).disabled(recorder.recording || cloud.audioBusy)
-                        Text(cloud.audioStatus).font(.subheadline).foregroundStyle(.secondary)
-                        if cloud.audioBusy { Text("This can take a little time. Your recording is saved for retry.").font(.caption).foregroundStyle(.secondary) }
+                        if live.recording { live.stop() }
+                        else { Task { await live.start(cloud: cloud) } }
+                    } label: {
+                        Text(live.recording ? "Stop recording" : live.state == "connecting" ? "Connecting…" : live.state == "finishing" ? "Finishing transcript…" : "Start recording")
+                    }.buttonStyle(PrimaryButton()).disabled((cloud.audioBusy || live.working) && !live.recording)
+                    if live.working {
+                        Text(String(format: "%.1f / 60 seconds", live.seconds)).font(.body.monospacedDigit())
+                        if !live.text.isEmpty { Text(live.text).font(.title3).frame(maxWidth: .infinity, alignment: .leading) }
+                        Text(live.state == "finishing" ? "Waiting for the final words…" : "Live text may change as you speak.").font(.caption).foregroundStyle(RelayTheme.secondary)
                     }
+                    if !live.problem.isEmpty { WorkflowNotice(text: live.problem) }
+                    if live.state == "failed", !live.text.isEmpty {
+                        Text("Incomplete transcript").font(.headline)
+                        Text(live.text).foregroundStyle(RelayTheme.secondary)
+                    }
+                    Button("Import a saved WAV") { importingWAV = true }.buttonStyle(WorkflowSecondaryButton()).disabled(cloud.audioBusy || live.working)
                 }
-                if cloud.audioJob?.transcript != nil {
+                if let job = cloud.audioJob, !live.working, live.state == "idle" || live.state == "completed" || live.seconds > 0 {
                     RelayCard {
-                        WorkflowSection(title: "3. Check the words", symbol: "checkmark.bubble.fill", subtitle: "Review names, quantities and locations.")
-                        TextField("Review transcript", text: $cloud.transcript, axis: .vertical).lineLimit(5...12).textFieldStyle(WorkflowInput()).focused($editing)
-                        Button("Prepare request from this text") { cloud.applyTranscript(); dismiss(); Task { await cloud.previewRequest() } }.buttonStyle(PrimaryButton())
+                        Text(job.transcript == nil ? "Saved recording" : "Review the transcript").font(.title3.bold())
+                        if job.transcript == nil {
+                            Button(cloud.audioBusy ? "Transcribing…" : "Transcribe / resume") { Task { await cloud.transcribe() } }
+                                .buttonStyle(WorkflowSecondaryButton()).disabled(cloud.audioBusy)
+                            if cloud.audioBusy { ProgressView() }
+                        } else {
+                            TextField("Review transcript", text: $cloud.transcript, axis: .vertical).lineLimit(5...12).textFieldStyle(WorkflowInput()).focused($editing)
+                            Text("Check names, quantities and locations.").font(.subheadline).foregroundStyle(RelayTheme.secondary)
+                            Button("Use this text") { cloud.applyTranscript(); dismiss(); Task { await cloud.previewRequest() } }
+                                .buttonStyle(PrimaryButton()).disabled(cloud.transcript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        }
+                        Text(cloud.audioStatus).font(.caption).foregroundStyle(RelayTheme.secondary)
                     }
                 }
                 if !cloud.problem.isEmpty { WorkflowNotice(text: cloud.problem) }
-                Text("Use synthetic test data. Audio stays separate from nearby text messaging.").font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
+                Text("Recording never sends a shelter request. You review and send separately.").font(.caption).foregroundStyle(RelayTheme.secondary)
             }.padding(.horizontal, 24).padding(.vertical, 16).frame(maxWidth: 680).frame(maxWidth: .infinity)
         }.background(RelayTheme.canvas).navigationTitle("")
             #if os(iOS)
@@ -213,13 +222,12 @@ struct VoiceInputView: View {
             #endif
             .fileImporter(isPresented: $importingWAV, allowedContentTypes: [.audio]) { result in
                 do {
-                    let source = try result.get()
-                    let copy = try VoiceRecorder.importWAV(source)
+                    let source = try result.get(), copy = try VoiceRecorder.importWAV(source)
                     Task { await cloud.saveRecording(url: copy) }
                 } catch { if (error as NSError).code != NSUserCancelledError { cloud.problem = error.localizedDescription } }
             }
             .toolbar { ToolbarItem(placement: .primaryAction) { if editing { Button("Done") { editing = false } } } }
-            .onDisappear { if recorder.recording { recorder.stop() } }
+            .onDisappear { live.cancel() }
     }
 }
 struct LocalRequestThread: View {
@@ -236,7 +244,7 @@ struct LocalRequestThread: View {
                     Text(row.message.originID == model.deviceID ? "You" : model.peerTitle(row.message.originID)).font(.caption.bold())
                     if let progress = update.progress { Text(progress.replacingOccurrences(of: "_", with: " ")).font(.subheadline.bold()) }
                     if !update.text.isEmpty { Text(update.text) }
-                    Text(row.status(deviceID: model.deviceID)).font(.caption).foregroundStyle(.secondary)
+                    Text(row.status(deviceID: model.deviceID)).font(.caption).foregroundStyle(RelayTheme.secondary)
                 }.padding(.vertical, 6)
             }
             TextField("Reply about this request", text: $text, axis: .vertical).lineLimit(2...5).textFieldStyle(.roundedBorder).focused($editing)
@@ -251,7 +259,7 @@ struct LocalRequestThread: View {
                 model.sendRequestUpdate(request, text: text, progress: progress.isEmpty ? nil : progress) { text = ""; progress = "" }
             }.disabled(model.sending || (text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && progress.isEmpty))
             if editing { Button("Done") { editing = false } }
-            Text("Device-reported updates; staff identity is unverified. A cancellation note does not recall messages already carried by other devices.").font(.caption).foregroundStyle(.secondary)
+            Text("Device-reported updates; staff identity is unverified. A cancellation note does not recall messages already carried by other devices.").font(.caption).foregroundStyle(RelayTheme.secondary)
         }
     }
 }

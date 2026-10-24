@@ -204,13 +204,20 @@ class Service(InterpretationMixin, InventoryMixin):
                 raise APIError(400, "invalid_cursor", "Cursor does not match this authorized inbox") from None
         rows, next_after = self.store.query(pk, after=after, limit=limit)
         keys = [key(kind, reference["request_id"]) for _, reference, _ in rows
-                for kind in ("request", "reservation")]
+                for kind in ("request", "reservation", "history")]
         batch = self.store.get_many(keys)
         records = []
         for _, reference, _ in rows:
             row = batch.get(key("request", reference["request_id"]))
             if row and self.can_read(principal, row[0]):
-                records.append(self.public_request(row[0], batch.get(key("reservation", reference["request_id"]))))
+                identifier = reference["request_id"]
+                reservation = batch.get(key("reservation", identifier))
+                history = batch.get(key("history", identifier))
+                result = self.public_request(row[0], reservation)
+                result["reservation"] = reservation[0] if reservation else None
+                result["history"] = history[0] if history else {"request_id": identifier, "revision": 0,
+                    "status": "new", "events": [], "resource_allocation_verified": False}
+                records.append(result)
         next_cursor = base64.urlsafe_b64encode(canonical({"scope": scope, "after": next_after}).encode()).decode().rstrip("=") if next_after else None
         return {"items": records, "next_cursor": next_cursor}
 
@@ -261,7 +268,20 @@ class Service(InterpretationMixin, InventoryMixin):
         return row
 
     def get_audio(self, principal, identifier):
-        return self.public_transcription(self.owned_audio(principal, identifier)[0], self.clock())
+        record, version = self.owned_audio(principal, identifier)
+        now = self.clock()
+        if (record["status"] == "processing" and
+                (record.get("provider_evidence") or {}).get("transport") == "streaming" and
+                now > record["started_at"] + self.settings.max_audio_seconds + 45):
+            # An API process may disappear without its finally block. A bounded
+            # stale session must not trap the retained recording in processing.
+            record = {**record, "status": "failed", "transcript": None,
+                      "error": {"code": "stream_expired", "message": "The live session ended. Retry the saved recording.", "retryable": False}}
+            try:
+                self.store.transact(puts=[Put(*key("transcription", identifier), record, version)])
+            except Conflict:
+                record = self.owned_audio(principal, identifier)[0]
+        return self.public_transcription(record, now)
 
     def start_audio(self, principal, identifier, operation_id):
         self.writable()
@@ -270,6 +290,8 @@ class Service(InterpretationMixin, InventoryMixin):
             raise APIError(409, "idempotency_conflict", "Reuse the original transcription start operation ID")
         if record["status"] in {"queued", "processing", "completed"}:
             return self.public_transcription(record, self.clock())
+        if (record.get("provider_evidence") or {}).get("transport") == "streaming":
+            raise APIError(409, "stream_not_resumable", "Start a new live session or import the retained recording as a new audio job.")
         if record["status"] == "failed" and (not record["error"]["retryable"] or record["start_count"] >= 3):
             raise APIError(409, "transcription_terminal", "This transcription cannot be restarted; allocate a new recording")
         try:

@@ -88,8 +88,10 @@ public struct CloudAudioJob: Codable {
     public let sha256: String
     public let byteLength: Int
     public var transcript: String?
-    public init(fileName: String, incidentID: String, data: Data) {
-        id = UUID().uuidString.lowercased(); allocationID = UUID().uuidString.lowercased(); startID = UUID().uuidString.lowercased()
+    public var source: String?
+    public init(fileName: String, incidentID: String, data: Data, id: String? = nil, source: String? = nil) {
+        self.source = source
+        self.id = id ?? UUID().uuidString.lowercased(); allocationID = UUID().uuidString.lowercased(); startID = UUID().uuidString.lowercased()
         self.fileName = fileName; self.incidentID = incidentID; byteLength = data.count
         sha256 = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
     }

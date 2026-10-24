@@ -5,7 +5,7 @@ import RelayCore
 struct RelayApp: App {
     @StateObject private var model = RelayModel()
     var body: some Scene {
-        WindowGroup { ContentView(model: model).tint(RelayTheme.accent) }
+        WindowGroup { ContentView(model: model).tint(RelayTheme.accent).modifier(ReadingPreferences()) }
     }
 }
 
@@ -273,34 +273,23 @@ final class RelayModel: ObservableObject {
 }
 
 enum RelayTheme {
-    static let accent = Color("RelayAccent")
-    static var action: Color {
-        #if os(iOS)
-        Color(uiColor: .label)
-        #else
-        Color(nsColor: .labelColor)
-        #endif
+    static let accent = Color(red: 0.55, green: 0.20, blue: 0.025)
+    static let secondary = Color(red: 0.29, green: 0.29, blue: 0.29)
+    static let action = Color.black
+    static let onAction = Color.white
+    static let incoming = Color.white
+    static let canvas = Color.white
+}
+
+struct ReadingPreferences: ViewModifier {
+    @AppStorage("relay.readingSize") private var readingSize = "Normal"
+    @Environment(\.dynamicTypeSize) private var systemSize
+    private var preferred: DynamicTypeSize {
+        let selected: DynamicTypeSize = readingSize == "Largest" ? .accessibility1 : readingSize == "Large" ? .xxxLarge : .large
+        return max(systemSize, selected)
     }
-    static var onAction: Color {
-        #if os(iOS)
-        Color(uiColor: .systemBackground)
-        #else
-        Color(nsColor: .textBackgroundColor)
-        #endif
-    }
-    static var incoming: Color {
-        #if os(iOS)
-        Color(uiColor: .secondarySystemGroupedBackground)
-        #else
-        Color(nsColor: .controlBackgroundColor)
-        #endif
-    }
-    static var canvas: Color {
-        #if os(iOS)
-        Color(uiColor: UIColor { $0.userInterfaceStyle == .dark ? UIColor(red: 0.075, green: 0.078, blue: 0.075, alpha: 1) : UIColor(red: 0.97, green: 0.965, blue: 0.95, alpha: 1) })
-        #else
-        Color(nsColor: NSColor(name: nil) { $0.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? NSColor(red: 0.075, green: 0.078, blue: 0.075, alpha: 1) : NSColor(red: 0.97, green: 0.965, blue: 0.95, alpha: 1) })
-        #endif
+    func body(content: Content) -> some View {
+        content.preferredColorScheme(.light).dynamicTypeSize(preferred)
     }
 }
 
@@ -323,9 +312,9 @@ struct RelayCard<Content: View>: View {
 struct PrimaryButton: ButtonStyle {
     @Environment(\.isEnabled) private var enabled
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label.font(.body.weight(.semibold)).frame(maxWidth: .infinity).padding(.vertical, 16)
+        configuration.label.font(.body.weight(.bold)).multilineTextAlignment(.center).frame(maxWidth: .infinity).padding(.horizontal, 14).padding(.vertical, 17)
             .foregroundStyle(enabled ? RelayTheme.onAction : Color.secondary)
-            .background(enabled ? RelayTheme.action : Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+            .background(enabled ? RelayTheme.action : Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
             .opacity(configuration.isPressed ? 0.70 : 1)
     }
 }
@@ -341,38 +330,97 @@ private struct StatusPill: View {
     }
 }
 
+struct HideNativeTabBar: ViewModifier {
+    func body(content: Content) -> some View {
+        #if os(iOS)
+        content.toolbar(.hidden, for: .tabBar)
+        #else
+        content
+        #endif
+    }
+}
+
 struct ContentView: View {
     @ObservedObject var model: RelayModel
     @StateObject private var cloud = CloudModel()
     @State private var selectedTab = 3
     @State private var requestPath: [String] = []
-    @State private var chatPath: [String] = []
-    @State private var choosingPeer = false
-    @State private var pendingPeer: String?
     @Environment(\.scenePhase) private var scenePhase
-    private var conversations: [RelayConversation] { RelayConversation.project(model.messages, deviceID: model.deviceID) }
 
     var body: some View {
+        VStack(spacing: 0) {
         TabView(selection: $selectedTab) {
             if cloud.isDispatcher {
                 NavigationStack { WorkflowRequestsView(model: model, staff: true) }
-                    .tabItem { Text("Inbox") }.tag(3)
+                    .tabItem { Label("Inbox", systemImage: "tray.fill") }.tag(3).modifier(HideNativeTabBar())
                 NavigationStack { InventoryView(model: model) }
-                    .tabItem { Text("Inventory") }.tag(4)
+                    .tabItem { Label("Inventory", systemImage: "shippingbox.fill") }.tag(4).modifier(HideNativeTabBar())
             } else {
                 NavigationStack { PublicHelpView(model: model) { id in selectedTab = 4; requestPath = [id] } }
-                    .tabItem { Text("Help") }.tag(3)
+                    .tabItem { Label("Ask for help", systemImage: "lifepreserver") }.tag(3).modifier(HideNativeTabBar())
                 NavigationStack(path: $requestPath) {
                     WorkflowRequestsView(model: model, staff: false)
                         .navigationDestination(for: String.self) { id in WorkflowRequestDetail(id: id) }
-                }.tabItem { Text("Requests") }.tag(4)
+                }.tabItem { Label("Requests", systemImage: "tray.fill") }.tag(4).modifier(HideNativeTabBar())
             }
-            NavigationStack(path: $chatPath) {
+            NavigationStack { WorkflowSettings(model: model) }
+                .tabItem { Label("Settings", systemImage: "gearshape.fill") }.tag(5).modifier(HideNativeTabBar())
+        }
+            #if os(iOS)
+            .toolbar(.hidden, for: .tabBar)
+            #endif
+            #if os(iOS)
+                HStack(spacing: 0) {
+                    tabButton(cloud.isDispatcher ? "Inbox" : "Ask for help", symbol: cloud.isDispatcher ? "tray.fill" : "lifepreserver", tag: 3)
+                    tabButton(cloud.isDispatcher ? "Inventory" : "Requests", symbol: cloud.isDispatcher ? "shippingbox.fill" : "tray.fill", tag: 4)
+                    tabButton("Settings", symbol: "gearshape.fill", tag: 5)
+                }.padding(.top, 12).padding(.bottom, 4).background(.white)
+                    .overlay(alignment: .top) { Rectangle().fill(.black).frame(height: 1.5) }
+            #endif
+        }.tint(RelayTheme.accent)
+            .environmentObject(cloud)
+        .task(id: model.ready) { if model.ready { model.setNearby(active: true); Task { await cloud.attach(model) } } }
+        .onChange(of: cloud.profile?.role) { _, _ in selectedTab = 3; requestPath = [] }
+            .alert("Couldn’t complete that action", isPresented: Binding(get: { !model.error.isEmpty }, set: { if !$0 { model.error = "" } })) {
+                Button("OK") { model.error = "" }
+            } message: { Text(model.error) }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active { model.setNearby(active: true) }
+                else if phase == .background { model.setNearby(active: false) }
+                #if os(iOS)
+                UIApplication.shared.isIdleTimerDisabled = phase == .active
+                #endif
+            }
+            #if os(macOS)
+            .frame(minWidth: 540, minHeight: 650)
+            #endif
+    }
+    private func tabButton(_ title: String, symbol: String, tag: Int) -> some View {
+        Button { selectedTab = tag } label: {
+            VStack(spacing: 6) {
+                Image(systemName: symbol).font(.system(size: 23, weight: .semibold)).accessibilityHidden(true)
+                Text(title).font(.caption.bold()).multilineTextAlignment(.center)
+            }.foregroundStyle(selectedTab == tag ? RelayTheme.accent : .black)
+                .frame(maxWidth: .infinity, minHeight: 52).contentShape(Rectangle())
+        }.buttonStyle(.plain).accessibilityLabel(title).accessibilityIdentifier("workspaceTab" + String(tag))
+            .accessibilityAddTraits(selectedTab == tag ? .isSelected : [])
+    }
+
+}
+
+struct NearbyMessagesView: View {
+    @ObservedObject var model: RelayModel
+    @State private var chatPath: [String] = []
+    @State private var choosingPeer = false
+    @State private var pendingPeer: String?
+    private var conversations: [RelayConversation] { RelayConversation.project(model.messages, deviceID: model.deviceID) }
+    var body: some View {
+        NavigationStack(path: $chatPath) {
                 VStack(spacing: 0) {
                     HStack(alignment: .center) {
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("Nearby").font(.system(.largeTitle, design: .serif).weight(.medium))
-                            Text("Direct device conversations").font(.subheadline).foregroundStyle(.secondary)
+                            Text("Nearby").font(.largeTitle.weight(.bold))
+                            Text("Direct device conversations").font(.subheadline).foregroundStyle(RelayTheme.secondary)
                         }
                         Spacer()
                         Button { choosingPeer = true } label: {
@@ -385,7 +433,7 @@ struct ContentView: View {
                             VStack(spacing: 14) {
                                 Text("Start a conversation").font(.title3.bold())
                                 Text("Choose a nearby device, or enter its ID.\nYour messages stay saved between encounters.")
-                                    .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                                    .font(.subheadline).foregroundStyle(RelayTheme.secondary).multilineTextAlignment(.center)
                                 Button("New chat") { choosingPeer = true }.buttonStyle(.borderedProminent).controlSize(.large)
                                     .disabled(!model.ready)
                             }.padding(.horizontal, 24).padding(.top, 70)
@@ -400,37 +448,17 @@ struct ContentView: View {
                             }.padding(.horizontal, 8)
                         }
                         Text("Shelter conversations are in Requests or Inbox. Devices carry eligible nearby messages automatically.")
-                            .font(.caption2).foregroundStyle(.secondary).padding(20)
+                            .font(.caption2).foregroundStyle(RelayTheme.secondary).padding(20)
                     }
                 }.background(RelayTheme.canvas)
                     .navigationDestination(for: String.self) { peerID in
                         ConversationView(model: model, peerID: peerID) { choosingPeer = true }
                     }
-            }.tabItem { Text("Nearby") }.tag(0)
-        }.tint(RelayTheme.accent)
-            .environmentObject(cloud)
-        .task(id: model.ready) { if model.ready { model.setNearby(active: true); Task { await cloud.attach(model) } } }
-        .onChange(of: cloud.profile?.role) { _, _ in selectedTab = 3; requestPath = [] }
+            }
         .sheet(isPresented: $choosingPeer, onDismiss: {
-                if let id = pendingPeer { pendingPeer = nil; openChat(id) }
-            }) {
-                RecipientPicker(model: model) { id in pendingPeer = id; choosingPeer = false }
-            }
-            .alert("Couldn’t complete that action", isPresented: Binding(get: { chatPath.isEmpty && !model.error.isEmpty }, set: { if !$0 { model.error = "" } })) {
-                Button("OK") { model.error = "" }
-            } message: { Text(model.error) }
-            .onChange(of: scenePhase) { _, phase in
-                if phase == .active { model.setNearby(active: true) }
-                else if phase == .background { model.setNearby(active: false) }
-                #if os(iOS)
-                UIApplication.shared.isIdleTimerDisabled = phase == .active
-                #endif
-            }
-            #if os(macOS)
-            .frame(minWidth: 540, minHeight: 650)
-            #endif
+            if let id = pendingPeer { pendingPeer = nil; chatPath = [id] }
+        }) { RecipientPicker(model: model) { id in pendingPeer = id; choosingPeer = false } }
     }
-    private func openChat(_ id: String) { selectedTab = 0; chatPath = [id] }
 }
 
 private struct PeerAvatar: View {
@@ -454,15 +482,15 @@ private struct ConversationRow: View {
                 HStack {
                     Text(model.peerTitle(conversation.peerID)).font(.headline).lineLimit(1)
                     Spacer(minLength: 6)
-                    Text(row.message.createdAt, style: .time).font(.caption2).foregroundStyle(.secondary)
+                    Text(row.message.createdAt, style: .time).font(.caption2).foregroundStyle(RelayTheme.secondary)
                 }
                 Text((row.message.originID == model.deviceID ? "You: " : "") + row.message.payload.text)
-                    .font(.subheadline).foregroundStyle(.secondary).lineLimit(2).multilineTextAlignment(.leading)
+                    .font(.subheadline).foregroundStyle(RelayTheme.secondary).lineLimit(2).multilineTextAlignment(.leading)
                 HStack(spacing: 6) {
                     Text(String(conversation.peerID.prefix(8))).font(.system(.caption2, design: .monospaced))
                     Text("·")
                     Text(row.message.originID == model.deviceID ? row.chatStatus : "Received")
-                }.font(.caption2).foregroundStyle(.secondary)
+                }.font(.caption2).foregroundStyle(RelayTheme.secondary)
             }
             Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(.tertiary)
         }.padding(.horizontal, 16).padding(.vertical, 16).contentShape(Rectangle())
@@ -486,7 +514,7 @@ struct ConnectionCard: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(!model.active ? "Nearby paused" : model.connected.isEmpty ? "Looking for a connection" : "\(model.connected.count) nearby connection\(model.connected.count == 1 ? "" : "s")")
                     .font(.subheadline.weight(.medium))
-                Text("Messages remain saved between encounters").font(.caption).foregroundStyle(.secondary)
+                Text("Messages remain saved between encounters").font(.caption).foregroundStyle(RelayTheme.secondary)
             }
             Spacer(minLength: 4)
             Button(model.active ? "Pause" : "Connect") { model.toggle() }.font(.subheadline).buttonStyle(.plain)
@@ -509,17 +537,17 @@ private struct RecipientPicker: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     if !model.connected.isEmpty {
-                        Text("CONNECTED NOW").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                        Text("CONNECTED NOW").font(.caption.weight(.semibold)).foregroundStyle(RelayTheme.secondary)
                         ForEach(model.connected, id: \.deviceID) { peer in peerButton(peer) }
                     }
                     if !previous.isEmpty {
-                        Text("PREVIOUSLY MET").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                        Text("PREVIOUSLY MET").font(.caption.weight(.semibold)).foregroundStyle(RelayTheme.secondary)
                         ForEach(previous, id: \.deviceID) { peer in peerButton(peer) }
                     }
                     if model.known.isEmpty {
                         Label("No devices met yet", systemImage: "person.2").font(.headline)
                         Text("Start connections on both devices, or paste the other device’s ID from Tools.")
-                            .font(.subheadline).foregroundStyle(.secondary)
+                            .font(.subheadline).foregroundStyle(RelayTheme.secondary)
                         if !model.active { Button("Start nearby connections") { model.toggle() }.buttonStyle(.bordered) }
                     }
                     VStack(alignment: .leading, spacing: 12) {
@@ -531,7 +559,7 @@ private struct RecipientPicker: View {
                             .textInputAutocapitalization(.never)
                             #endif
                         Text(normalized == model.deviceID ? "That is your own device ID. Choose another device." : "The destination can be offline. A relay can carry messages to it later.")
-                            .font(.caption).foregroundStyle(.secondary)
+                            .font(.caption).foregroundStyle(RelayTheme.secondary)
                         Button("Open chat") { select(normalized) }.buttonStyle(PrimaryButton()).disabled(!valid)
                     }.padding(16).background(.background, in: RoundedRectangle(cornerRadius: 16))
                 }.padding(20).frame(maxWidth: 620).frame(maxWidth: .infinity)
@@ -555,7 +583,7 @@ private struct RecipientPicker: View {
                 PeerAvatar(title: model.peerTitle(peer.deviceID))
                 VStack(alignment: .leading, spacing: 4) {
                     Text(model.peerTitle(peer.deviceID)).font(.headline).foregroundStyle(.primary)
-                    Text(String(peer.deviceID.prefix(8))).font(.system(.caption, design: .monospaced)).foregroundStyle(.secondary)
+                    Text(String(peer.deviceID.prefix(8))).font(.system(.caption, design: .monospaced)).foregroundStyle(RelayTheme.secondary)
                 }
                 Spacer(); Image(systemName: "chevron.right").font(.caption)
             }.padding(14).background(.background, in: RoundedRectangle(cornerRadius: 16))
@@ -580,7 +608,7 @@ private struct ConversationView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(direct ? "Connected now" : "Messages stay queued between encounters")
                     Text("To: \(model.peerTitle(peerID)) · \(peerID.prefix(8))").lineLimit(1)
-                }.font(.caption).foregroundStyle(.secondary)
+                }.font(.caption).foregroundStyle(RelayTheme.secondary)
                 Spacer(minLength: 0)
                 if !model.active { Button("Connect") { model.toggle() }.font(.caption.weight(.semibold)).frame(minHeight: 36) }
             }.padding(.horizontal, 16).padding(.vertical, 5)
@@ -590,10 +618,10 @@ private struct ConversationView: View {
                     ScrollView {
                         LazyVStack(spacing: 12) {
                             Text("Nearby conversation · synthetic demo").font(.caption2)
-                                .foregroundStyle(.secondary).padding(.vertical, 12)
+                                .foregroundStyle(RelayTheme.secondary).padding(.vertical, 12)
                             if messages.isEmpty {
                                 Text("Send your first message.\nIt will be saved even when this device isn’t nearby.")
-                                    .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center).padding(.vertical, 30)
+                                    .font(.subheadline).foregroundStyle(RelayTheme.secondary).multilineTextAlignment(.center).padding(.vertical, 30)
                             }
                             ForEach(messages) { row in
                                 ChatBubble(row: row, outgoing: row.message.originID == model.deviceID,
@@ -694,7 +722,7 @@ private struct ChatBubble: View {
                         Image(systemName: row.finalReceiptID != nil ? "checkmark.circle.fill" : "clock")
                         Text(row.chatStatus)
                     }
-                }.font(.caption2).foregroundStyle(.secondary).padding(.horizontal, 4)
+                }.font(.caption2).foregroundStyle(RelayTheme.secondary).padding(.horizontal, 4)
             }.frame(maxWidth: maxWidth, alignment: outgoing ? .trailing : .leading)
             if !outgoing { Spacer(minLength: 24) }
         }.frame(maxWidth: .infinity)
@@ -722,25 +750,25 @@ struct NearbyView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 ConnectionCard(model: model)
-                HStack { Text("Connected devices").font(.title2.bold()); Spacer(); Text("\(model.connected.count)").foregroundStyle(.secondary) }
+                HStack { Text("Connected devices").font(.title2.bold()); Spacer(); Text("\(model.connected.count)").foregroundStyle(RelayTheme.secondary) }
                 if model.connected.isEmpty {
                     RelayCard {
                         Label("Bring another device nearby", systemImage: "iphone.radiowaves.left.and.right").font(.headline)
                         Text("Open RELAY on both devices and start nearby connections. Keep Wi-Fi and Bluetooth on, and allow Local Network access.")
-                            .font(.subheadline).foregroundStyle(.secondary)
+                            .font(.subheadline).foregroundStyle(RelayTheme.secondary)
                         if model.forceRoute { Label("Forced relay route is on. Sender A and Receiver C cannot connect directly.", systemImage: "arrow.triangle.branch").font(.caption).foregroundStyle(.orange) }
                     }
                 }
                 ForEach(model.connected, id: \.deviceID) { peer in peerCard(peer, online: true) }
                 if !remembered.isEmpty {
                     Text("Previously met").font(.title2.bold())
-                    Text("Queue a message now. It can travel when you meet again, or through a relay.").font(.subheadline).foregroundStyle(.secondary)
+                    Text("Queue a message now. It can travel when you meet again, or through a relay.").font(.subheadline).foregroundStyle(RelayTheme.secondary)
                     ForEach(remembered, id: \.deviceID) { peer in peerCard(peer, online: false) }
                 }
                 RelayCard {
                     Label("For a real offline test", systemImage: "wifi.slash").font(.headline)
                     Text("Turn off cellular and disconnect from Wi-Fi networks and hotspots. Leave the Wi-Fi and Bluetooth radios on. Unplug USB and keep both apps open.")
-                        .font(.subheadline).foregroundStyle(.secondary)
+                        .font(.subheadline).foregroundStyle(RelayTheme.secondary)
                     Text("Peer-to-peer path: not yet verified.").font(.caption).foregroundStyle(.orange)
                 }
             }.padding(20).frame(maxWidth: 760).frame(maxWidth: .infinity)
@@ -752,7 +780,7 @@ struct NearbyView: View {
                 PeerAvatar(title: model.peerTitle(peer.deviceID))
                 VStack(alignment: .leading, spacing: 4) {
                     Text(model.addressLabel(peer.deviceID)).font(.headline)
-                    Text(online ? "Connected now" : "Currently disconnected").font(.caption).foregroundStyle(.secondary)
+                    Text(online ? "Connected now" : "Currently disconnected").font(.caption).foregroundStyle(RelayTheme.secondary)
                 }
                 Spacer()
                 if online { Image(systemName: "circle.fill").font(.caption2).foregroundStyle(RelayTheme.accent) }
@@ -778,7 +806,7 @@ private struct MessageDetailView: View {
                         RelayCard {
                             DeliveryBadge(row: row, deviceID: model.deviceID)
                             Text(row.message.payload.text).font(.title3).textSelection(.enabled)
-                            Text(row.message.createdAt, format: .dateTime.month().day().hour().minute()).font(.caption).foregroundStyle(.secondary)
+                            Text(row.message.createdAt, format: .dateTime.month().day().hour().minute()).font(.caption).foregroundStyle(RelayTheme.secondary)
                             if row.message.destinationID == model.deviceID && row.message.originID != model.deviceID && row.message.messageType == .request {
                                 Button { reply(row.message.originID) } label: { Label("Reply", systemImage: "arrowshape.turn.up.left") }.buttonStyle(PrimaryButton())
                             }
@@ -794,7 +822,7 @@ private struct MessageDetailView: View {
                                     progress("Final delivery receipt", detail: "A separate receipt must travel back from the destination.", done: row.finalReceiptID != nil)
                                 }
                             }
-                            Text(row.status(deviceID: model.deviceID)).font(.caption).foregroundStyle(.secondary)
+                            Text(row.status(deviceID: model.deviceID)).font(.caption).foregroundStyle(RelayTheme.secondary)
                         }
                         RelayCard {
                             Text("Message details").font(.headline)
@@ -804,7 +832,7 @@ private struct MessageDetailView: View {
                             if let original = row.message.payload.originalMessageID { detail("Receipt for", original) }
                             if let receipt = row.finalReceiptID { detail("Final receipt", receipt) }
                             HStack { Label("\(row.message.hopCount) / \(row.message.maxHops) hops", systemImage: "arrow.triangle.branch"); Spacer(); Text("\(row.attempts) attempts") }.font(.caption)
-                            Text("Expires \(row.message.expiresAt.formatted(date: .abbreviated, time: .shortened))").font(.caption).foregroundStyle(.secondary)
+                            Text("Expires \(row.message.expiresAt.formatted(date: .abbreviated, time: .shortened))").font(.caption).foregroundStyle(RelayTheme.secondary)
                             Button { copyText(row.id); copied = true } label: { Label(copied ? "Message ID copied" : "Copy message ID", systemImage: copied ? "checkmark" : "doc.on.doc") }
                         }
                     }.padding(20).frame(maxWidth: 660).frame(maxWidth: .infinity)
@@ -818,14 +846,14 @@ private struct MessageDetailView: View {
     }
     private func detail(_ title: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.caption).foregroundStyle(.secondary)
+            Text(title).font(.caption).foregroundStyle(RelayTheme.secondary)
             Text(value).font(.system(.caption, design: .monospaced)).textSelection(.enabled)
         }
     }
     private func progress(_ title: String, detail: String, done: Bool) -> some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: done ? "checkmark.circle.fill" : "circle.dotted").foregroundStyle(done ? RelayTheme.accent : .secondary).font(.title3)
-            VStack(alignment: .leading, spacing: 4) { Text(title).font(.subheadline.bold()); Text(detail).font(.caption).foregroundStyle(.secondary) }
+            VStack(alignment: .leading, spacing: 4) { Text(title).font(.subheadline.bold()); Text(detail).font(.caption).foregroundStyle(RelayTheme.secondary) }
         }
     }
 }
@@ -845,9 +873,9 @@ private struct DeviceNameView: View {
                     .focused($focused).submitLabel(.done).onSubmit { if valid { save() } }
                     .accessibilityIdentifier("deviceNameField")
                 Text("Use up to 40 characters. Your name is shared when peers connect. Renaming keeps your messages and device ID.")
-                    .font(.subheadline).foregroundStyle(.secondary)
+                    .font(.subheadline).foregroundStyle(RelayTheme.secondary)
                 Text("Names can be duplicated. The small ID below each name identifies the exact device.")
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.caption).foregroundStyle(RelayTheme.secondary)
                 Button(saving ? "Saving…" : "Save name", action: save).buttonStyle(PrimaryButton())
                     .disabled(!valid || saving).accessibilityIdentifier("saveDeviceName")
                 Spacer()
@@ -886,7 +914,7 @@ struct ToolsView: View {
                         Image(systemName: "person.crop.square.filled.and.at.rectangle").font(.title).foregroundStyle(RelayTheme.accent)
                         VStack(alignment: .leading, spacing: 4) {
                             Text(model.displayName).font(.title3.bold())
-                            Text("Your name on nearby devices").font(.caption).foregroundStyle(.secondary)
+                            Text("Your name on nearby devices").font(.caption).foregroundStyle(RelayTheme.secondary)
                         }
                         Spacer()
                         Button("Edit name") { editingName = true }.buttonStyle(.bordered).disabled(!model.ready)
@@ -900,9 +928,9 @@ struct ToolsView: View {
                 }
                 RelayCard {
                     Label("How messaging works", systemImage: "bubble.left.and.bubble.right").font(.headline)
-                    Text("Choose a name in Nearby or New chat. Every device can send and receive. Another device can carry a copy until it meets the recipient.").font(.subheadline).foregroundStyle(.secondary)
-                    Text("Your sent copy and the recipient’s received copy appear in Chats. Copies for other people only appear in the forwarding queue.").font(.caption).foregroundStyle(.secondary)
-                    Text("This prototype is not encrypted. A name is a label, not verified identity.").font(.caption).foregroundStyle(.secondary)
+                    Text("Choose a name in Nearby or New chat. Every device can send and receive. Another device can carry a copy until it meets the recipient.").font(.subheadline).foregroundStyle(RelayTheme.secondary)
+                    Text("Your sent copy and the recipient’s received copy appear in Chats. Copies for other people only appear in the forwarding queue.").font(.caption).foregroundStyle(RelayTheme.secondary)
+                    Text("This prototype is not encrypted. A name is a label, not verified identity.").font(.caption).foregroundStyle(RelayTheme.secondary)
                     if model.forceRoute {
                         Label("Advanced relay test is active", systemImage: "arrow.triangle.branch").font(.subheadline).foregroundStyle(.orange)
                         Button("Use normal messaging") { model.forceRoute = false; model.configure() }.buttonStyle(.bordered)
@@ -914,7 +942,7 @@ struct ToolsView: View {
                             }.pickerStyle(.menu).onChange(of: model.role) { _, _ in model.configure() }
                             Toggle("Force A → B → C", isOn: Binding(get: { model.forceRoute }, set: { model.forceRoute = $0; model.configure() }))
                             Text("Roles only control this lab test: A and C cannot connect directly when forced routing is on. They do not determine who can send or receive. Changing setup reconnects active peers.")
-                                .font(.caption).foregroundStyle(.secondary)
+                                .font(.caption).foregroundStyle(RelayTheme.secondary)
                         }.padding(.top, 10)
                     }
                 }
@@ -927,16 +955,16 @@ struct ToolsView: View {
                 }
                 RelayCard {
                     Label("Forwarding & receipts", systemImage: "tray.2").font(.headline)
-                    Text("Engineering view of all saved envelopes, including copies addressed to someone else. A forwarding copy is not a message to you.").font(.subheadline).foregroundStyle(.secondary)
+                    Text("Engineering view of all saved envelopes, including copies addressed to someone else. A forwarding copy is not a message to you.").font(.subheadline).foregroundStyle(RelayTheme.secondary)
                     Button("Open durable queue (\(model.messages.count))") { showQueue = true }.buttonStyle(.bordered)
                 }
                 RelayCard {
                     Label("Engineering tools", systemImage: "waveform.path.ecg").font(.title3.bold())
-                    Text("Inspect paths, logs, receipt messages, and repeat or interrupt a transfer.").font(.subheadline).foregroundStyle(.secondary)
+                    Text("Inspect paths, logs, receipt messages, and repeat or interrupt a transfer.").font(.subheadline).foregroundStyle(RelayTheme.secondary)
                     Button { showDiagnostics = true } label: { Label("Open diagnostics", systemImage: "terminal") }.buttonStyle(.bordered)
                 }
                 Text("RELAY \(version) · Engineering preview\nSynthetic data only. Messages are not encrypted or authenticated. Keep RELAY foreground during encounters. Infrastructure-independent delivery remains unverified.")
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.caption).foregroundStyle(RelayTheme.secondary)
             }.padding(20).frame(maxWidth: 760).frame(maxWidth: .infinity)
         }.background(RelayTheme.canvas).navigationTitle("Tools")
             .sheet(isPresented: $showDiagnostics) { DiagnosticsView(model: model) }
@@ -946,7 +974,7 @@ struct ToolsView: View {
     private func instruction(_ number: String, _ title: String, _ text: String) -> some View {
         HStack(alignment: .top, spacing: 12) {
             Text(number).font(.caption.bold()).frame(width: 28, height: 28).background(RelayTheme.accent.opacity(0.10), in: Circle()).foregroundStyle(RelayTheme.accent)
-            VStack(alignment: .leading, spacing: 4) { Text(title).font(.subheadline.bold()); Text(text).font(.caption).foregroundStyle(.secondary) }
+            VStack(alignment: .leading, spacing: 4) { Text(title).font(.subheadline.bold()); Text(text).font(.caption).foregroundStyle(RelayTheme.secondary) }
         }
     }
 }
@@ -994,7 +1022,7 @@ private struct DurableQueueView: View {
         NavigationStack {
             List {
                 Text("Forwarding copies are addressed to someone else. They are excluded from your chats; their text is hidden in this view. Storage and transport are still unencrypted.")
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.caption).foregroundStyle(RelayTheme.secondary)
                 ForEach(model.messages.reversed()) { row in
                     let carried = row.message.originID != model.deviceID && row.message.destinationID != model.deviceID
                     DisclosureGroup {
@@ -1008,7 +1036,7 @@ private struct DurableQueueView: View {
                     } label: {
                         VStack(alignment: .leading, spacing: 6) {
                             Text(carried ? "Forwarding copy · not addressed to you" : row.message.messageType == .receipt ? "Delivery receipt" : row.message.originID == model.deviceID ? "Sent by you" : "Received by you").font(.subheadline.bold())
-                            Text("\(model.peerTitle(row.message.originID)) → \(model.peerTitle(row.message.destinationID))").font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                            Text("\(model.peerTitle(row.message.originID)) → \(model.peerTitle(row.message.destinationID))").font(.caption).foregroundStyle(RelayTheme.secondary).lineLimit(2)
                             DeliveryBadge(row: row, deviceID: model.deviceID)
                         }.padding(.vertical, 4)
                     }

@@ -102,8 +102,12 @@ def test_paginated_batch_keeps_authorization_order_and_reservation_projection(en
     second=c.get("/v1/requests",params={"limit":2,"cursor":first["next_cursor"]},headers=auth(env)).json()
     assert [x["request_id"] for x in second["items"]]==[b["request_id"] for b in bodies[:2]]
     assert [x["assignment_state"] for x in second["items"]]==["reserved","unassigned"]
+    assert second["items"][0]["reservation"]["quantity"]==2
+    assert second["items"][1]["reservation"] is None
+    assert [x["history"]["request_id"] for x in second["items"]]==[b["request_id"] for b in bodies[:2]]
+    assert all(x["history"]["status"]=="new" for x in second["items"])
     last=c.get("/v1/requests",params={"limit":2,"cursor":second["next_cursor"]},headers=auth(env)).json()
     assert [x["request_id"] for x in last["items"]]==[bodies[2]["request_id"]] and last["next_cursor"] is None
-    assert [len(x) for x in batches]==[4,4,2]
+    assert [len(x) for x in batches]==[6,6,3]
     assert c.get("/v1/requests",params={"cursor":first["next_cursor"]},headers=auth(env,"test-requester-b")).status_code==400
     assert c.get("/v1/requests?view=shelter&shelter_id=shelter-a",headers=auth(env)).status_code==403

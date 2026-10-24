@@ -21,7 +21,7 @@ def main():
         raise SystemExit("Local-test authentication is restricted to loopback.")
     service = build_service(settings)
     if args.command == "serve":
-        uvicorn.run(create_app(settings, service), host=args.host, port=args.port, access_log=False)
+        uvicorn.run(create_app(settings, service), host=args.host, port=args.port, access_log=False, ws_max_size=16384, ws_max_queue=4)
     else:
         worker = Worker(service)
         while True:

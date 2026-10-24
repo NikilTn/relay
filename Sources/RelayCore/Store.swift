@@ -289,6 +289,35 @@ public final class RelayStore {
 }
 
 extension RelayStore {
+    /// Called only after the app verifies the same enrolled account on an explicitly
+    /// configured replacement endpoint. Preserve the source as an upgrade backup.
+    public func copyCloudScope(from old: String, to new: String) throws {
+        guard old != new, [old, new].allSatisfy({ $0.count == 64 && $0.allSatisfy(\.isHexDigit) }) else {
+            throw RelayError.invalid("Invalid cloud scope migration")
+        }
+        try transaction {
+            let marker = "cloud_scope_copied:" + old + ":" + new
+            guard try setting(marker) == nil else { return }
+            let existing = try cloudRecords(scope: new)
+            for record in try cloudRecords(scope: old) {
+                if let target = existing.first(where: { $0.id == record.id }) {
+                    guard target.submission == record.submission else { throw RelayError.invalid("Conflicting saved request during server migration") }
+                    continue // Never overwrite newer delivery or inventory state.
+                }
+                var object = try JSONSerialization.jsonObject(with: CloudCodec.encode(record)) as! [String: Any]
+                object["scope"] = new
+                try saveCloudRecord(CloudCodec.decode(CloudQueueRecord.self, JSONSerialization.data(withJSONObject: object)))
+            }
+            for prefix in ["request_compose:", "cloud_audio:", "cloud_directory:", "cloud_bindings:"] {
+                if try setting(prefix + new) == nil, let value = try setting(prefix + old) { try setSetting(prefix + new, value) }
+            }
+            for row in try rows("SELECT key,value FROM metadata WHERE key LIKE ?", ["inventory_adjustment:" + old + ":%"] ) {
+                let name = row[0]!.replacingOccurrences(of: old, with: new)
+                if try setting(name) == nil { try setSetting(name, row[1]!) }
+            }
+            try setSetting(marker, "complete")
+        }
+    }
     public func cloudRecords(scope: String) throws -> [CloudQueueRecord] {
         try rows("SELECT value FROM metadata WHERE key LIKE ? ORDER BY key", ["cloud_record:" + scope + ":%"]).map {
             try CloudCodec.decode(CloudQueueRecord.self, Data($0[0]!.utf8))

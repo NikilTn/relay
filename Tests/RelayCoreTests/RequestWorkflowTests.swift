@@ -71,4 +71,32 @@ final class RequestWorkflowTests: XCTestCase {
         XCTAssertEqual(recovered.pendingInventory, record.pendingInventory)
         XCTAssertEqual(recovered.submission, record.submission)
     }
+    func testEndpointMigrationRetainsRequestsDraftAudioAndPendingInventoryWithoutOverwritingNewerState() throws {
+        let store = try RelayStore.open(path: ":memory:"), target = String(repeating: "b", count: 64)
+        var record = try store.submitCloudDraft(draft(), scope: scope, shelter: shelter)
+        record.pendingInventory = InventoryCommand(action: "reserve", item: "water_packs", quantity: 2, revision: 1)
+        record.attempts = 3; try store.saveCloudRecord(record)
+        let next = try draft(); try store.saveRequestDraft(next, scope: scope)
+        try store.setSetting("cloud_audio:" + scope, "retained-audio-reference")
+        try store.setSetting("inventory_adjustment:" + scope + ":shelter-a", "pending-operation")
+        try store.copyCloudScope(from: scope, to: target)
+        var copy = try XCTUnwrap(store.cloudRecords(scope: target).first)
+        XCTAssertEqual(copy.submission, record.submission); XCTAssertEqual(copy.pendingInventory, record.pendingInventory)
+        XCTAssertEqual(copy.attempts, 3); XCTAssertEqual(try store.requestDraft(scope: target), next)
+        XCTAssertEqual(try store.setting("cloud_audio:" + target), "retained-audio-reference")
+        XCTAssertEqual(try store.setting("inventory_adjustment:" + target + ":shelter-a"), "pending-operation")
+        copy.state = "accepted"; try store.saveCloudRecord(copy)
+        try store.copyCloudScope(from: scope, to: target)
+        XCTAssertEqual(try store.cloudRecords(scope: target).first?.state, "accepted")
+        XCTAssertEqual(try store.cloudRecords(scope: scope).count, 1)
+    }
+    func testEndpointMigrationRejectsConflictingContentAtomically() throws {
+        let store = try RelayStore.open(path: ":memory:"), target = String(repeating: "b", count: 64)
+        var source = try draft(); _ = try store.submitCloudDraft(source, scope: scope, shelter: shelter)
+        source.text = "Conflicting content"; _ = try store.submitCloudDraft(source, scope: target, shelter: shelter)
+        try store.setSetting("cloud_audio:" + scope, "audio")
+        XCTAssertThrowsError(try store.copyCloudScope(from: scope, to: target))
+        XCTAssertNil(try store.setting("cloud_audio:" + target))
+    }
+
 }
