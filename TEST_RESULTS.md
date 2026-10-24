@@ -397,8 +397,10 @@ Evidence: [tests](evidence/automated-tests-build-7.txt),
 [signed phone build](evidence/build-shelter-removal-ios-signed.txt).
 
 Build 7 paid-team archive/upload also passed: Apple accepted it at 23:12:02 PDT.
-The upload is Processing at the latest browser check; internal Testing and saved
-build-specific notes are not yet verified. External build 2 remains Waiting for
-Review. [Archive](evidence/archive-testflight-build-7.txt),
+Follow-up browser verification confirms processing completed and build 7 is
+Testing in RELAY Development. Its build-specific notes were saved with Apple’s
+Saved confirmation. The one internal tester is shown with build 6 installed;
+no TestFlight build-7 phone installation was checked. External build 2 remains
+Waiting for Review. [Archive](evidence/archive-testflight-build-7.txt),
 [upload log](evidence/testflight-upload-build-7.txt),
 [release record](evidence/testflight-upload-build-7.json).

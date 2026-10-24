@@ -8,9 +8,12 @@
   "upload_completed": "2026-10-23T23:12:02-07:00",
   "upload": "PASS",
   "archive": "PASS",
-  "processing": "Processing",
-  "internal_distribution": "NOT YET VERIFIED",
-  "what_to_test": "Prepared locally; not saved in Apple yet",
+  "processing": "Complete",
+  "internal_distribution": "RELAY Development: Testing",
+  "what_to_test": "Saved in App Store Connect; Saved confirmation observed",
   "external_submission": "Build 2 remains Waiting for Review; not replaced",
-  "physical_wireless_acceptance": "NOT VERIFIED"
+  "physical_wireless_acceptance": "NOT VERIFIED",
+  "status_checked_at": "2026-10-23T23:28:24.177290-07:00",
+  "internal_testers": 1,
+  "tester_install_observed": "Existing tester has build 6 installed on iPhone 15 Pro Max; build 7 update availability verified, installation not checked"
 }
