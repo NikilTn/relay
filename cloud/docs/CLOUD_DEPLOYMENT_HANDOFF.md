@@ -1,6 +1,6 @@
 # CLOUD_DEPLOYMENT_HANDOFF — RELAY build 8
 
-**Current status: the approved integration source is packaged and locally validated; managed AWS hosting is still blocked.** No Lambda/API Gateway HTTPS URL or deployed AWS source revision exists. The native task subsequently reported user authorization for a temporary Cloudflare HTTPS tunnel to its loopback API; that separate fallback is being handled by the native task, and its URL/external verification have not yet been supplied to this AWS task. Latest read-only AWS check: **2026-10-24T07:16:42.341203+00:00**, account **928489693154**, region **us-east-1**. Handoff updated **2026-10-24T07:19:55.097035+00:00**.
+**Current status: the approved integration source is packaged and locally validated; managed AWS hosting is still blocked.** No Lambda/API Gateway HTTPS URL or deployed AWS source revision exists. The native task established the separately authorized temporary Cloudflare fallback at **https://resumes-investigated-striking-mba.trycloudflare.com** → `http://127.0.0.1:8788`. Independent authenticated read/isolation checks passed at **2026-10-24T07:34:00.865883+00:00**. This is temporary Mac-backed HTTPS, not a Lambda/API Gateway deployment. Latest read-only AWS check: **2026-10-24T07:16:42.341203+00:00**, account **928489693154**, region **us-east-1**. Handoff updated **2026-10-24T07:19:55.097035+00:00**.
 
 ## Approved source and prepared package
 
@@ -32,9 +32,10 @@ The ZIP contains a source manifest and was checked against all 11 committed back
 | Required dedicated-role PassRole grant | FAIL at full policy audit 06:41 UTC — only participant role itself was allowed; recheck after organizer provisioning |
 | HTTP API Gateway | FAIL — zero APIs/no additional page at latest check; request `3ebadcfe-5067-426c-94b3-5df8e027389f` |
 | MVP stack, API/worker Lambda and recovery schedule | FAIL — absent in full 06:41 UTC inventory; this task has not deployed them |
-| Hosted health, authorized shelters, text acceptance, Bedrock persistence and replay | NOT TESTED — no deployed HTTPS endpoint |
+| Managed AWS API Gateway health/request/replay | NOT TESTED — no managed AWS endpoint |
+| Temporary Cloudflare HTTPS health/authenticated reads/isolation | PASS — 12 independent GET checks; no new write/audio flow run by this audit |
 
-**Managed AWS HTTPS API base URL: none. Deployed AWS Git revision, Lambda CodeSha256/RevisionId and hosted worker runtime status: unavailable.** Temporary Cloudflare URL/test status: pending confirmation from the native task. The hash above is for the prepared local artifact, not a deployed function. Template syntax, localhost success and a Cognito login domain are not deployment evidence.
+**Managed AWS HTTPS API base URL: none. Deployed AWS Git revision, Lambda CodeSha256/RevisionId and hosted worker runtime status: unavailable.** Temporary Cloudflare base URL: **https://resumes-investigated-striking-mba.trycloudflare.com**; health, authenticated existing-record reads and access isolation pass. New public-URL request creation/replay/audio and native PKCE/UI testing are left to the native task; this audit did not rerun them. The hash above is for the prepared local artifact, not a deployed function. Template syntax, localhost success and a Cognito login domain are not deployment evidence.
 
 The previous full inventory also found zero REST APIs. `relay-bedrock-metrics` is a completed CloudWatch-dashboard stack, not an API. `relay-public` is ROLLBACK_COMPLETE; its former HTTP API `t9xj4xi8k4` is DELETE_COMPLETE and must not be used. Its role-creation failures at 02:16:46 UTC explicitly denied iam:CreateRole (requests `9a3ecf95-68b4-4706-b98a-45684ae66b02` and `64b410d6-1c57-4549-8f14-3a2ecb722080`), wrapped as UnauthorizedTaggingOperation. Tagging permissions alone do not resolve the missing CreateRole permission.
 
@@ -104,9 +105,44 @@ Transcription `99599e0d-df75-4712-b28c-522bb4be669b` and its real Transcribe job
 
 Latest shared counters are **15 requests / 30 and 2 recordings / 5** (also reconfirmed in the packaging read-only check). Fifteen request slots and three recording slots remain at that timestamp. This packaging run added **zero** accepted requests, model calls, transcription jobs or infrastructure writes. The native task reports no further paid tests planned. Recheck these shared durable counters before any later test; counters are not a dollar billing statement.
 
-Native local testing uses **http://127.0.0.1:8788**; the earlier 8787 server/worker was preserved. Neither address is a deployed HTTPS API or reachable as localhost from a separate iPhone. Carrier-to-cloud ingestion is explicitly not implemented. No source files or running servers were overwritten by packaging. The native task owns the separately authorized temporary tunnel and physical-login/audio test workflow; it must preserve Cognito and the shared test limits. A working tunnel must not be described as a Lambda/API Gateway deployment.
+Native local testing uses **http://127.0.0.1:8788**; the earlier 8787 server/worker was preserved. Neither address is a deployed HTTPS API or reachable as localhost from a separate iPhone. Carrier-to-cloud ingestion is explicitly not implemented. No source files or running servers were overwritten by packaging. The native task owns the separately authorized temporary tunnel and physical-login/audio test workflow. The AWS task verified its public hostname against the running cloudflared process/log and verified Cognito-protected reads. A working tunnel must not be described as a Lambda/API Gateway deployment.
 
-## Exact next step
+## Temporary HTTPS verification — current demo endpoint
+
+**Base URL:** https://resumes-investigated-striking-mba.trycloudflare.com
+
+**Origin:** `http://127.0.0.1:8788`, with the existing AWS-backed database and worker. The active cloudflared process targeted that origin and its local log contained this exact public hostname. All 11 backend files on disk match approved source `cfcaade434114ca584de406c9104de21e0b64008`; build-9 native UI/configuration work is separate and was not packaged or modified by this AWS task. This source comparison does not assert an AWS deployed revision or prove the in-memory process revision through a dedicated endpoint.
+
+Verification window: **2026-10-24T07:33:56.347122+00:00 → 2026-10-24T07:34:00.865883+00:00**. Requests used the public HTTPS hostname with certificate verification and no redirect following. Only existing records were read.
+
+| Check | HTTP | Result | Safe Cloudflare request correlation |
+|---|---|---|---|
+| public_health | 200 | PASS | `a4f74bd769cc7b83-SJC` |
+| missing_token_rejected | 401 | PASS | `a4f74bd9fed07b83-SJC` |
+| invalid_token_rejected | 401 | PASS | `a4f74bdb9a197b83-SJC` |
+| requester_a_profile | 200 | PASS | `a4f74bdc0b097b83-SJC` |
+| requester_a_directory | 200 | PASS | `a4f74bdc8c197b83-SJC` |
+| existing_persisted_request_read | 200 | PASS | `a4f74bddaeae7b83-SJC` |
+| existing_history_read | 200 | PASS | `a4f74be13e707b83-SJC` |
+| fresh_requester_b_profile | 200 | PASS | `a4f74be9aff37b83-SJC` |
+| requester_b_directory | 200 | PASS | `a4f74bea38f37b83-SJC` |
+| valid_other_user_cannot_read_request | 404 | PASS | `a4f74beaea287b83-SJC` |
+| valid_other_user_cannot_read_history | 404 | PASS | `a4f74bec3cfe7b83-SJC` |
+| requester_cannot_use_dispatcher_inbox | 403 | PASS | `a4f74bed9fb37b83-SJC` |
+
+Requester-B completed a fresh SOFTWARE_TOKEN_MFA challenge in memory (Cognito request `c88cf975-5cb1-481f-a679-c5df683a58cc`). Its valid session could read its own profile/shelter-b directory but could not read requester-A's existing request/history or use a dispatcher inbox. This closes the earlier expired-token gap: the isolation result is **404/403 with a valid other-user token**, not merely 401 with an expired token. The temporary session was not saved; no shared token file, config, worker or backend was changed.
+
+The existing request `2774002c-8238-4311-871c-cf820d3a2c92` returned its persisted real Bedrock result and revision-3 history. No new request was created, no POST/replay was issued, no audio was uploaded, and no model/transcription job was invoked in these checks. Shared counters were unchanged at **15/30 requests and 2/5 recordings**.
+
+The native task reports successful build-9 builds with this configured endpoint and a synthetic-WAV importer; the user is completing Cognito PKCE/MFA before native UI testing. Those native/physical outcomes are **pending**, not inferred from this HTTP probe. Follow the native task for the new public-URL write/audio/UI evidence.
+
+This is a temporary quick tunnel: availability depends on the Mac, cloudflared process, origin API and worker; a restart can yield a different hostname. Treat it as the authorized demo fallback, not durable AWS hosting. The Lambda artifact remains unuploaded and undeployed, with the organizer role/PassRole gate unchanged.
+
+Sanitized evidence: `cloud/docs/evidence/temporary-https-readonly-20261024.json` and `temporary-https-source-20261024.json`.
+
+## Exact next step for managed AWS hosting
+
+The temporary HTTPS demo can proceed under its existing authorization while the native task completes PKCE/MFA and public-URL text/audio UI checks within the shared limits. That path does not require pretending the organizer role exists.
 
 The source/packaging gate is **cleared for cfcaade**. The remaining immediate gate is the organizer-provided scoped role/PassRole and hosting approval. Once those exist:
 
