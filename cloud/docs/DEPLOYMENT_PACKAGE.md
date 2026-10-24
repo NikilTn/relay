@@ -52,14 +52,16 @@ s3://relay-artifacts-928489693154-use1/cloud-mvp-v1/deploy/cfcaade434114ca584de4
 
 ## Remaining gate
 
-Fresh AWS check at **2026-10-24T07:16:42.341203+00:00**, account **928489693154**, region **us-east-1**:
+Latest AWS check at **2026-10-24T07:44:57.246002+00:00**, account **928489693154**, region **us-east-1**:
 
-- `relay-cloud-mvp-execution` is absent (`NoSuchEntity`, request `088b483c-decb-4aab-b5cf-9fec890a98e0`).
-- HTTP API inventory is empty (request `3ebadcfe-5067-426c-94b3-5df8e027389f`).
-- Shared counters remain **15/30 requests and 2/5 recordings**. This packaging run made zero model/transcription calls and zero infrastructure writes.
+- `relay-cloud-mvp-execution` remains absent (`NoSuchEntity`, request `8f367161-9509-44ed-96ce-c644c1d75d53`).
+- HTTP API inventory is empty (request `06137d8a-f5d9-470b-a2c5-553604df7811`); the MVP stack and API/worker Lambda functions remain absent.
+- Shared counters are **17/30 requests and 3/5 recordings** after the native task's bounded public-HTTPS flow. This packaging/audit work made zero model/transcription calls and zero infrastructure writes.
 
 The earlier full audit found no MVP stack, API/worker Lambdas or recovery schedule, and no participant PassRole grant for the dedicated role. The source gate is now cleared: the native task approved this exact commit for local packaging. Deployment still requires the organizer-created Lambda-trusted scoped role, narrow PassRole grant, and hosting approval. Do not change participant trust, weaken MFA or expose an unauthenticated server.
 
 After that gate is satisfied, confirm cfcaade is still the agreed integration revision, upload this exact ZIP, deploy the reviewed template/parameters, compare the resulting Lambda CodeSha256 with the value above, record the real HTTPS URL and test it with Cognito. If the native task supplies a newer functional commit, rebuild and revalidate instead of silently overwriting it with this package.
 
-This packaging task performed no S3 upload, CloudFormation stack mutation, IAM change, Lambda creation or public exposure. The native task separately established the authorized temporary Cloudflare fallback at https://resumes-investigated-striking-mba.trycloudflare.com. Read-only health, authenticated existing-request/history reads and valid-other-user isolation checks passed at 2026-10-24T07:34:00.865883+00:00. Native PKCE/UI and new public-URL write/audio tests remain with that task. This fallback does not deploy the Lambda package; no artifact or shared runtime configuration was changed by the AWS verification.
+This packaging task performed no S3 upload, CloudFormation stack mutation, IAM change, Lambda creation or public exposure. The native task separately established the authorized temporary Cloudflare fallback at https://resumes-investigated-striking-mba.trycloudflare.com. Read-only health, authenticated existing-request/history reads and valid-other-user isolation checks passed at 2026-10-24T07:34:00.865883+00:00. Its public-URL Swift HTTP text/audio/replay flow subsequently passed, with this AWS task independently verifying the DynamoDB results/history, completed Transcribe job, S3 artifacts and empty queue at 07:44 UTC. Native PKCE/MFA, microphone/picker and phone UI remain untested. This fallback does not deploy the Lambda package; no artifact or shared runtime configuration was changed by the AWS verification.
+
+Build-9 integration/evidence commit `8c207e736d269b02d52d888b8de12ac360ed1db7` has the same 11 backend modules as cfcaade. The ZIP/hash above remains unchanged. See CLOUD_DEPLOYMENT_HANDOFF.md and `cloud/docs/evidence/public-https-flow-readback-20261024.json` for the timestamped live results and safe request IDs.

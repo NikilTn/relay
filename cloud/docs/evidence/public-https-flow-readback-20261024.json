@@ -1,0 +1,323 @@
+{
+  "started_at": "2026-10-24T07:44:51.739394+00:00",
+  "account": "928489693154",
+  "region": "us-east-1",
+  "sts_request_id": "0ce2dbde-fd45-4f94-91c4-83d3ecd56ef2",
+  "verification": "Read-only follow-up of the native task public HTTPS run; zero new accepted requests, model calls or transcriptions",
+  "requests": [
+    {
+      "request_id": "23187afa-d2a5-4f7c-9677-8c17db31e59b",
+      "status": "PASS",
+      "ddb_request_id": "OIU46P882QNQ8RF5HNTIL331BVVV4KQNSO5AEMVJF66Q9ASUAAJG",
+      "cloud_state": "accepted",
+      "analysis_state": "ready_for_review",
+      "result": {
+        "status": "ready_for_review",
+        "proposal": {
+          "item_id": "water_packs",
+          "quantity": 2,
+          "unit": "pack",
+          "shelter_id": "shelter-a",
+          "negated": false,
+          "missing_fields": [],
+          "summary": "Shelter A needs two water packs."
+        },
+        "review_reasons": [],
+        "allocation_authorized": false
+      },
+      "provider_evidence": {
+        "provider": "aws",
+        "model_id": "amazon.nova-lite-v1:0",
+        "request_id": "ce2542cd-963d-43f6-9d75-8c36bccb4b2a",
+        "usage": {
+          "inputTokens": 511,
+          "outputTokens": 47,
+          "totalTokens": 558
+        },
+        "stop_reason": "end_turn"
+      },
+      "input_mode": "text",
+      "transcription_id": null
+    },
+    {
+      "request_id": "8aecd834-416a-4b7d-9f12-7914eee8b1e6",
+      "status": "PASS",
+      "ddb_request_id": "OIC9QG0B735U2PL0FTLUIH6VO3VV4KQNSO5AEMVJF66Q9ASUAAJG",
+      "cloud_state": "accepted",
+      "analysis_state": "ready_for_review",
+      "result": {
+        "status": "ready_for_review",
+        "proposal": {
+          "item_id": "water_packs",
+          "quantity": 2,
+          "unit": "pack",
+          "shelter_id": "shelter-a",
+          "negated": false,
+          "missing_fields": [],
+          "summary": "Shelter A needs two water packs."
+        },
+        "review_reasons": [],
+        "allocation_authorized": false
+      },
+      "provider_evidence": {
+        "provider": "aws",
+        "model_id": "amazon.nova-lite-v1:0",
+        "request_id": "7f3da5e6-31f5-4156-9bb3-4b1341cbc3ab",
+        "usage": {
+          "inputTokens": 511,
+          "outputTokens": 47,
+          "totalTokens": 558
+        },
+        "stop_reason": "end_turn"
+      },
+      "input_mode": "reviewed_transcript",
+      "transcription_id": "fea5049d-a3c9-493b-ba7d-8830fbd23d0c"
+    }
+  ],
+  "histories": [
+    {
+      "request_id": "23187afa-d2a5-4f7c-9677-8c17db31e59b",
+      "status": "PASS",
+      "ddb_request_id": "QBOQBCSP54SFQSFLRD0KCEC21BVV4KQNSO5AEMVJF66Q9ASUAAJG",
+      "revision": 3,
+      "reported_status": "completed",
+      "resource_allocation_verified": false,
+      "events": [
+        {
+          "event_id": "36371377-68e2-48ad-955a-2570cb0ae597",
+          "revision": 1,
+          "author_role": "dispatcher",
+          "status": "accepted",
+          "created_at": "2026-10-24T07:39:03.799624+00:00"
+        },
+        {
+          "event_id": "38b3fd28-2e97-4768-a30a-498363f8c5dd",
+          "revision": 2,
+          "author_role": "dispatcher",
+          "status": "in_progress",
+          "created_at": "2026-10-24T07:39:04.749865+00:00"
+        },
+        {
+          "event_id": "ad4c810f-d020-4338-abdf-581c4afd24e5",
+          "revision": 3,
+          "author_role": "dispatcher",
+          "status": "completed",
+          "created_at": "2026-10-24T07:39:05.930650+00:00"
+        }
+      ]
+    },
+    {
+      "request_id": "8aecd834-416a-4b7d-9f12-7914eee8b1e6",
+      "status": "PASS",
+      "ddb_request_id": "GG7PR4KCMVCSMJE448BR56ARCRVV4KQNSO5AEMVJF66Q9ASUAAJG",
+      "revision": 3,
+      "reported_status": "completed",
+      "resource_allocation_verified": false,
+      "events": [
+        {
+          "event_id": "684c04bc-4f28-42a2-a1ec-f2bcaa587f6f",
+          "revision": 1,
+          "author_role": "dispatcher",
+          "status": "accepted",
+          "created_at": "2026-10-24T07:39:44.780748+00:00"
+        },
+        {
+          "event_id": "8fe7618e-f2bb-49fa-a79f-b90b614daee6",
+          "revision": 2,
+          "author_role": "dispatcher",
+          "status": "in_progress",
+          "created_at": "2026-10-24T07:39:45.847143+00:00"
+        },
+        {
+          "event_id": "15d257a2-ee83-471f-92a3-ae31042a4b23",
+          "revision": 3,
+          "author_role": "dispatcher",
+          "status": "completed",
+          "created_at": "2026-10-24T07:39:46.882940+00:00"
+        }
+      ]
+    }
+  ],
+  "transcription": {
+    "id": "fea5049d-a3c9-493b-ba7d-8830fbd23d0c",
+    "status": "PASS",
+    "stored_status": "completed",
+    "duration_seconds": 1.824,
+    "provider_evidence": {
+      "provider": "aws",
+      "job_name": "relay-mvp-fea5049d-a3c9-493b-ba7d-8830fbd23d0c",
+      "request_id": "0dd0c599-e7ad-43e5-9dc7-e3a3e3187198",
+      "poll_request_id": "fe6ec4de-1e6c-44e5-81dd-48ac9f54c7ce"
+    },
+    "ddb_request_id": "RFEJU0GLF2QN06JFTN5DC1PAHJVV4KQNSO5AEMVJF66Q9ASUAAJG",
+    "job_status": "COMPLETED",
+    "job_request_id": "734bc0d8-1f01-4182-a316-d9f33631b390",
+    "s3_objects": [
+      {
+        "key": "cloud-mvp-v1/uploads/fea5049d-a3c9-493b-ba7d-8830fbd23d0c.wav",
+        "bytes": 62464,
+        "encryption": "AES256",
+        "request_id": "TM51RX2WJCNNGA6V"
+      },
+      {
+        "key": "cloud-mvp-v1/sealed/fea5049d-a3c9-493b-ba7d-8830fbd23d0c.wav",
+        "bytes": 62464,
+        "encryption": "AES256",
+        "request_id": "TM531E974B3T11YJ"
+      },
+      {
+        "key": "cloud-mvp-v1/transcripts/fea5049d-a3c9-493b-ba7d-8830fbd23d0c.json",
+        "bytes": 1052,
+        "encryption": "AES256",
+        "request_id": "TM57NED46NTR8DKB"
+      }
+    ]
+  },
+  "worker_queue": {
+    "empty": true,
+    "request_id": "M107L6O6555DAETROMTKUDUHL3VV4KQNSO5AEMVJF66Q9ASUAAJG"
+  },
+  "counters": {
+    "requests": {
+      "count": 17,
+      "limit": 30,
+      "request_id": "THEAVC10761179K64LPV896N6FVV4KQNSO5AEMVJF66Q9ASUAAJG"
+    },
+    "transcriptions": {
+      "count": 3,
+      "limit": 5,
+      "request_id": "BMSKI77NF1V5984450V2OSVV5NVV4KQNSO5AEMVJF66Q9ASUAAJG"
+    }
+  },
+  "hosting": {
+    "execution_role": {
+      "status": "ABSENT",
+      "code": "NoSuchEntity",
+      "request_id": "8f367161-9509-44ed-96ce-c644c1d75d53"
+    },
+    "stack": {
+      "status": "ABSENT",
+      "code": "ValidationError",
+      "request_id": "cd8a452e-7f49-4556-a367-46ccd4972752"
+    },
+    "relay-cloud-mvp-api": {
+      "status": "ABSENT",
+      "code": "ResourceNotFoundException",
+      "request_id": "033801f7-1b3a-4b5e-83d1-ac09a3ef6534"
+    },
+    "relay-cloud-mvp-worker": {
+      "status": "ABSENT",
+      "code": "ResourceNotFoundException",
+      "request_id": "76a7ef76-b3d9-4d7d-aabf-f8fb349d17fa"
+    },
+    "http_apis": {
+      "count": 0,
+      "more_pages": false,
+      "request_id": "06137d8a-f5d9-470b-a2c5-553604df7811"
+    }
+  },
+  "native_evidence_commit": "8c207e736d269b02d52d888b8de12ac360ed1db7",
+  "backend_modules_unchanged_from_packaged_source": true,
+  "backend_module_count": 11,
+  "source_evidence": {
+    "swift-https-aws-build-9.json": {
+      "sha256": "b510a2231ee59b2a74b2bcf0f68df4205d5840c3734b48ce24fc55fe56c6a06f",
+      "content": {
+        "analysis_state": "ready_for_review",
+        "audio_did_not_auto_submit_request": true,
+        "audio_status": "completed",
+        "directory": "PASS",
+        "dispatcher_progress": "completed",
+        "durable_cloud_intent": "PASS",
+        "event_replay_count": 3,
+        "input_mode": "text",
+        "lost_response_replay": "PASS",
+        "mode": "aws",
+        "native_PKCE": "NOT TESTED by this CLI",
+        "physical_wireless": "NOT TESTED",
+        "profile": "PASS",
+        "proposal_allocation_authorized": false,
+        "request_id": "23187afa-d2a5-4f7c-9677-8c17db31e59b",
+        "synthetic_transcript": "Sheltering needs 2 water packs.",
+        "test": "Swift URLSession to Python API",
+        "transcription_id": "fea5049d-a3c9-493b-ba7d-8830fbd23d0c"
+      }
+    },
+    "swift-https-reviewed-aws-build-9.json": {
+      "sha256": "0466c2f44bb306d7adaafc9872510d0109c284373e1f1b885aafdbd4d725df48",
+      "content": {
+        "analysis_state": "ready_for_review",
+        "directory": "PASS",
+        "dispatcher_progress": "completed",
+        "durable_cloud_intent": "PASS",
+        "event_replay_count": 3,
+        "input_mode": "reviewed_transcript",
+        "lost_response_replay": "PASS",
+        "mode": "aws",
+        "native_PKCE": "NOT TESTED by this CLI",
+        "physical_wireless": "NOT TESTED",
+        "profile": "PASS",
+        "proposal_allocation_authorized": false,
+        "request_id": "8aecd834-416a-4b7d-9f12-7914eee8b1e6",
+        "test": "Swift URLSession to Python API"
+      }
+    },
+    "aws-readback-build-9.json": {
+      "sha256": "d94eda7bf5a29fe6b35bb43a90af3ef48d7420b7176a6a753f8e7c85d76f559a",
+      "content": {
+        "mode": "Independent DynamoDB readback after public HTTPS Swift client",
+        "time_utc": "2026-10-24T07:40:35.018156+00:00",
+        "requests": [
+          {
+            "request_id": "23187afa-d2a5-4f7c-9677-8c17db31e59b",
+            "analysis_state": "ready_for_review",
+            "input_mode": "text",
+            "result": {
+              "status": "ready_for_review",
+              "proposal": {
+                "item_id": "water_packs",
+                "quantity": 2,
+                "unit": "pack",
+                "shelter_id": "shelter-a",
+                "negated": false,
+                "missing_fields": [],
+                "summary": "Shelter A needs two water packs."
+              },
+              "review_reasons": [],
+              "allocation_authorized": false
+            },
+            "history_events": 3,
+            "reported_status": "completed"
+          },
+          {
+            "request_id": "8aecd834-416a-4b7d-9f12-7914eee8b1e6",
+            "analysis_state": "ready_for_review",
+            "input_mode": "reviewed_transcript",
+            "result": {
+              "status": "ready_for_review",
+              "proposal": {
+                "item_id": "water_packs",
+                "quantity": 2,
+                "unit": "pack",
+                "shelter_id": "shelter-a",
+                "negated": false,
+                "missing_fields": [],
+                "summary": "Shelter A needs two water packs."
+              },
+              "review_reasons": [],
+              "allocation_authorized": false
+            },
+            "history_events": 3,
+            "reported_status": "completed"
+          }
+        ],
+        "budget_counts": {
+          "requests": 17,
+          "transcriptions": 3
+        }
+      }
+    }
+  },
+  "finished_at": "2026-10-24T07:44:57.246002+00:00",
+  "status": "PASS"
+}
