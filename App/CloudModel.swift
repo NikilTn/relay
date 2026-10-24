@@ -37,6 +37,9 @@ import RelayCore
     @Published var residentDetailsProblem = ""
     @Published private(set) var residentDetailsBusy = false
     private let residentVault = ResidentDetailsVault()
+    #if DEBUG
+    private var replayedResidentSetup = false
+    #endif
     var residentContextID: String? { profile?.role == "requester" && residentContextScope == scope ? residentContextScope : nil }
     private var lastAlertsRefresh = Date.distantPast
     @Published var cloudPaused = UserDefaults.standard.bool(forKey: "relay.demo.cloudPaused") {
@@ -687,8 +690,17 @@ import RelayCore
         guard force || residentContextScope != scope else { return }
         residentContextScope = nil; residentDetails = ResidentDetails(); residentDetailsAvailable = false; residentDetailsProblem = ""
         do {
-            let state = try await model.withStore { try $0.residentSetup(scope: scope) }
+            var state = try await model.withStore { try $0.residentSetup(scope: scope) }
             guard self.scope == scope, profile?.role == "requester" else { return }
+            #if DEBUG
+            // Explicit development launch only. Preserve profile, account and request data.
+            if !replayedResidentSetup && ProcessInfo.processInfo.arguments.contains("--relay-replay-resident-setup") {
+                try await model.withStore { try $0.saveResidentSetup(ResidentSetupState(), scope: scope) }
+                guard self.scope == scope, profile?.role == "requester" else { return }
+                replayedResidentSetup = true
+                state = ResidentSetupState()
+            }
+            #endif
             residentSetup = state
             do { residentDetails = try residentVault.read(scope: scope); residentDetailsAvailable = true }
             catch { residentDetailsProblem = error.localizedDescription }

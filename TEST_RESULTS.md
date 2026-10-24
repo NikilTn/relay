@@ -1,10 +1,30 @@
 # RELAY test results — updated 24 October 2026
 
-**Current verdict:** build22 is installed and launched on both owned phones and the
-Mac. Incident alerts downloaded and persisted on both physical phones. Native
+**Current verdict:** the15ProMax now has development build23 for first-run replay;
+the iPhone16 and running Mac remain on build22. All three retain the build22 feature set. Incident alerts downloaded and persisted on both physical phones. Native
 software, real AWS services and separate-encounter relay controls pass. Physical
 router-free wireless acceptance is still **NOT TESTED**. The older dated sections
 below are historical; this checkpoint supersedes their feature/release status.
+
+## Development build23 — replay personal-details setup
+
+24October2026,10:43–10:46PDT. Added an explicit DEBUG launch argument that resets
+only the current resident account's two onboarding-completion flags. Existing login,
+Keychain profile, device identity, requests and receipts remain intact. No account
+creation/reset, schema or transport change. Same hardware/SDK as build22.
+
+All three native builds PASS. Simulator UI replay displayed **A little about you**
+with retained synthetic photo/fields; Skip→guide→Skip and normal restart returned
+home without replay. Original15ProMax installed23 and launched; final readback
+confirms both onboarding flagsfalse, previous53messages and all prior immutable
+submissions/receipts/keys/identity retained, quick_checkok. Initial replay readback
+was still completed; same demo session restoration and direct launch argument fixed
+the final setup. Physical screen appearance remains user-observed; no capture made.
+
+No TestFlight23 upload; iPhone16 and running Mac remain22. Core/backend unchanged,
+so prior84Swift/111backend run was not repeated. Shell syntax and native builds
+validated; physical radio acceptance remains NOT TESTED.
+[Evidence](docs/evidence/build23) · [Repeat command](docs/RESIDENT_SETUP.md#replay-the-first-run-demo--development-build23).
 
 ## Fresh resident demonstration setup —24October2026,10:33PDT
 

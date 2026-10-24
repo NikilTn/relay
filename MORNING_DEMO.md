@@ -18,6 +18,9 @@ now**, then **Skip tour**. No profile typing or login is needed during this demo
 This preparation uses the owned development app's one-use session importer; the
 import file was consumed. It is not guest access or a TestFlight authentication bypass.
 
+To restart from the personal-details page for another take, the original15ProMax
+now has development build23. Use [Replay the first-run demo](docs/RESIDENT_SETUP.md#replay-the-first-run-demo--development-build23); this preserves the account and data.
+
 Keep the Mac and phone online for this first flow. ShelterA had **one water pack
 available** at preparation; verify stock before repeating approval/handover.
 

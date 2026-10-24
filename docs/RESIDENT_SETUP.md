@@ -100,3 +100,19 @@ Build22 native UI testing used a synthetic avatar selected by the user in Simula
 then Save/restart/reopen. A synthetic shared request reached the Mac with the expected
 fields. Automated photo bounds/metadata, immutable snapshot, encryption, authorization,
 legacy retry and AI-exclusion tests pass. See TEST_RESULTS and docs/evidence/build22.
+
+## Replay the first-run demo — development build23
+
+On an owned phone with the original DEBUG build23 installed, run:
+
+```sh
+bash scripts/replay_resident_setup.sh CORE_DEVICE_ID
+```
+
+This relaunches RELAY with `--relay-replay-resident-setup`. Once the current resident
+account loads, only its `profileOffered`/`guideSeen` flags reset, once per explicit
+launch. It returns to **A little about you**, then the walkthrough. Existing profile
+values/photo, login, requests, messages, receipts and keys stay saved. Complete or
+skip setup normally; ordinary launches do not replay it. Coordinator accounts are
+unaffected. The launch option is excluded from Release/TestFlight builds. Installing
+an update or simply restarting the app does not otherwise reset completed setup.
