@@ -1,0 +1,28 @@
+{
+  "account": "928489693154",
+  "region": "us-east-1",
+  "status": "local fixture implementation verified; live test approval pending",
+  "created_aws_resources": [],
+  "modified_existing_aws_resources": [],
+  "chargeable_model_invocations": 0,
+  "chargeable_transcription_jobs": 0,
+  "existing_resources_inspected": {
+    "table": "relay-messages",
+    "user_pool": "us-east-1_f7wyKUgiY",
+    "private_bucket": "relay-artifacts-928489693154-use1"
+  },
+  "reserved_namespaces_not_yet_written": {
+    "dynamodb_partition_prefix": "RELAY_MVP_V1#",
+    "s3_prefix": "cloud-mvp-v1/",
+    "transcribe_job_prefix": "relay-mvp-"
+  },
+  "proposed_new_auth_resources": {
+    "public_client_name": "RELAY-Cloud-MVP-Native",
+    "domain": "relay-mvp-928489693154",
+    "synthetic_user_count": 4
+  },
+  "hosted_stack": null,
+  "public_api_url": null,
+  "private_runtime_manifest": "created-resources.json is written outside Git only after approved provisioning",
+  "cleanup_authorized": false
+}
