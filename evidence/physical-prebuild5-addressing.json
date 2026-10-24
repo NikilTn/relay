@@ -1,0 +1,288 @@
+{
+  "a": {
+    "device_id": "d8024643-427c-43dd-a991-7db89543bf19",
+    "stored_items": 15,
+    "messages": [
+      {
+        "id": "1a480018-3f9e-4d7f-b254-953deaabff06",
+        "type": "RESOURCE_REQUEST",
+        "origin": "4e328dc5-51a9-4e37-92d6-833a81c32078",
+        "destination": "d8024643-427c-43dd-a991-7db89543bf19",
+        "scope": "received",
+        "final_receipt": null
+      },
+      {
+        "id": "ea218e2d-62bb-49c2-b06a-ba8b779bcc4a",
+        "type": "DELIVERY_RECEIPT",
+        "origin": "d8024643-427c-43dd-a991-7db89543bf19",
+        "destination": "4e328dc5-51a9-4e37-92d6-833a81c32078",
+        "scope": "sent",
+        "final_receipt": null
+      },
+      {
+        "id": "fd36332a-ee3b-4e84-9fda-05ef08a8be26",
+        "type": "RESOURCE_REQUEST",
+        "origin": "4e328dc5-51a9-4e37-92d6-833a81c32078",
+        "destination": "d8024643-427c-43dd-a991-7db89543bf19",
+        "scope": "received",
+        "final_receipt": null
+      },
+      {
+        "id": "e842ca9c-345b-4722-b352-377fea2d3cc5",
+        "type": "DELIVERY_RECEIPT",
+        "origin": "d8024643-427c-43dd-a991-7db89543bf19",
+        "destination": "4e328dc5-51a9-4e37-92d6-833a81c32078",
+        "scope": "sent",
+        "final_receipt": null
+      },
+      {
+        "id": "17813539-3e39-4d6d-b524-be26a3c81115",
+        "type": "RESOURCE_REQUEST",
+        "origin": "fabb432e-244d-4be8-86eb-eb9ac6982d0f",
+        "destination": "00000000-0000-0000-0000-00000000000c",
+        "scope": "carried",
+        "final_receipt": null
+      },
+      {
+        "id": "68027e07-97de-41c7-8e3b-0db0ebaadb83",
+        "type": "RESOURCE_REQUEST",
+        "origin": "fabb432e-244d-4be8-86eb-eb9ac6982d0f",
+        "destination": "989a39ee-67c7-4cfe-bd50-67d44e31c0ce",
+        "scope": "carried",
+        "final_receipt": null
+      },
+      {
+        "id": "ecb318f9-bd7b-478c-a1a9-61a6a0f85b8b",
+        "type": "DELIVERY_RECEIPT",
+        "origin": "fabb432e-244d-4be8-86eb-eb9ac6982d0f",
+        "destination": "e816be05-b366-4b44-a5dd-8b56ef7e5884",
+        "scope": "carried",
+        "final_receipt": null
+      },
+      {
+        "id": "8f331595-d76d-4b55-bf1c-3cc110dc363a",
+        "type": "RESOURCE_REQUEST",
+        "origin": "fabb432e-244d-4be8-86eb-eb9ac6982d0f",
+        "destination": "e816be05-b366-4b44-a5dd-8b56ef7e5884",
+        "scope": "carried",
+        "final_receipt": null
+      },
+      {
+        "id": "ef8e1935-f776-4ae3-905c-24d01d489842",
+        "type": "RESOURCE_REQUEST",
+        "origin": "4e328dc5-51a9-4e37-92d6-833a81c32078",
+        "destination": "fabb432e-244d-4be8-86eb-eb9ac6982d0f",
+        "scope": "carried",
+        "final_receipt": null
+      },
+      {
+        "id": "01a93319-01a6-42b1-a666-bc42c13b7784",
+        "type": "RESOURCE_REQUEST",
+        "origin": "e816be05-b366-4b44-a5dd-8b56ef7e5884",
+        "destination": "fabb432e-244d-4be8-86eb-eb9ac6982d0f",
+        "scope": "carried",
+        "final_receipt": null
+      },
+      {
+        "id": "cf2ead56-c8da-44fa-b6a3-bff790b75935",
+        "type": "DELIVERY_RECEIPT",
+        "origin": "e816be05-b366-4b44-a5dd-8b56ef7e5884",
+        "destination": "fabb432e-244d-4be8-86eb-eb9ac6982d0f",
+        "scope": "carried",
+        "final_receipt": null
+      },
+      {
+        "id": "ec744e87-36a8-472c-b9af-43518be94e80",
+        "type": "RESOURCE_REQUEST",
+        "origin": "e816be05-b366-4b44-a5dd-8b56ef7e5884",
+        "destination": "fabb432e-244d-4be8-86eb-eb9ac6982d0f",
+        "scope": "carried",
+        "final_receipt": null
+      },
+      {
+        "id": "da1f71c2-4bd8-4fe0-a1c9-3958e4af0162",
+        "type": "RESOURCE_REQUEST",
+        "origin": "e816be05-b366-4b44-a5dd-8b56ef7e5884",
+        "destination": "fabb432e-244d-4be8-86eb-eb9ac6982d0f",
+        "scope": "carried",
+        "final_receipt": null
+      },
+      {
+        "id": "02aff9fc-fc3b-4388-9d36-d477cebe60f4",
+        "type": "RESOURCE_REQUEST",
+        "origin": "e816be05-b366-4b44-a5dd-8b56ef7e5884",
+        "destination": "4e328dc5-51a9-4e37-92d6-833a81c32078",
+        "scope": "carried",
+        "final_receipt": null
+      },
+      {
+        "id": "234e00c3-844c-44b8-bb57-f632f949a6b0",
+        "type": "DELIVERY_RECEIPT",
+        "origin": "4e328dc5-51a9-4e37-92d6-833a81c32078",
+        "destination": "e816be05-b366-4b44-a5dd-8b56ef7e5884",
+        "scope": "carried",
+        "final_receipt": null
+      }
+    ],
+    "known_peers": [
+      {
+        "id": "4e328dc5-51a9-4e37-92d6-833a81c32078",
+        "role": "Relay B"
+      },
+      {
+        "id": "e816be05-b366-4b44-a5dd-8b56ef7e5884",
+        "role": "Relay B"
+      }
+    ]
+  },
+  "b": {
+    "device_id": "4e328dc5-51a9-4e37-92d6-833a81c32078",
+    "stored_items": 16,
+    "messages": [
+      {
+        "id": "1a480018-3f9e-4d7f-b254-953deaabff06",
+        "type": "RESOURCE_REQUEST",
+        "origin": "4e328dc5-51a9-4e37-92d6-833a81c32078",
+        "destination": "d8024643-427c-43dd-a991-7db89543bf19",
+        "scope": "sent",
+        "final_receipt": "ea218e2d-62bb-49c2-b06a-ba8b779bcc4a"
+      },
+      {
+        "id": "ea218e2d-62bb-49c2-b06a-ba8b779bcc4a",
+        "type": "DELIVERY_RECEIPT",
+        "origin": "d8024643-427c-43dd-a991-7db89543bf19",
+        "destination": "4e328dc5-51a9-4e37-92d6-833a81c32078",
+        "scope": "received",
+        "final_receipt": null
+      },
+      {
+        "id": "fd36332a-ee3b-4e84-9fda-05ef08a8be26",
+        "type": "RESOURCE_REQUEST",
+        "origin": "4e328dc5-51a9-4e37-92d6-833a81c32078",
+        "destination": "d8024643-427c-43dd-a991-7db89543bf19",
+        "scope": "sent",
+        "final_receipt": "e842ca9c-345b-4722-b352-377fea2d3cc5"
+      },
+      {
+        "id": "e842ca9c-345b-4722-b352-377fea2d3cc5",
+        "type": "DELIVERY_RECEIPT",
+        "origin": "d8024643-427c-43dd-a991-7db89543bf19",
+        "destination": "4e328dc5-51a9-4e37-92d6-833a81c32078",
+        "scope": "received",
+        "final_receipt": null
+      },
+      {
+        "id": "17813539-3e39-4d6d-b524-be26a3c81115",
+        "type": "RESOURCE_REQUEST",
+        "origin": "fabb432e-244d-4be8-86eb-eb9ac6982d0f",
+        "destination": "00000000-0000-0000-0000-00000000000c",
+        "scope": "carried",
+        "final_receipt": null
+      },
+      {
+        "id": "68027e07-97de-41c7-8e3b-0db0ebaadb83",
+        "type": "RESOURCE_REQUEST",
+        "origin": "fabb432e-244d-4be8-86eb-eb9ac6982d0f",
+        "destination": "989a39ee-67c7-4cfe-bd50-67d44e31c0ce",
+        "scope": "carried",
+        "final_receipt": null
+      },
+      {
+        "id": "ecb318f9-bd7b-478c-a1a9-61a6a0f85b8b",
+        "type": "DELIVERY_RECEIPT",
+        "origin": "fabb432e-244d-4be8-86eb-eb9ac6982d0f",
+        "destination": "e816be05-b366-4b44-a5dd-8b56ef7e5884",
+        "scope": "carried",
+        "final_receipt": null
+      },
+      {
+        "id": "8f331595-d76d-4b55-bf1c-3cc110dc363a",
+        "type": "RESOURCE_REQUEST",
+        "origin": "fabb432e-244d-4be8-86eb-eb9ac6982d0f",
+        "destination": "e816be05-b366-4b44-a5dd-8b56ef7e5884",
+        "scope": "carried",
+        "final_receipt": null
+      },
+      {
+        "id": "ef8e1935-f776-4ae3-905c-24d01d489842",
+        "type": "RESOURCE_REQUEST",
+        "origin": "4e328dc5-51a9-4e37-92d6-833a81c32078",
+        "destination": "fabb432e-244d-4be8-86eb-eb9ac6982d0f",
+        "scope": "sent",
+        "final_receipt": "d479e085-336a-461f-a423-b53c3b3c4d9a"
+      },
+      {
+        "id": "d479e085-336a-461f-a423-b53c3b3c4d9a",
+        "type": "DELIVERY_RECEIPT",
+        "origin": "fabb432e-244d-4be8-86eb-eb9ac6982d0f",
+        "destination": "4e328dc5-51a9-4e37-92d6-833a81c32078",
+        "scope": "received",
+        "final_receipt": null
+      },
+      {
+        "id": "01a93319-01a6-42b1-a666-bc42c13b7784",
+        "type": "RESOURCE_REQUEST",
+        "origin": "e816be05-b366-4b44-a5dd-8b56ef7e5884",
+        "destination": "fabb432e-244d-4be8-86eb-eb9ac6982d0f",
+        "scope": "carried",
+        "final_receipt": null
+      },
+      {
+        "id": "cf2ead56-c8da-44fa-b6a3-bff790b75935",
+        "type": "DELIVERY_RECEIPT",
+        "origin": "e816be05-b366-4b44-a5dd-8b56ef7e5884",
+        "destination": "fabb432e-244d-4be8-86eb-eb9ac6982d0f",
+        "scope": "carried",
+        "final_receipt": null
+      },
+      {
+        "id": "ec744e87-36a8-472c-b9af-43518be94e80",
+        "type": "RESOURCE_REQUEST",
+        "origin": "e816be05-b366-4b44-a5dd-8b56ef7e5884",
+        "destination": "fabb432e-244d-4be8-86eb-eb9ac6982d0f",
+        "scope": "carried",
+        "final_receipt": null
+      },
+      {
+        "id": "da1f71c2-4bd8-4fe0-a1c9-3958e4af0162",
+        "type": "RESOURCE_REQUEST",
+        "origin": "e816be05-b366-4b44-a5dd-8b56ef7e5884",
+        "destination": "fabb432e-244d-4be8-86eb-eb9ac6982d0f",
+        "scope": "carried",
+        "final_receipt": null
+      },
+      {
+        "id": "02aff9fc-fc3b-4388-9d36-d477cebe60f4",
+        "type": "RESOURCE_REQUEST",
+        "origin": "e816be05-b366-4b44-a5dd-8b56ef7e5884",
+        "destination": "4e328dc5-51a9-4e37-92d6-833a81c32078",
+        "scope": "received",
+        "final_receipt": null
+      },
+      {
+        "id": "234e00c3-844c-44b8-bb57-f632f949a6b0",
+        "type": "DELIVERY_RECEIPT",
+        "origin": "4e328dc5-51a9-4e37-92d6-833a81c32078",
+        "destination": "e816be05-b366-4b44-a5dd-8b56ef7e5884",
+        "scope": "sent",
+        "final_receipt": null
+      }
+    ],
+    "known_peers": [
+      {
+        "id": "d8024643-427c-43dd-a991-7db89543bf19",
+        "role": "Sender A"
+      },
+      {
+        "id": "fabb432e-244d-4be8-86eb-eb9ac6982d0f",
+        "role": "Receiver C"
+      },
+      {
+        "id": "e816be05-b366-4b44-a5dd-8b56ef7e5884",
+        "role": "Relay B"
+      }
+    ]
+  },
+  "interpretation": "Copies for nonlocal destinations exist in the relay stores. Personal chat projection uses UUID origin/destination, not test roles. Two observed peers used the same Relay B role label. No controlled network-isolation evidence was collected.",
+  "payloads_included": false
+}
