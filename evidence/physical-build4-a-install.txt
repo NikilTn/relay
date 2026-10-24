@@ -1,0 +1,10 @@
+19:17:49  Acquired tunnel connection to device.
+19:17:49  Enabling developer disk image services.
+19:17:50  Acquired usage assertion.
+App installed:
+• bundleID: org.relay.prototype.ios
+• installationURL: file:///private/var/containers/Bundle/Application/F07E6147-CD9A-4713-B8D8-4F68E0D77B23/RELAY-iOS.app/
+• launchServicesIdentifier: unknown
+• databaseUUID: 793C88A9-5192-4599-9CC1-1D45089245D2
+• databaseSequenceNumber: 4608
+• options: 

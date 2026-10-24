@@ -1,0 +1,23 @@
+{
+  "prepared_at_utc": "2026-10-24T00:56:03.724622+00:00",
+  "A": {
+    "model": "iPhone 15 Pro Max",
+    "os": "27.0.1",
+    "device_id": "d8024643-427c-43dd-a991-7db89543bf19",
+    "intended_role": "Sender A"
+  },
+  "B": {
+    "model": "iPhone 16",
+    "os": "26.2",
+    "device_id": "4e328dc5-51a9-4e37-92d6-833a81c32078",
+    "intended_role": "Relay B"
+  },
+  "C": {
+    "model": "Mac15,6 / M3 Pro",
+    "os": "26.6.2",
+    "device_id": "fabb432e-244d-4be8-86eb-eb9ac6982d0f",
+    "observed_role": "Receiver C",
+    "observed_network_state": "Stopped; discovered 0, connected 0"
+  },
+  "test_stage": "User instructed to unplug USB, disable cellular/no AP association, enable Wi-Fi/Bluetooth radios, set phone roles, start nearby discovery. Awaiting confirmation of actual offline conditions and connection; no wireless delivery PASS yet."
+}

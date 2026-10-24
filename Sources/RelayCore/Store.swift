@@ -1,0 +1,217 @@
+import Foundation
+import SQLite3
+
+public struct StoredMessage: Identifiable {
+    public let message: RelayMessage
+    public let finalReceiptID: String?
+    public let attempts: Int
+    public let acceptedBy: [String]
+    public let destinationAccepted: Bool
+    public var id: String { message.id }
+    public func status(deviceID: String, now: Date = Date()) -> String {
+        if finalReceiptID != nil { return "Final destination receipt received" }
+        if message.destinationID == deviceID { return message.messageType == .receipt ? "Receipt persisted locally" : "Received at final destination" }
+        if message.expiresAt <= now { return "Expired — retained, not forwarded" }
+        if message.messageType == .receipt {
+            if destinationAccepted { return "Receipt accepted by its recipient (storage ACK)" }
+            if !acceptedBy.isEmpty { return "Receipt accepted by relay — queued for onward forwarding" }
+        }
+        if destinationAccepted { return "Destination storage ACK — awaiting return receipt" }
+        if !acceptedBy.isEmpty { return "Accepted by relay — awaiting destination receipt" }
+        return attempts > 0 ? "Queued — awaiting durable ACK (\(attempts) attempts)" : "Locally saved — queued"
+    }
+}
+public struct ReceiveResult {
+    public let duplicate: Bool
+    public let generatedReceipt: RelayMessage?
+    public let recognizedReceipt: Bool
+}
+
+/// Confined to the engine's serial queue. Transactions use WAL + synchronous FULL.
+public final class RelayStore {
+    public static let capacity = 1000
+    private var db: OpaquePointer?
+    private let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+    public let deviceID: String
+    public let path: String
+
+    private init(openPath: String, requestedID: String?) throws {
+        path = openPath
+        if openPath != ":memory:" {
+            try FileManager.default.createDirectory(at: URL(fileURLWithPath: openPath).deletingLastPathComponent(), withIntermediateDirectories: true)
+        }
+        var handle: OpaquePointer?
+        guard sqlite3_open_v2(openPath, &handle, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX, nil) == SQLITE_OK else {
+            let reason = handle.map { String(cString: sqlite3_errmsg($0)) } ?? "open failed"
+            sqlite3_close(handle); throw RelayError.database(reason)
+        }
+        // Close failed initialization handles as well as successful ones.
+        do { deviceID = try Self.bootstrap(handle: handle!, requestedID: requestedID) }
+        catch { sqlite3_close(handle); throw error }
+        db = handle
+    }
+    public static func open(path: String, deviceID: String? = nil) throws -> RelayStore {
+        try RelayStore(openPath: path, requestedID: deviceID)
+    }
+    private static func bootstrap(handle: OpaquePointer, requestedID: String?) throws -> String {
+        let schema = """
+        PRAGMA journal_mode=WAL;
+        PRAGMA synchronous=FULL;
+        PRAGMA busy_timeout=3000;
+        CREATE TABLE IF NOT EXISTS metadata(key TEXT PRIMARY KEY, value TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS messages(id TEXT PRIMARY KEY, body TEXT NOT NULL, final_receipt TEXT);
+        CREATE TABLE IF NOT EXISTS transfers(message_id TEXT NOT NULL, peer_id TEXT NOT NULL,
+            attempts INTEGER NOT NULL DEFAULT 0, acceptance TEXT, PRIMARY KEY(message_id,peer_id));
+        CREATE TABLE IF NOT EXISTS events(seq INTEGER PRIMARY KEY AUTOINCREMENT, line TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS peers(id TEXT PRIMARY KEY, role TEXT NOT NULL);
+        """
+        guard sqlite3_exec(handle, schema, nil, nil, nil) == SQLITE_OK else {
+            throw RelayError.database("schema initialization")
+        }
+        // Existing installations keep their UUIDs, messages and receipt state.
+        var columns: OpaquePointer?
+        guard sqlite3_prepare_v2(handle, "PRAGMA table_info(peers)", -1, &columns, nil) == SQLITE_OK else { throw RelayError.database("peer schema query") }
+        var hasName = false
+        while sqlite3_step(columns) == SQLITE_ROW {
+            if let p = sqlite3_column_text(columns, 1), String(cString: p) == "display_name" { hasName = true }
+        }
+        sqlite3_finalize(columns)
+        let migration = hasName ? "PRAGMA user_version=2;" : "BEGIN IMMEDIATE; ALTER TABLE peers ADD COLUMN display_name TEXT; PRAGMA user_version=2; COMMIT;"
+        guard sqlite3_exec(handle, migration, nil, nil, nil) == SQLITE_OK else { throw RelayError.database("peer name migration") }
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(handle, "SELECT value FROM metadata WHERE key='device_id'", -1, &stmt, nil) == SQLITE_OK else { throw RelayError.database("identity query") }
+        var stored: String?
+        if sqlite3_step(stmt) == SQLITE_ROW, let p = sqlite3_column_text(stmt, 0) { stored = String(cString: p) }
+        sqlite3_finalize(stmt)
+        let id = stored ?? requestedID ?? UUID().uuidString.lowercased()
+        guard UUID(uuidString: id) != nil, id == id.lowercased(), requestedID == nil || requestedID == id else { throw RelayError.invalid("persistent device identity mismatch") }
+        if stored == nil {
+            // UUID is validated; no user-provided SQL enters this statement.
+            guard sqlite3_exec(handle, "INSERT INTO metadata VALUES('device_id','\(id)')", nil, nil, nil) == SQLITE_OK else { throw RelayError.database("identity insert") }
+        }
+        return id
+    }
+    deinit { sqlite3_close(db) }
+
+    private func statement(_ sql: String, _ values: [String] = []) throws -> OpaquePointer {
+        var s: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &s, nil) == SQLITE_OK, let s else { throw error() }
+        for (i, value) in values.enumerated() {
+            guard sqlite3_bind_text(s, Int32(i + 1), value, -1, transient) == SQLITE_OK else { sqlite3_finalize(s); throw error() }
+        }
+        return s
+    }
+    private func error() -> RelayError { .database(String(cString: sqlite3_errmsg(db))) }
+    private func execute(_ sql: String, _ values: [String] = []) throws {
+        let s = try statement(sql, values); defer { sqlite3_finalize(s) }
+        guard sqlite3_step(s) == SQLITE_DONE else { throw error() }
+    }
+    private func rows(_ sql: String, _ values: [String] = []) throws -> [[String?]] {
+        let s = try statement(sql, values); defer { sqlite3_finalize(s) }
+        var output: [[String?]] = []
+        while true {
+            let result = sqlite3_step(s)
+            if result == SQLITE_DONE { return output }
+            guard result == SQLITE_ROW else { throw error() }
+            output.append((0..<sqlite3_column_count(s)).map { col in
+                sqlite3_column_text(s, col).map { String(cString: $0) }
+            })
+        }
+    }
+    private func transaction<T>(_ body: () throws -> T) throws -> T {
+        try execute("BEGIN IMMEDIATE")
+        do { let result = try body(); try execute("COMMIT"); return result }
+        catch { try? execute("ROLLBACK"); throw error }
+    }
+    public func setting(_ key: String) throws -> String? { try rows("SELECT value FROM metadata WHERE key=?", [key]).first?.first ?? nil }
+    public func setSetting(_ key: String, _ value: String) throws {
+        try execute("INSERT INTO metadata(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", [key, value])
+    }
+    public func remember(_ peer: Peer) throws {
+        if let name = peer.displayName { _ = try Peer.normalizedName(name) }
+        try execute("INSERT INTO peers(id,role,display_name) VALUES(?,?,NULLIF(?,'')) ON CONFLICT(id) DO UPDATE SET role=excluded.role,display_name=COALESCE(excluded.display_name,peers.display_name)", [peer.deviceID, peer.role.rawValue, peer.displayName ?? ""])
+    }
+    public func knownPeers() throws -> [Peer] {
+        try rows("SELECT id,role,display_name FROM peers ORDER BY COALESCE(display_name,id),id").compactMap {
+            guard let id = $0[0], let r = $0[1], let role = TestRole(rawValue: r) else { return nil }
+            return Peer(deviceID: id, role: role, displayName: $0[2])
+        }
+    }
+    public func message(_ id: String) throws -> RelayMessage? {
+        guard let body = try rows("SELECT body FROM messages WHERE id=?", [id]).first?[0] else { return nil }
+        return try WireCodec.decode(RelayMessage.self, from: Data(body.utf8))
+    }
+    public func allMessages() throws -> [RelayMessage] {
+        try rows("SELECT body FROM messages ORDER BY rowid").map { try WireCodec.decode(RelayMessage.self, from: Data($0[0]!.utf8)) }
+    }
+    private func insert(_ message: RelayMessage) throws {
+        guard let n = try rows("SELECT COUNT(*) FROM messages").first?[0], Int(n)! < Self.capacity else { throw RelayError.database("1000-message prototype quota reached; no ACK issued") }
+        let body = String(decoding: try WireCodec.encode(message), as: UTF8.self)
+        try execute("INSERT INTO messages(id,body) VALUES(?,?)", [message.id, body])
+    }
+    public func saveLocal(_ message: RelayMessage, now: Date) throws {
+        try message.validate(now: now)
+        guard message.originID == deviceID, message.hopCount == 0 else { throw RelayError.invalid("local origin") }
+        try transaction { try insert(message) }
+    }
+    public func receive(_ message: RelayMessage, now: Date) throws -> ReceiveResult {
+        try message.validate(now: now)
+        guard message.hopCount > 0 else { throw RelayError.invalid("received hop must be positive") }
+        return try transaction {
+            let previous = try self.message(message.id)
+            if let previous, !previous.sameContent(as: message) { throw RelayError.invalid("UUID content collision \(message.id)") }
+            if previous == nil { try insert(message) }
+            else if message.hopCount < previous!.hopCount {
+                try execute("UPDATE messages SET body=? WHERE id=?", [String(decoding: try WireCodec.encode(message), as: UTF8.self), message.id])
+            }
+            var generated: RelayMessage?
+            var recognized = false
+            if message.destinationID == deviceID && message.messageType == .request {
+                // Insert request and its receipt atomically. A duplicate never repeats the application action.
+                let receipts = try allMessages().filter { $0.messageType == .receipt && $0.originID == deviceID && $0.payload.originalMessageID == message.id }
+                if receipts.isEmpty {
+                    let receipt = RelayMessage(originID: deviceID, destinationID: message.originID,
+                        messageType: .receipt, payload: Payload(text: "Final destination persisted request", originalMessageID: message.id),
+                        createdAt: WireCodec.second(now), maxHops: message.maxHops)
+                    try insert(receipt); generated = receipt
+                }
+            }
+            if message.messageType == .receipt, message.destinationID == deviceID,
+               let originalID = message.payload.originalMessageID,
+               let original = try self.message(originalID), original.messageType == .request,
+               original.originID == deviceID, message.originID == original.destinationID {
+                try execute("UPDATE messages SET final_receipt=COALESCE(final_receipt,?) WHERE id=?", [message.id, originalID])
+                recognized = true
+            }
+            return ReceiveResult(duplicate: previous != nil, generatedReceipt: generated, recognizedReceipt: recognized)
+        }
+    }
+    public func inventory(now: Date) throws -> [String] { try allMessages().filter { $0.expiresAt > now }.map(\.id) }
+    public func recordAttempt(_ id: String, peer: String) throws {
+        try execute("INSERT INTO transfers(message_id,peer_id,attempts) VALUES(?,?,1) ON CONFLICT(message_id,peer_id) DO UPDATE SET attempts=attempts+1", [id, peer])
+    }
+    public func recordAck(_ ack: StorageAck, peer: String) throws {
+        try execute("UPDATE transfers SET acceptance=COALESCE(acceptance,?) WHERE message_id=? AND peer_id=?", [ack.acceptance.rawValue, ack.messageID, peer])
+    }
+    public func hasUnacknowledgedAttempt(_ id: String, peer: String) throws -> Bool {
+        !(try rows("SELECT 1 FROM transfers WHERE message_id=? AND peer_id=? AND acceptance IS NULL", [id, peer])).isEmpty
+    }
+    public func summaries() throws -> [StoredMessage] {
+        try allMessages().map { m in
+            let transfers = try rows("SELECT peer_id,attempts,acceptance FROM transfers WHERE message_id=?", [m.id])
+            return StoredMessage(message: m, finalReceiptID: try rows("SELECT final_receipt FROM messages WHERE id=?", [m.id]).first?[0],
+                attempts: transfers.reduce(0) { $0 + (Int($1[1] ?? "0") ?? 0) },
+                acceptedBy: transfers.compactMap { $0[2] == nil ? nil : $0[0] },
+                destinationAccepted: transfers.contains { $0[0] == m.destinationID && $0[2] == Acceptance.destinationStored.rawValue })
+        }
+    }
+    public func log(_ line: String) throws {
+        try transaction {
+            try execute("INSERT INTO events(line) VALUES(?)", [line])
+            try execute("DELETE FROM events WHERE seq <= (SELECT COALESCE(MAX(seq),0)-10000 FROM events)")
+        }
+    }
+    public func logs(limit: Int = 500) throws -> [String] {
+        try rows("SELECT line FROM (SELECT seq,line FROM events ORDER BY seq DESC LIMIT ?) ORDER BY seq", [String(limit)]).compactMap { $0[0] }
+    }
+}

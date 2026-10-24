@@ -1,0 +1,61 @@
+$ date -u
+Fri Oct 23 22:25:07 UTC 2026
+$ sw_vers
+ProductName:		macOS
+ProductVersion:		26.6.2
+BuildVersion:		25G83
+$ sysctl -n hw.model machdep.cpu.brand_string
+Mac15,6
+Apple M3 Pro
+$ xcodebuild -version
+Xcode 26.1.1
+Build version 17B100
+$ xcrun swift --version
+swift-driver version: 1.127.14.1 Apple Swift version 6.2.1 (swiftlang-6.2.1.4.8 clang-1700.4.4.1)
+Target: arm64-apple-macosx26.0
+$ xcodebuild -showsdks
+DriverKit SDKs:
+	DriverKit 25.1                	-sdk driverkit25.1
+
+iOS SDKs:
+	iOS 26.1                      	-sdk iphoneos26.1
+
+iOS Simulator SDKs:
+	Simulator - iOS 26.1          	-sdk iphonesimulator26.1
+
+macOS SDKs:
+	macOS 26.1                    	-sdk macosx26.1
+	macOS 26.1                    	-sdk macosx26.1
+
+tvOS SDKs:
+	tvOS 26.1                     	-sdk appletvos26.1
+
+tvOS Simulator SDKs:
+	Simulator - tvOS 26.1         	-sdk appletvsimulator26.1
+
+visionOS SDKs:
+	visionOS 26.1                 	-sdk xros26.1
+
+visionOS Simulator SDKs:
+	Simulator - visionOS 26.1     	-sdk xrsimulator26.1
+
+watchOS SDKs:
+	watchOS 26.1                  	-sdk watchos26.1
+
+watchOS Simulator SDKs:
+	Simulator - watchOS 26.1      	-sdk watchsimulator26.1
+
+$ xcrun simctl list devices available
+== Devices ==
+-- iOS 26.1 --
+    iPhone 17 Pro (11069F45-03E2-40CA-AD2B-49792F76C466) (Shutdown) 
+    iPhone 17 Pro Max (A74B359B-A6E2-40F8-B54F-E82D7069E70C) (Shutdown) 
+    iPhone Air (F0D75CD1-818C-480C-A664-CD5ECC8FB8D3) (Shutdown) 
+    iPhone 17 (192A4922-AD20-4C19-BC12-C2982A8B06C0) (Shutdown) 
+    iPhone 16e (98B7045A-4862-4994-ADE0-BC6375AEC498) (Shutdown) 
+    iPad Pro 13-inch (M5) (AFBB5255-DD86-4E7D-A5CC-2247CE79ED82) (Shutdown) 
+    iPad Pro 11-inch (M5) (76195D89-24BB-4F37-897D-40FE8B38E881) (Shutdown) 
+    iPad mini (A17 Pro) (4841D22D-5E10-431E-9C78-A096975A5D50) (Shutdown) 
+    iPad (A16) (1A25CF86-B107-4597-933F-E22A08875E5F) (Shutdown) 
+    iPad Air 13-inch (M3) (34277D44-EBC3-4411-9076-07F2B819850E) (Shutdown) 
+    iPad Air 11-inch (M3) (A5B27621-B919-44AC-8B17-0ACCB64B673E) (Shutdown) 

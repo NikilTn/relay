@@ -1,0 +1,86 @@
+# RELAY teammate beta deployment
+
+**Latest update: 0.1.0 (5)** adds editable persistent device names, clearer destination labels, advanced-only test roles, and forwarding copies without payload previews. Signed archive/upload passed at 19:37:57 PDT. Apple processing completed; RELAY Development shows **Testing** and build-specific test notes are saved. Both phones have the direct build installed; iPhone 16 launched, iPhone 15 Pro Max is locked and must be opened. External build 2 remains Waiting for Review; it was not replaced. [Build 5 evidence](evidence/testflight-upload-build-5.json).
+
+**Previous update: 0.1.0 (4)** contains the chat UI and repeat-send fix. It is directly installed/launched on both physical iPhones with their original IDs and all stored messages preserved. Paid-team upload succeeded at 19:18:26 PDT. Apple processing completed; RELAY Development shows **Testing** for build 4 and its test notes are saved. See [release evidence](evidence/testflight-upload-build-4.json). External build 2 was not canceled/replaced.
+
+**Previous update: 0.1.0 (3)** is uploaded, processed, and verified **Testing** in RELAY Development. It contains the redesigned Messages/Nearby/Tools UI, reply action, clearer receipt progress, validation, templates, identity sharing, and improved keyboard dismissal. Build-specific test notes are saved. The original external submission below is build 2; it was not canceled or replaced. [Build 3 release evidence](evidence/testflight-upload-build-3.json).
+
+Direct installation and launch of build 3 succeeded on both the iPhone 15 Pro Max and iPhone 16 using the original Personal Team bundle ID, preserving both device UUIDs and stores. TestFlight installations use the separate paid-team identifier.
+
+Status (2026-10-23 PDT): **version 0.1.0 (2) was signed and uploaded successfully** at 18:18:46 PDT. The keyboard fix is included. Processing is complete and the external build status is **Waiting for Review**. Public link: **https://testflight.apple.com/join/paGggTvE** (100-tester limit). Apple explicitly says testers cannot join until the group has an approved build; approval and actual installation are not yet verified. Physical offline acceptance remains separate in TEST_RESULTS.md.
+
+## Publishing account and app record
+
+- Enrolled team: **U4G9LV39GM**, Nikil Thalapaneni, using the user-selected `anonymousfool` account already signed into Xcode. The user accepted Apple's updated Developer Program agreement and membership resources became available.
+- App: **RELAY Offline Lab**, Apple ID **6826458231**, SKU `relay-offline-ios`, English (U.S.), iOS.
+- [App Store Connect / TestFlight](https://appstoreconnect.apple.com/teams/dbe8f073-de84-4055-87b7-48ce75f7b773/apps/6826458231/testflight).
+- Registered distribution bundle ID: **com.nikilthalapaneni.relay**. Apple rejected `org.relay.prototype.ios` as unavailable under this team. The original Personal Team phone installs are untouched; the new identifier has a separate store/device UUID when installed.
+- Initial signed archive was blocked because the paid team had no development devices. Registered the previously verified Sender A iPhone 15 Pro Max; retry produced a signed release archive and valid local signature. No phone was reconnected or reinstalled for this publishing step.
+- Signed archive: `/tmp/RELAY-testflight.q944Ku/RELAY.xcarchive`. Export/upload succeeded using automatic App Store Connect signing. [Archive log](evidence/archive-testflight-build-2.txt), [upload log](evidence/testflight-upload-build-2.txt), [sanitized release record](evidence/testflight-upload-build-2.json).
+- Beta description/review instructions are saved without claims of verified offline wireless operation. User explicitly approved account contact details for Apple's beta reviewers; those private details are not stored in this repo.
+- Internal group **RELAY Development** was created with automatic build distribution enabled as the prerequisite for external testing. External group **RELAY Teammates** contains build 0.1.0 (2), submitted for beta review with automatic tester notification selected. The public link is configured but blocked pending an approved build. No teammates have been granted App Store Connect account roles or sent individual email invitations.
+
+## Local readiness
+
+- iOS/macOS targets share the existing tested relay engine.
+- App icon assets are included. Regenerate with `xcrun swift scripts/generate_app_icon.swift .` from RELAY, then `python3 scripts/generate_project.py` if project structure changes.
+- The current installed iPhone build uses the free Personal Team for direct device testing. TestFlight needs the user's enrolled Developer Program team; do not assume the Personal Team is that membership.
+- The iOS project now uses `com.nikilthalapaneni.relay` and the enrolled signing team. The original `org.relay.prototype.ios` phone apps remain available for earlier test data.
+- The selected Xcode 26.1.1 / iOS 26.1 SDK meets Apple's published October 2026 upload SDK minimum (Xcode 26 and iOS 26 SDK); no large Xcode update is indicated by that requirement. Recheck at submission time: https://developer.apple.com/news/upcoming-requirements/.
+- Latest source version is **0.1.0 (3)**. A visible navigation-bar Done button dismisses either text-field keyboard. Scroll dismissal is enabled; selecting a peer or sending also clears focus. Simulator checks passed for both fields; build 3 is installed/launched on both physical phones.
+- `ITSAppUsesNonExemptEncryption = NO` is generated for iOS. Source review found plain Network.framework TCP, no TLS/custom encryption, and no third-party libraries. This matches [Apple's key guidance](https://developer.apple.com/documentation/bundleresources/information-property-list/itsappusesnonexemptencryption). Reassess before introducing encryption; this setting does not make the prototype confidential.
+
+## Repeatable archive/upload
+
+Use the enrolled account already signed into Xcode; agreement acceptance, bundle registration, app creation, and the first upload are complete. No phone needs to be attached for this step. From `RELAY/`:
+
+```sh
+# Set to the identifier actually registered under the enrolled team.
+export RELAY_TEAM_ID=U4G9LV39GM
+export RELAY_BUNDLE_ID=com.nikilthalapaneni.relay
+bash scripts/testflight.sh 5          # next build: signed archive only
+bash scripts/testflight.sh 5 --upload # next build: archive and upload
+```
+
+The script stores logs/archives in a fresh `/tmp/RELAY-testflight.*` directory, outside the file-provider-backed source directory. It uses automatic signing and never accepts a password/token. The script's signed archive path passed; its export/upload command was executed separately against that archive and passed. Use the next unused build number after each upload; the script does not silently change it. Check Apple's processing/review state after upload.
+
+TestFlight delivers installed builds, not live source changes. Each future fix needs a new build/upload, then testers install its update (or enable TestFlight automatic updates). Downloading needs internet; the subsequent RELAY radio test can be offline. External testing still requires Apple's beta-review eligibility/approval.
+
+## Immediate testing while external review is pending
+
+The existing enrolled account holder was added to **RELAY Development**. App Store Connect verifies **1 Tester**, status **Invited**, and build **0.1.0 (2): Ready to Test**. Open Apple's invitation in the developer account inbox on the iPhone, install TestFlight, and accept/install RELAY Offline Lab. Inbox delivery, invitation acceptance, and phone installation have not yet been observed. This internal route does not wait for external beta review and does not require USB. No teammate developer-account roles were created or expanded.
+
+## Teammate rollout steps
+
+1. **Completed:** paid-team signing, upload, Apple processing, beta metadata, testing groups, and external review submission. Build 0.1.0 (2) is **Waiting for Review**.
+2. **Apple approval pending:** the [public TestFlight invitation](https://testflight.apple.com/join/paGggTvE) exists, but Apple says testers cannot join until this group has an approved build. It is open to anyone with the link, capped at 100 testers. No teammate account role, device UDID, or USB setup is needed for external TestFlight.
+3. Once approved, install Apple's TestFlight app on each iPhone, open the invitation link, accept the beta invitation, and install RELAY Offline Lab. Enable TestFlight automatic updates if desired. Keep internet available for installation and updates.
+4. This is a different bundle ID from the original development app. Use the TestFlight copy consistently, record its new device UUID on each phone, choose roles again, and preserve the old installation until test evidence is exported.
+5. Run the actual offline radio test with cellular off, no conventional Wi-Fi association/hotspot, Wi-Fi/Bluetooth radios enabled, no USB/tethering, and both apps foreground. Follow TEST_PLAN.md for the separate A–B, B–C, and B–A encounters and Mac setup.
+
+Apple references: [TestFlight overview](https://developer.apple.com/help/app-store-connect/test-a-beta-version/testflight-overview/), [external testers](https://developer.apple.com/help/app-store-connect/test-a-beta-version/invite-external-testers/), [distribution preparation](https://developer.apple.com/documentation/xcode/preparing-your-app-for-distribution).
+
+## Submitted beta description
+
+RELAY is an engineering prototype for testing local message exchange and store-carry-forward delivery between Apple devices. It uses nearby discovery, a durable local message queue, duplicate suppression, and delivery receipts. Test only with synthetic messages. Keep the app foreground during encounters. This beta is not an emergency service and does not provide authenticated identities or confidential messaging. Physical infrastructure-independent delivery has not yet been verified.
+
+## Submitted “What to Test”
+
+Build 0.1.0 (2): verify that Done at the top right dismisses the keyboard from both destination and message fields.
+
+Use synthetic messages only. Keep RELAY foreground and awake. Allow Local Network access. For offline trials, turn off cellular, disconnect USB and ordinary Wi-Fi networks/hotspots, but keep Wi-Fi and Bluetooth radios enabled.
+
+Direct test: start discovery on two iPhones, choose the nearby peer as destination, and verify the request and receipt persist. Relay test: select Sender A, Relay B, Receiver C, copy C's UUID to A, transfer A to B, stop A, terminate/relaunch B, then let B encounter C. Later reconnect B to A and verify the separate final delivery receipt.
+
+Use the retransmit and interrupted-transfer controls. Record actual message IDs, duplicate suppression, restart recovery, connection changes, and radio/SSID conditions. A common-router connection or a logical A-B-C route is not proof of infrastructure-independent wireless delivery. Physical acceptance is still being evaluated; this is not an emergency service.
+
+## Submitted beta review notes
+
+No account login is required inside RELAY. Peer communication requires another copy of RELAY on a nearby compatible Apple device and Local Network permission. Keep Wi-Fi and Bluetooth radios enabled. A single device can display its persistent identity, save an addressed synthetic request while offline, and retain the queue across app restart. Tap Done at the top right to dismiss the keyboard.
+
+For direct transfer, select Relay B on both iPhones, start nearby discovery on both, select the discovered peer as the destination, and send synthetic text. To test store-carry-forward, use three devices assigned Sender A, Relay B, and Receiver C. Enter C's displayed UUID as A's destination. Transfer A to B, stop A, terminate and relaunch B, start discovery on B and C, then verify C receives the queued request. Return the receipt through a separate B to A encounter. Roles are testing controls; forced routing does not prove physical separation.
+
+This foreground engineering beta uses plaintext, unauthenticated local TCP and synthetic test data. It has no backend, purchases, or external login. Offline wireless acceptance and disaster resilience are not claimed.
+
+External TestFlight builds expire after 90 days; this is a beta distribution route, not permanent emergency deployment.

@@ -1,0 +1,209 @@
+# RELAY — offline store-carry-forward prototype
+
+Buildable SwiftUI iOS and macOS apps sharing a Swift/Network.framework/SQLite engine. No AWS, cloud, AI, third-party runtime dependencies, or external radio hardware.
+
+**Current verdict:** automated protocol tests, separate-process TCP loopback experiments, and native Mac ↔ iOS Simulator Bonjour control exchanges pass. **Physical iPhone A → iPhone B → Mac C and infrastructure-independent wireless delivery have NOT been verified.** See [TEST_RESULTS.md](TEST_RESULTS.md) for evidence and blockers. A simulator is not a radio test.
+
+## Build and install
+
+Tested using Xcode 26.1.1 (17B100), Swift 6.2.1, iOS/macOS 26.1 SDKs on an M3 Pro Mac. Deployment targets are iOS 17 and macOS 14; older supported OS versions have not been tested. The package uses Swift 5 language mode with explicit serial-queue confinement.
+
+From this directory:
+
+```sh
+# No dependency downloads or project-generator installation needed.
+open RELAY.xcodeproj
+
+# Native Apple-silicon Mac; ad hoc signing supports local development.
+# Keep DerivedData outside file-provider-backed Documents folders.
+xcodebuild -project RELAY.xcodeproj -scheme RELAY-macOS \
+  -configuration Debug -destination 'platform=macOS,arch=arm64' \
+  -derivedDataPath /tmp/RELAY-mac-build build
+open /tmp/RELAY-mac-build/Build/Products/Debug/RELAY-macOS.app
+
+# Simulator compile (not a physical P2P test).
+xcodebuild -project RELAY.xcodeproj -scheme RELAY-iOS \
+  -configuration Debug -sdk iphonesimulator \
+  -destination 'generic/platform=iOS Simulator' \
+  -derivedDataPath /tmp/RELAY-sim-build CODE_SIGNING_ALLOWED=NO build
+
+# Device-SDK compilation without signing; this cannot be installed on a phone.
+xcodebuild -project RELAY.xcodeproj -scheme RELAY-iOS \
+  -configuration Debug -destination 'generic/platform=iOS' \
+  -derivedDataPath /tmp/RELAY-ios-build CODE_SIGNING_ALLOWED=NO build
+```
+
+For **each physical iPhone**, connect it to Xcode, unlock it, trust this Mac, enable Developer Mode when requested, select the `RELAY-iOS` scheme and that device. In Signing & Capabilities choose your Apple development team and a bundle identifier your team can provision. Build and Run. No developer credentials are bundled. The iOS project currently names the enrolled team and its registered bundle ID; use your own team/identifier if building elsewhere. Both original physical phone development installs and the enrolled-team release archive have succeeded. A free Personal Team may suffice for local development, subject to Apple's provisioning limits.
+
+For stable macOS Local Network permission behavior across rebuilds, use your own development signing identity when available. The committed Mac settings use local ad hoc signing and the App Sandbox's network client/server entitlements. No multicast entitlement is requested: the app only browses/advertises its declared Bonjour service and uses unicast TCP. Allow the normal Local Network and firewall prompts for RELAY during your test; record what appears. No Bluetooth, location, hotspot, or Wi-Fi Aware entitlement is used.
+
+The project is checked in. `python3 scripts/generate_project.py` deterministically regenerates its two app targets, shared schemes, and plists using only Python's standard library. It resets signing changes to the project defaults: enrolled team U4G9LV39GM / com.nikilthalapaneni.relay for iOS, ad hoc signing for macOS. Override DEVELOPMENT_TEAM and PRODUCT_BUNDLE_IDENTIFIER on the command line when using another team.
+
+## Chat interface (build 5)
+
+- **Chats:** conversations grouped by the other device, with an always-visible New chat button in the list. Open a chat to see incoming/outgoing bubbles, timestamps, and delivery state. The bottom input stays available after sending; send repeatedly without opening another sheet. Done dismisses the keyboard. Drafts are retained in memory per conversation while the app runs, but unsaved drafts are not durable.
+- **New chat:** choose a connected or previously encountered device, or enter its full UUID. Selecting an existing peer opens the same conversation. Invalid/self destinations cannot open a new chat.
+- **Nearby:** Connect/Pause controls, connected and remembered peers, and Message this device to open a chat. Forwarding, retry, persistence, and receipts still run through the shared relay engine.
+- **Names:** Tools → Edit name sets the name other devices see in Nearby, New chat, and existing conversations after reconnecting. Names persist across restart; every device can send, receive, and carry. A short UUID stays below each name to distinguish duplicate names. Routing and conversation grouping always use the full stable UUID, never the display name. Names are not authenticated identities. Devices that have not yet exchanged a name show a Device + short-ID fallback.
+- **Tools:** device-name editing and ID copy/share; test roles under **Advanced relay test**; **Open durable queue** for forwarding/receipt metadata; and diagnostics/fault injection. Carried requests and receipt envelopes are excluded from personal chats. Forwarding copies explicitly say they are not addressed to you, and their payload text is hidden in the queue, including expanded rows. The underlying database and transport remain plaintext; this is presentation separation, not confidentiality. No stored messages are deleted. Tap a personal chat bubble for delivery details.
+- Standard body-sized message text, adaptive light/dark colors, width-limited bubbles, compact connection controls, and 44-point send targets. Receipt confirmation remains distinct from a relay's storage acknowledgement.
+
+For a **two-phone test**, turn off **Tools → Advanced relay test → Force A → B → C** on both, tap **Connect**, then **Nearby → Message this device**. Type a synthetic message in the fixed bottom input and tap the send arrow. New stores default to direct mode; existing saved test settings are preserved. Keep the Mac and simulator paused during the two-phone test. Read the no-internet/no-router setup in TEST_PLAN.md before claiming offline success.
+
+## Run the demonstration
+
+Follow [TEST_PLAN.md](TEST_PLAN.md), including network isolation and evidence capture. The essential sequence is:
+
+1. Install on two physical iPhones and the Mac. Select Sender A, Relay B, Receiver C. Each app shows its persistent UUID. Record C's UUID and enter it as A's destination even if they never discover one another. **Role labels are not addresses.**
+2. Leave **Tools → Advanced relay test → Force A → B → C** enabled for a close-range logical test. Changing role or route mode reconnects peers if networking was already active. This blocks application messages between A/C, not their radio reachability.
+3. Disable cellular/internet, detach conventional Wi-Fi infrastructure while leaving Wi-Fi/Bluetooth radios on, remove tethering/Ethernet/VPN paths, and collect the evidence described in the test plan.
+4. Keep C stopped. Tap Start nearby connections on A and B; wait for Connected. A saves `SYNTHETIC M001: Shelter A needs 20 water packs` addressed to **C's UUID**. Record the actual generated message UUID; `M001` is just a test label.
+5. Wait for B's `PERSISTED` and A's `RELAY_STORED` ACK. Stop A, terminate B, relaunch B, and verify the same message and device UUID remain. Do not uninstall or erase app data.
+6. Start B and C; keep A stopped/out of range. B forwards automatically. C records one request and generates a separate receipt; B persists that receipt.
+7. Stop C, stop/restart B if desired, then start B and A. A recognizes the returned receipt and displays **Final destination receipt received**. A's earlier relay ACK must never be mistaken for this state.
+8. Repeat with A and C genuinely out of direct range, with forced routing disabled on all devices, before claiming physical separation.
+
+Apps must remain **foreground and awake** during encounters. Network services start only when the operator presses Start; they resume after relaunch when Start is pressed again. Once running, discovery, connection, inventory, forwarding, and retries are automatic. iOS background/terminated discovery is not implemented or promised.
+
+## Teammate beta distribution
+
+TestFlight preparation, a repeatable archive/upload script, draft beta metadata, and the enrolled-account status are in [TESTFLIGHT.md](TESTFLIGHT.md). Builds 0.1.0 (2), (3), (4), and (5) have been signed and uploaded to App Store Connect as RELAY Offline Lab. Build 2 is the external beta submission; build 5 adds device names and clearer forwarding-copy presentation. The [TestFlight invitation](https://testflight.apple.com/join/paGggTvE) is configured but cannot accept testers until Apple approves a build. After TestFlight setup, new builds can reach teammates without USB; source edits still require another build/upload.
+
+Build 5 is directly installed on both physical phones under the original development identifier, preserving both UUIDs and stores. The iPhone 16 launched successfully; the iPhone 15 Pro Max needs unlocking/opening to complete first launch and its name migration. TestFlight uses the separate paid-team identifier and therefore a separate local store.
+
+## Automated checks
+
+```sh
+xcrun swift test                 # XCTest unit/integration tests; simulated byte transport
+xcrun swift build
+python3 scripts/tcp_experiment.py # three OS processes using real TCP on 127.0.0.1
+```
+
+`tcp_experiment.py` launches three `RelayLab` processes with temporary SQLite stores. It cuts a frame, reconnects, duplicates the same ID, terminates/restarts B between encounters (twice), and checks A → B → C → B → A. It uses explicit loopback addresses and no Bonjour. Its printed logs contain actual UUIDs and assertions; its temporary databases are removed afterward. It does **not** test wireless, range, physical phones, local-network permission, or disaster resilience. A separate native Mac ↔ iOS Simulator control tested Bonjour and the UI; see the evidence files.
+
+## Design and wire format
+
+- `Sources/RelayCore/Protocol.swift`: versioned JSON, message validation, 4-byte unsigned big-endian byte count followed by UTF-8 JSON. No newline delimiter. Maximum JSON frame: 256 KiB; request text: 16 KiB.
+- `Store.swift`: SQLite WAL, `synchronous=FULL`, transactions, stable device identity, messages, attempts/ACKs, settings, known peers, and timestamped events. Stored at the app's Application Support/RELAY/relay.sqlite; the UI displays the exact path.
+- `Engine.swift`: transport-independent session state machine. Exchange `hello`, then `inventory`, then missing `message` packets and durable-storage `ack` packets. No continuous end-to-end route is needed.
+- `NetworkTransport.swift`: Bonjour `_relay-poc._tcp`, NWBrowser/NWListener/NWConnection, TCP, `includePeerToPeer=true` for browser/listener/dialer and cellular prohibited. The lexicographically smaller service UUID dials; both sides browse/listen. A one-second timer drives reconnect checks and eight-second unacknowledged-message retries, with ten-second dial cooldown, five-second inventories, handshake/connect/idle timeouts, and at most eight connections.
+- `Conversations.swift`: presentation-only grouping of personal requests into peer conversations; excludes carried traffic and receipt envelopes without modifying the durable store.
+- `App/RelayApp.swift`: one SwiftUI chat interface for both targets; test roles, destination UUID/manual or known peer, queue and receipts, paths, persistent logs, forced route, forced duplicate, and partial-frame fault injection. UI updates cross back to the main queue; all SQLite/protocol/network operations use one serial engine queue.
+
+Example request (UUIDs below are illustrative, not test evidence):
+
+```json
+{
+  "protocol_version": 1,
+  "message_id": "10000000-0000-0000-0000-000000000001",
+  "origin_id": "00000000-0000-0000-0000-00000000000a",
+  "destination_id": "00000000-0000-0000-0000-00000000000c",
+  "message_type": "RESOURCE_REQUEST",
+  "payload": { "text": "SYNTHETIC Shelter A needs 20 water packs" },
+  "created_at": "2026-10-23T22:00:00Z",
+  "expires_at": "2026-10-24T22:00:00Z",
+  "hop_count": 0,
+  "max_hops": 5
+}
+```
+
+The TCP frame contains an envelope, for example `{"protocol_version":1,"kind":"message","message":{...}}`. Other envelopes carry `peer:{device_id,role}`, `inventory:[uuid,...]`, or `ack:{message_id,acceptance}`. The shared decoder rejects unsupported versions, malformed packet shapes, invalid UUIDs, out-of-bounds frames, clocks/TTLs, and hops. IDs use canonical lowercase UUIDs; dates are UTC ISO8601 at whole-second precision.
+
+Hop count increments **per forwarding edge**, not per retry. A message arriving on its last permitted hop may be delivered but cannot be forwarded further. Default max hops is 5; validation permits 1–16. A duplicate can improve the stored hop count if it arrived by a shorter route. Its immutable content must match; a conflicting body with the same UUID is rejected.
+
+A relay ACK means that peer committed the message to SQLite. Even `DESTINATION_STORED` is an immediate storage ACK, not the return-receipt UI state. The final destination atomically inserts the request and a **separate UUID receipt**, which references `payload.original_message_id`, reverses origin/destination, and has its own 24-hour lifetime and the request's hop limit. Receipts use the same store-carry-forward protocol; they do not generate receipts of receipts. On the original sender, a matching receipt updates delivery state in the same transaction as receipt insertion. The claimed receipt origin must equal the request destination; this is a consistency check, **not cryptographic authentication**.
+
+Unique SQLite message IDs and atomic receipt creation suppress duplicate application actions. A lost ACK causes retransmission even when a later inventory contains the ID. TCP send completion never updates delivery state. Partial frames are discarded on disconnect; the original remains queued. Expired messages remain visible for diagnosis/deduplication but are omitted from inventory and forwarding. Expiration uses device wall clocks (up to 5 minutes future skew accepted; TTL up to 7 days). Clock synchronization is an operator prerequisite.
+
+Prototype limits: 1,000 stored messages including receipts, 10,000 retained event lines, 300 log lines loaded into the UI (100 shown); Copy diagnostic log exports all retained lines. Exceeding message capacity rolls back insertion and sends **no ACK**. There is no automatic message purge or administrative reset UI. Preserve/export evidence before uninstalling or intentionally resetting a test install; reinstalling can change the device address. Exactly-once behavior is limited to the durable logical insert and receipt creation, not arbitrary external side effects.
+
+## Wi-Fi transport and developer launches
+
+Messages use Bonjour discovery and Network.framework TCP with Apple peer-to-peer Wi-Fi enabled. This app does not implement a Core Bluetooth message transport. A connection can still use an available conventional network; peer-to-peer opt-in alone is not proof of router independence. Keep the test conditions and actual PATH logs together when evaluating offline results.
+
+During development, the paired Mac can install and explicitly launch RELAY with Apple's `xcrun devicectl device process launch` command. That uses the trusted developer connection (USB or a supported paired local-network connection). It is separate from RELAY's message protocol; the prototype has no remote-launch feature.
+
+## Apple API selection and path evidence
+
+Reviewed current official docs and the installed SDK declarations before implementation:
+
+- [TN3151 — Choosing the right networking API](https://developer.apple.com/documentation/technotes/tn3151-choosing-the-right-networking-api): recommends Network framework and documents opt-in Apple peer-to-peer Wi-Fi; current guidance marks Multipeer Connectivity deprecated in 2026.
+- [TN3111 — iOS Wi-Fi API overview](https://developer.apple.com/documentation/technotes/tn3111-ios-wifi-api-overview): distinguishes Apple peer-to-peer Wi-Fi from Wi-Fi Aware and describes device/API scope. Apple peer-to-peer was chosen for this Apple-only prototype; no Wi-Fi Aware pairing flow is required.
+- [NWParameters.includePeerToPeer](https://developer.apple.com/documentation/network/nwparameters/includepeertopeer): enables peer-to-peer link technologies. **It is not an assertion that a particular connection used them.**
+- [NWBrowser](https://developer.apple.com/documentation/network/nwbrowser), [NWListener](https://developer.apple.com/documentation/network/nwlistener), [NWConnection](https://developer.apple.com/documentation/network/nwconnection): the installed SDK supports all APIs used here.
+- [TN3179 — Understanding local network privacy](https://developer.apple.com/documentation/technotes/tn3179-understanding-local-network-privacy): local-network access, explicit Bonjour service declarations, and multicast entitlement boundaries. Both Info.plists contain `NSLocalNetworkUsageDescription` and `NSBonjourServices = [_relay-poc._tcp]`.
+
+Diagnostics report discovery interfaces, connection path interfaces/types, local/remote endpoints, path state, expense, and cellular status when available. These observations are **not** conclusive evidence of AWDL selection or lack of router mediation. The app intentionally displays infrastructure independence as UNVERIFIED. A Wi-Fi interface, link-local address, or `awdl0` in a browser result alone is insufficient. Qualify the actual operating conditions and capture traffic/path evidence as described in [TEST_PLAN.md](TEST_PLAN.md).
+
+## Security and disaster-resilience limitations
+
+Synthetic data only. Wire traffic and SQLite are plaintext at the application layer. This prototype has **no TLS, end-to-end encryption, signed messages/receipts, authenticated organizational identities, enrollment, access controls, or secure device-ID key storage**. A nearby attacker can read, inject, impersonate, replay, forge ACKs/receipts, lie about inventory, exhaust quotas, or deny service. UUID matching is not identity proof. The forced-route switch is a cooperative test control, not a security boundary. Device IDs/roles are broadcast in discovery/handshake; logs expose test identifiers and endpoints.
+
+Not a production emergency communication system. Delivery depends on foreground encounters, functioning radios, adequate power/storage, permissions, compatible OS behavior, and honest peers with usable clocks. No end-to-end route planning, redundancy guarantee, congestion control, background wake strategy, attachment transport, or failure-rate/energy/range characterization is provided. Physical tests and longer repeated-failure trials must precede any disaster-resilience claim.
+
+### Name compatibility and storage upgrade
+
+Build 5 adds the optional `display_name` field to the version-1 hello packet. Old peers can ignore it; new peers accept legacy hellos without it. Names are trimmed single-line labels, limited to 40 characters / 160 UTF-8 bytes, with control characters rejected. Renaming reconnects active sessions so peers learn the new label; the device UUID and all message addresses remain unchanged. SQLite schema version 2 adds a nullable peer-name column and saves the local name in metadata. Existing stores migrate on first launch, retaining messages and receipts. Wire compatibility with older peers is tested; downgrading an upgraded app database is not supported.
+
+## Proposed product scope: shelters and cloud continuity
+
+This section is a product plan, not a list of implemented capabilities. The current
+build addresses physical device UUIDs. It already supports known/manual destinations
+that are absent, durable queued messages, and future relay encounters; nearby chat is
+only the current presentation of that engine. Shelters, organizational accounts,
+structured resource workflows, cloud APIs/sync, ASR, and Bedrock are still to be built.
+
+A shelter is a persistent organizational inbox, with its own ID, display name,
+area/contact information, authorized receiving devices, and designated dispatchers.
+It is not a phone's display name or an A/B/C test role. For the first MVP, support one
+designated receiving device per shelter and retain separate shelter/device IDs so
+later device replacement and multiple receivers do not require changing message
+identity. Verified membership, directory updates, and address migration need explicit
+implementation. A device that carries a shelter-addressed envelope is not its final
+recipient and must not gain access to the shelter's personal inbox.
+
+The user selects a shelter or team from a saved directory even when it is not nearby.
+Online, the directory is refreshed from the backend. Offline, it must already be
+cached or explicitly imported, for example from a demo directory or contact code.
+An unknown distant shelter cannot be discovered magically without a connection.
+If no suitable encounter occurs, the message remains queued until receipt or expiry.
+
+| Proposed capability | Cloud reachable | Cloud/internet unavailable |
+|---|---|---|
+| Shelter/team directory | Fetch and update authorized entries | Use saved/imported entries with last-update time |
+| Shelter and person conversations | Authenticated cloud delivery and synchronization | Durable local queue and direct/store-carry-forward delivery when peers meet |
+| Supply requests | Submit item, quantity, location/area, stated urgency and notes | Create the same structured request locally and carry it later |
+| Dispatcher workspace | Shared request queue, inventory-backed proposals, approved assignments | Locally received requests, replies and acknowledgements; cloud-dependent assignments remain pending |
+| Inventory/capacity | Authoritative updates with transactional reservations | Last-known values labeled stale; no promise of globally available stock |
+| Voice input | ASR with editable transcript before submission | Text input initially; offline ASR and relayed audio are separate future features |
+| AI recommendations | Bedrock with actual request/inventory/procedure context | Unavailable without a separately implemented local model |
+| Recovery | Upload/fetch under the original request ID | Retain pending items and retry after actual API recovery |
+
+Operational roles are requester, dispatcher, and responder. Backend authorization
+controls organizational access; choosing a display name or test role does not grant
+it. All roles may participate in transport. The existing native Mac app is the first
+dispatcher-console candidate because it can retain native offline networking.
+
+Separate transport states (locally saved, relay stored, recipient received, cloud
+accepted) from workflow states (new, needs clarification, approved, assigned,
+accepted by responder, in progress, fulfilled/cancelled). A delivery receipt does not
+mean supplies arrived. Retries through different gateways must not duplicate cloud
+requests, reservations, or assignments. Expiry, stale updates, revisions, and offline
+conflicts must be handled explicitly. A cloud outage does not turn relay peers into
+Bedrock or ASR servers.
+
+Recommended implementation order:
+
+1. Shelter/contact directory, shelter inbox addressing, and structured supply requests
+   using the existing durable engine; synthetic demo identities are labeled as such.
+2. Local dispatcher/requester/responder views and a consistent status model.
+3. Coordinate the API contract with the separate AWS-access/backend work: authenticated
+   request submission, status, synchronization, and authorized relay gateways.
+4. Idempotent cloud recovery and reconciliation, then Bedrock recommendations and
+   baseline ASR with transcript review.
+5. Validate controlled physical relay delivery and scale to additional devices before
+   claiming range, background operation, or ten-device reliability. Add authenticated
+   identities and encrypted payloads before using private operational data.
+
+Use one app with role-appropriate views. Nearby/path diagnostics remain engineering
+tools; shelters, requests and conversations become the primary product navigation.

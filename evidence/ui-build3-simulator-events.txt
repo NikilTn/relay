@@ -1,0 +1,47 @@
+2026-10-24T01:42:36Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] APP_OPEN device=e816be05-b366-4b44-a5dd-8b56ef7e5884 os=Version 26.1 (Build 23B86) durable_store=/Users/DEVELOPER/Library/Developer/CoreSimulator/Devices/11069F45-03E2-40CA-AD2B-49792F76C466/data/Containers/Data/Application/FF754BE3-E65B-466B-9DC7-A47A21C3B04B/Library/Application Support/RELAY/relay.sqlite
+2026-10-24T01:45:25Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] APP_OPEN device=e816be05-b366-4b44-a5dd-8b56ef7e5884 os=Version 26.1 (Build 23B86) durable_store=/Users/DEVELOPER/Library/Developer/CoreSimulator/Devices/11069F45-03E2-40CA-AD2B-49792F76C466/data/Containers/Data/Application/D402948A-1541-4BC2-8E0F-BEF8263FF4D4/Library/Application Support/RELAY/relay.sqlite
+2026-10-24T01:46:35Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] LOCALLY_SAVED id=01a93319-01a6-42b1-a666-bc42c13b7784 destination=fabb432e-244d-4be8-86eb-eb9ac6982d0f
+2026-10-24T01:47:22Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] APP_OPEN device=e816be05-b366-4b44-a5dd-8b56ef7e5884 os=Version 26.1 (Build 23B86) durable_store=/Users/DEVELOPER/Library/Developer/CoreSimulator/Devices/11069F45-03E2-40CA-AD2B-49792F76C466/data/Containers/Data/Application/D402948A-1541-4BC2-8E0F-BEF8263FF4D4/Library/Application Support/RELAY/relay.sqlite
+2026-10-24T01:49:01Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] TRANSPORT_STARTED includePeerToPeer=true cellular=prohibited path=UNVERIFIED plaintext=true discovery=true
+2026-10-24T01:49:01Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] LISTENER ready
+2026-10-24T01:49:01Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] BROWSER ready
+2026-10-24T01:49:01Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] DISCOVERY count=1 peers=["fabb432e-244d-4be8-86eb-eb9ac6982d0f interfaces=[awdl0:wifi,lo0:loopback,en0:wifi]"]
+2026-10-24T01:49:01Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] PATH session=f1b7dc0a-d925-44aa-b5e8-e7a6494a6fe0 status=satisfied interfaces=[en0:wifi] wifi=true cellular=false expensive=false local=nil remote=Optional(fabb432e-244d-4be8-86eb-eb9ac6982d0f._relay-poc._tcp.local.); infrastructure_independence=UNVERIFIED
+2026-10-24T01:49:01Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] CONNECTION_STATE session=f1b7dc0a-d925-44aa-b5e8-e7a6494a6fe0 endpoint=fabb432e-244d-4be8-86eb-eb9ac6982d0f._relay-poc._tcp.local. state=preparing
+2026-10-24T01:49:01Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] CONNECTION_STATE session=f1b7dc0a-d925-44aa-b5e8-e7a6494a6fe0 endpoint=fabb432e-244d-4be8-86eb-eb9ac6982d0f._relay-poc._tcp.local. state=ready
+2026-10-24T01:49:01Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] PATH session=f1b7dc0a-d925-44aa-b5e8-e7a6494a6fe0 status=satisfied interfaces=[lo0:loopback] wifi=false cellular=false expensive=false local=Optional(10.0.0.79:55308) remote=Optional(10.0.0.79%en0:64253); infrastructure_independence=UNVERIFIED
+2026-10-24T01:49:01Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] CONNECTION_READY session=f1b7dc0a-d925-44aa-b5e8-e7a6494a6fe0
+2026-10-24T01:49:01Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] HELLO peer=fabb432e-244d-4be8-86eb-eb9ac6982d0f role=Receiver C identity=UNAUTHENTICATED
+2026-10-24T01:49:01Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] INVENTORY peer=fabb432e-244d-4be8-86eb-eb9ac6982d0f count=3
+2026-10-24T01:49:01Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] TRANSFER_ATTEMPT id=01a93319-01a6-42b1-a666-bc42c13b7784 peer=fabb432e-244d-4be8-86eb-eb9ac6982d0f hops=1 pending_retry=false
+2026-10-24T01:49:01Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] PERSISTED id=17813539-3e39-4d6d-b524-be26a3c81115 peer=fabb432e-244d-4be8-86eb-eb9ac6982d0f hops=1
+2026-10-24T01:49:01Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] STORAGE_ACK_SENT id=17813539-3e39-4d6d-b524-be26a3c81115 kind=RELAY_STORED
+2026-10-24T01:49:01Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] PERSISTED id=68027e07-97de-41c7-8e3b-0db0ebaadb83 peer=fabb432e-244d-4be8-86eb-eb9ac6982d0f hops=1
+2026-10-24T01:49:01Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] STORAGE_ACK_SENT id=68027e07-97de-41c7-8e3b-0db0ebaadb83 kind=RELAY_STORED
+2026-10-24T01:49:01Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] STORAGE_ACK_RECEIVED id=01a93319-01a6-42b1-a666-bc42c13b7784 kind=DESTINATION_STORED peer=fabb432e-244d-4be8-86eb-eb9ac6982d0f ack_latency_ms=67
+2026-10-24T01:49:01Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] PERSISTED id=ecb318f9-bd7b-478c-a1a9-61a6a0f85b8b peer=fabb432e-244d-4be8-86eb-eb9ac6982d0f hops=1
+2026-10-24T01:49:01Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] FINAL_RECEIPT_RECOGNIZED id=ecb318f9-bd7b-478c-a1a9-61a6a0f85b8b original=01a93319-01a6-42b1-a666-bc42c13b7784
+2026-10-24T01:49:01Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] STORAGE_ACK_SENT id=ecb318f9-bd7b-478c-a1a9-61a6a0f85b8b kind=DESTINATION_STORED
+2026-10-24T01:49:02Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] BONJOUR_ADVERTISEMENT add(e816be05-b366-4b44-a5dd-8b56ef7e5884._relay-poc._tcp.local.)
+2026-10-24T01:49:02Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] DISCOVERY count=1 peers=["fabb432e-244d-4be8-86eb-eb9ac6982d0f interfaces=[awdl0:wifi,lo0:loopback,en0:wifi]"]
+2026-10-24T01:49:07Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] INVENTORY peer=fabb432e-244d-4be8-86eb-eb9ac6982d0f count=5
+2026-10-24T01:49:12Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] INVENTORY peer=fabb432e-244d-4be8-86eb-eb9ac6982d0f count=5
+2026-10-24T01:49:18Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] INVENTORY peer=fabb432e-244d-4be8-86eb-eb9ac6982d0f count=5
+2026-10-24T01:49:23Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] INVENTORY peer=fabb432e-244d-4be8-86eb-eb9ac6982d0f count=5
+2026-10-24T01:49:29Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] INVENTORY peer=fabb432e-244d-4be8-86eb-eb9ac6982d0f count=5
+2026-10-24T01:49:35Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] INVENTORY peer=fabb432e-244d-4be8-86eb-eb9ac6982d0f count=5
+2026-10-24T01:49:41Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] INVENTORY peer=fabb432e-244d-4be8-86eb-eb9ac6982d0f count=5
+2026-10-24T01:49:47Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] INVENTORY peer=fabb432e-244d-4be8-86eb-eb9ac6982d0f count=5
+2026-10-24T01:49:53Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] INVENTORY peer=fabb432e-244d-4be8-86eb-eb9ac6982d0f count=5
+2026-10-24T01:49:56Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] PERSISTED id=8f331595-d76d-4b55-bf1c-3cc110dc363a peer=fabb432e-244d-4be8-86eb-eb9ac6982d0f hops=1
+2026-10-24T01:49:56Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] RECEIPT_CREATED id=cf2ead56-c8da-44fa-b6a3-bff790b75935 original=8f331595-d76d-4b55-bf1c-3cc110dc363a
+2026-10-24T01:49:56Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] STORAGE_ACK_SENT id=8f331595-d76d-4b55-bf1c-3cc110dc363a kind=DESTINATION_STORED
+2026-10-24T01:49:56Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] TRANSFER_ATTEMPT id=cf2ead56-c8da-44fa-b6a3-bff790b75935 peer=fabb432e-244d-4be8-86eb-eb9ac6982d0f hops=1 pending_retry=false
+2026-10-24T01:49:56Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] STORAGE_ACK_RECEIVED id=cf2ead56-c8da-44fa-b6a3-bff790b75935 kind=DESTINATION_STORED peer=fabb432e-244d-4be8-86eb-eb9ac6982d0f ack_latency_ms=7
+2026-10-24T01:49:59Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] INVENTORY peer=fabb432e-244d-4be8-86eb-eb9ac6982d0f count=7
+2026-10-24T01:50:04Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] STREAM_END session=f1b7dc0a-d925-44aa-b5e8-e7a6494a6fe0 partial=false error=nil
+2026-10-24T01:50:04Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] DISCONNECTED session=f1b7dc0a-d925-44aa-b5e8-e7a6494a6fe0 unacked=[] queued_for_retry
+2026-10-24T01:50:04Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] PATH session=e08123c8-d7e6-4e00-99ea-57dd6c3c87ae status=satisfied interfaces=[en0:wifi] wifi=true cellular=false expensive=false local=nil remote=Optional(fabb432e-244d-4be8-86eb-eb9ac6982d0f._relay-poc._tcp.local.); infrastructure_independence=UNVERIFIED
+2026-10-24T01:50:04Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] CONNECTION_STATE session=e08123c8-d7e6-4e00-99ea-57dd6c3c87ae endpoint=fabb432e-244d-4be8-86eb-eb9ac6982d0f._relay-poc._tcp.local. state=preparing
+2026-10-24T01:50:05Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] DISCOVERY count=0 peers=[]
+2026-10-24T01:50:11Z [e816be05-b366-4b44-a5dd-8b56ef7e5884] TRANSPORT_STOPPED
