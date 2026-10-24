@@ -168,7 +168,7 @@
 				"SWIFT_VERSION" = "5.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"DEVELOPMENT_TEAM" = "U4G9LV39GM";
-				"CURRENT_PROJECT_VERSION" = "14";
+				"CURRENT_PROJECT_VERSION" = "15";
 				"MARKETING_VERSION" = "0.1.0";
 				"LD_RUNPATH_SEARCH_PATHS" = "$(inherited) @executable_path/Frameworks";
 				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
@@ -194,7 +194,7 @@
 				"SWIFT_VERSION" = "5.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"DEVELOPMENT_TEAM" = "U4G9LV39GM";
-				"CURRENT_PROJECT_VERSION" = "14";
+				"CURRENT_PROJECT_VERSION" = "15";
 				"MARKETING_VERSION" = "0.1.0";
 				"LD_RUNPATH_SEARCH_PATHS" = "$(inherited) @executable_path/Frameworks";
 				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
@@ -335,7 +335,7 @@
 				"SWIFT_VERSION" = "5.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"DEVELOPMENT_TEAM" = "";
-				"CURRENT_PROJECT_VERSION" = "14";
+				"CURRENT_PROJECT_VERSION" = "15";
 				"MARKETING_VERSION" = "0.1.0";
 				"LD_RUNPATH_SEARCH_PATHS" = "$(inherited) @executable_path/../Frameworks";
 				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
@@ -362,7 +362,7 @@
 				"SWIFT_VERSION" = "5.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"DEVELOPMENT_TEAM" = "";
-				"CURRENT_PROJECT_VERSION" = "14";
+				"CURRENT_PROJECT_VERSION" = "15";
 				"MARKETING_VERSION" = "0.1.0";
 				"LD_RUNPATH_SEARCH_PATHS" = "$(inherited) @executable_path/../Frameworks";
 				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";

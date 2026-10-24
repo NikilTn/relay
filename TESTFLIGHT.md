@@ -1,3 +1,12 @@
+# Frontend redesign — build 15
+
+Build **0.1.0 (15)** signed, archived and uploaded successfully at **02:45:16 PDT
+on 2026-10-24**. It replaces decorative banners/cards and category symbols with a
+flat neutral layout, typography, text tabs and a new R app icon. See DESIGN.md.
+App Store Connect browser access needs a renewed sign-in; internal availability
+and What to Test for15 are unverified. Upload is not external beta approval.
+Next unused build:16. Older release records follow.
+
 # UI update — build 14
 
 Build **0.1.0 (14)** signed, archived and uploaded at **02:19:07 PDT on 2026-10-24**.

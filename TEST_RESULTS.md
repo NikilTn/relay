@@ -2,6 +2,35 @@
 
 **Verdict: implemented and tested as a software prototype; the controlled physical offline demonstration remains pending and unverified.** No physical wireless acceptance test is reported as a pass. Software evidence below does not establish disaster resilience.
 
+## Build 15 — frontend redesign, 2026-10-24
+
+The user rejected build14's decorative banner/card/icon treatment. Build15 replaces
+it with flat warm-neutral/charcoal surfaces, serif page headings, restrained rust
+accents, text tabs, plain supply choices, a message-first composer and rule-separated
+inbox/inventory rows. The app icon is an R with a small rust rule. Core networking,
+cloud contracts, persistent identities and stock rules are unchanged. DESIGN.md
+records the requested direction for future edits.
+
+- **PASS:** Mac, signed iOS Simulator, signed physical iOS and release archive;
+  TestFlight upload succeeded02:45:16PDT. [Build markers](evidence/build15/build-markers.txt).
+  Browser sign-in remains expired, so internal availability/new release notes are
+  unverified; upload does not mean external beta approval.
+- **PASS:**49Swift tests, [log](evidence/build15/swift-tests.txt). No backend code
+  changed; its prior67-test result is unchanged, not a new test run.
+- **PASS, visual UI:** iPhone17ProSimulator/iOS26.1 light composer, corrected local
+  text entry, software keyboard/Done, visibleReviewrequest, review sheet and voice
+  view. Native Mac dark appearance: coordinator inbox and inventory. These checks
+  used existing authenticated records; no new request/AI/audio/stock action was sent.
+- **PASS, install/preservation:** both original phone apps reportbuild15. iPhone16
+  launched and retained33/33messages; 15ProMax retained33/33messages, but iOS blocked
+  launch because it was locked. The operator was asked to unlock/open it. Read-only
+  post-install exports verified both device identities, shelters, receipt states and
+  each device's20immutablecloudsubmissions. [15ProMax](evidence/build15/iphone15promax-install.json),
+  [16](evidence/build15/iphone16-install.json). Phone Keychain accounts were not replaced.
+- **NOT TESTED:** physical visual acceptance, largest Dynamic Type/older devices,
+  real phone microphone/GPS and controlled physical no-router tests in this pass.
+  This does not close the separate cloud/P2P routing gap or establish ASR latency.
+
 ## Build 14 — interface polish, 2026-10-24
 
 The update changes presentation and client-side filtering only. Shared headers,

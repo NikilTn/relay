@@ -174,19 +174,16 @@ struct VoiceInputView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                WorkflowHeader(eyebrow: "Voice request", title: "Speak. Review. Send.", subtitle: "Say what you need. You'll check the words before anything is sent to a shelter.")
+                WorkflowHeader(eyebrow: "Voice", title: "Say what you need.", subtitle: "Review the transcript before sending.")
                 RelayCard {
                     WorkflowSection(title: "1. Record your request", symbol: "mic.fill", subtitle: "Up to 60 seconds · English · internet needed")
-                    Image(systemName: recorder.recording ? "waveform" : "waveform.circle.fill")
-                        .font(.system(size: 58)).foregroundStyle(recorder.recording ? .red : RelayTheme.accent)
-                        .frame(maxWidth: .infinity).padding(.vertical, 12).accessibilityHidden(true)
                     Button {
                         if recorder.recording { recorder.stop() }
                         else { Task { await recorder.start { url in Task { await cloud.saveRecording(url: url) } } } }
-                    } label: { Label(recorder.recording ? "Stop recording" : "Start recording", systemImage: recorder.recording ? "stop.fill" : "mic.fill") }
+                    } label: { Text(recorder.recording ? "Stop recording" : "Start recording") }
                         .buttonStyle(PrimaryButton()).disabled(cloud.audioBusy)
                     Button("Import WAV recording") { importingWAV = true }.buttonStyle(WorkflowSecondaryButton()).disabled(recorder.recording || cloud.audioBusy)
-                    if recorder.recording { Label("Recording…", systemImage: "record.circle").font(.subheadline).foregroundStyle(.red) }
+                    if recorder.recording { Text("RECORDING").font(.system(.caption, design: .monospaced)).foregroundStyle(RelayTheme.accent) }
                     if !recorder.problem.isEmpty { WorkflowNotice(text: recorder.problem) }
                 }
                 if cloud.audioJob != nil {
@@ -208,8 +205,8 @@ struct VoiceInputView: View {
                 }
                 if !cloud.problem.isEmpty { WorkflowNotice(text: cloud.problem) }
                 Text("Use synthetic test data. Audio stays separate from nearby text messaging.").font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
-            }.padding(20).frame(maxWidth: 680).frame(maxWidth: .infinity)
-        }.background(RelayTheme.canvas).navigationTitle("Voice input")
+            }.padding(.horizontal, 24).padding(.vertical, 16).frame(maxWidth: 680).frame(maxWidth: .infinity)
+        }.background(RelayTheme.canvas).navigationTitle("")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             .scrollDismissesKeyboard(.interactively)

@@ -1,6 +1,6 @@
 # Test the requester and shelter coordinator
 
-Use build 14 of the original development RELAY app launched by the installer on each phone.
+Use build 15 of the original development RELAY app launched by the installer on each phone.
 Settings shows the build number. The paid/TestFlight app has a separate store.
 This workflow uses internet. Keep the Mac awake, powered and online: its API and
 worker run behind the temporary Cloudflare tunnel described in DEMO_HOSTING.md.
@@ -19,14 +19,14 @@ worker run behind the temporary Cloudflare tunnel described in DEMO_HOSTING.md.
   The private helper on the Mac supplies the existing synthetic test credentials.
 
 The request list defaults to Open. Select All or Closed to see completed or released
-requests. Prepare details with AI is the typed-request preview action. Review and
-send stays at the bottom; Done dismisses the keyboard. Inventory → Record a stock
-change expands the adjustment form. Nearby is separate device chat, not a shelter inbox.
+requests. Extract details is the typed-request preview action. Review request stays at the
+bottom; Done dismisses the keyboard. Inventory → Adjust stock expands the adjustment
+form. Nearby is separate device chat, not a shelter inbox.
 
 ## 1. Make a voice request on the 15 Pro Max
 
 1. Keep internet on. Open Help; Shelter A should already be selected.
-2. Tap **Speak your request**, permit the microphone, tap Record, and say:
+2. Tap **Record voice**, permit the microphone, tap Record, and say:
    “Shelter A needs two water packs for one person.” Tap Stop.
 3. Tap **Transcribe / resume**. Wait for the transcript and correct any mistakes.
    The tested synthetic sample misheard “Shelter A” as “Sheltering”; review is required.
@@ -36,7 +36,7 @@ change expands the adjustment form. Nearby is separate device chat, not a shelte
 5. Tap **Use current location** and choose While Using or Allow Once. Inspect the
    coordinates/accuracy/capture time. If unavailable or declined, add a landmark.
    This captures one snapshot; no ongoing/background location tracking.
-6. Tap **Review and send**, verify shelter, details, quantity and location, then
+6. Tap **Review request**, verify shelter, details, quantity and location, then
    **Send request**. Requests should change from Queued to Waiting for coordinator.
    Note the request ID. A preview alone must never create a shelter request.
 

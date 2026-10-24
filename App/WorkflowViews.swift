@@ -9,7 +9,7 @@ struct AccountSignInView: View {
     @FocusState private var editing: Bool
     var body: some View {
         RelayCard {
-            Label("Welcome to RELAY", systemImage: "hands.sparkles.fill").font(.title2.bold())
+            Text("Sign in").font(.title2.weight(.medium))
             Text("Sign in once to send requests or coordinate your shelter. Your account opens the right workspace.").foregroundStyle(.secondary)
             if cloud.signInNeedsCode {
                 TextField("Six-digit authenticator code", text: $code).textFieldStyle(WorkflowInput()).focused($editing)
@@ -42,8 +42,8 @@ struct WorkflowStatus: View {
     @EnvironmentObject private var cloud: CloudModel
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: "cloud").foregroundStyle(RelayTheme.accent)
-            Text(cloud.status.contains("unavailable") ? "Waiting to reconnect · your request stays saved" : "Cloud requests · saved before sending")
+            Rectangle().fill(.secondary).frame(width: 4, height: 4).accessibilityHidden(true)
+            Text(cloud.status.contains("unavailable") ? "Waiting to reconnect · your request stays saved" : "Saved locally · sent when cloud is available")
                 .font(.caption)
         }.foregroundStyle(.secondary).padding(.horizontal, 4)
     }
@@ -52,7 +52,7 @@ struct LocationFacts: View {
     let location: RequestLocation
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
-            Label(location.precision == "approximate" ? "Approximate location" : "Location attached", systemImage: "location.fill").font(.subheadline.bold())
+            Text(location.precision == "approximate" ? "Approximate location" : "Location attached").font(.subheadline.weight(.medium))
             Text(String(format: "%.5f, %.5f · accuracy ±%.0f m", location.latitude, location.longitude, location.horizontal_accuracy)).font(.caption.monospaced())
             Text("Captured \(location.captured_at.formatted(date: .abbreviated, time: .shortened))").font(.caption).foregroundStyle(.secondary)
             if Date().timeIntervalSince(location.captured_at) > 300 { Text("This is an earlier location snapshot. Refresh if you have moved.").font(.caption).foregroundStyle(.orange) }
@@ -69,92 +69,96 @@ struct PublicHelpView: View {
     let sent: (String) -> Void
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                WorkflowHeader(eyebrow: "Your community", title: "Ask for help", subtitle: "Tell a shelter what you need. Keep every update in one place.")
+            VStack(alignment: .leading, spacing: 18) {
+                WorkflowHeader(eyebrow: "New request", title: "Get help.", subtitle: "Send a request to your shelter.")
                 if cloud.profile == nil { AccountSignInView() }
                 else {
-                    WorkflowStatus()
-                    RelayCard {
-                        WorkflowSection(title: "Your shelter", symbol: "building.2.fill")
-                        Picker("Send to", selection: $cloud.draft.shelterID) {
+                    HStack {
+                        Text("To").font(.subheadline).foregroundStyle(.secondary)
+                        Spacer()
+                        Picker("Shelter", selection: $cloud.draft.shelterID) {
                             Text("Choose shelter").tag("")
                             ForEach(cloud.directory) { Text($0.display_name).tag($0.shelter_id) }
-                        }.accessibilityIdentifier("destinationShelter")
-                        if cloud.directory.isEmpty { Text("No shelter available yet. Your draft stays saved.").font(.subheadline).foregroundStyle(.secondary) }
-                    }
-                    RelayCard {
-                        WorkflowSection(title: "What do you need?", symbol: "text.bubble.fill", subtitle: "Speak naturally or write a short message.")
-                        NavigationLink { VoiceInputView() } label: {
-                            Label("Speak your request", systemImage: "mic.fill")
-                        }.buttonStyle(WorkflowSecondaryButton()).disabled(cloud.audioBusy)
-                        TextField("e.g. Two water packs for one person", text: $cloud.draft.text, axis: .vertical)
-                            .lineLimit(3...6).textFieldStyle(WorkflowInput()).focused($editing)
-                            .accessibilityLabel("Describe your request").accessibilityIdentifier("requestText")
-                        Button { editing = false; Task { await cloud.previewRequest() } } label: {
-                            HStack(spacing: 8) {
-                                if cloud.interpreting { ProgressView().controlSize(.small) } else { Image(systemName: "sparkles") }
-                                Text(cloud.interpreting ? "Preparing details…" : "Prepare details with AI")
-                            }
-                        }.buttonStyle(WorkflowSecondaryButton())
-                            .disabled(cloud.interpreting || cloud.draft.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || cloud.draft.shelterID.isEmpty)
+                        }.labelsHidden().accessibilityLabel("Destination shelter").accessibilityIdentifier("destinationShelter")
+                    }.padding(.vertical, 4)
+                    Divider()
+                    VStack(alignment: .leading, spacing: 12) {
+                        TextField("What do you need?", text: $cloud.draft.text, axis: .vertical)
+                            .font(.title3).lineLimit(4...8).textFieldStyle(.plain).padding(.vertical, 8)
+                            .focused($editing).accessibilityLabel("Describe your request").accessibilityIdentifier("requestText")
+                        HStack {
+                            NavigationLink { VoiceInputView() } label: { Text("Record voice").underline() }
+                                .font(.subheadline).disabled(cloud.audioBusy).frame(minHeight: 44)
+                            Spacer()
+                            Button { editing = false; Task { await cloud.previewRequest() } } label: {
+                                HStack(spacing: 7) { if cloud.interpreting { ProgressView().controlSize(.small) }; Text(cloud.interpreting ? "Reading request…" : "Extract details") }
+                            }.font(.subheadline.weight(.medium)).buttonStyle(.plain).frame(minHeight: 44)
+                                .disabled(cloud.interpreting || cloud.draft.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || cloud.draft.shelterID.isEmpty)
+                        }
                         if let result = cloud.interpretation, cloud.draft.interpretationText == cloud.draft.text.trimmingCharacters(in: .whitespacesAndNewlines) {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Label("Ready for your review", systemImage: "checkmark.circle.fill").font(.subheadline.bold()).foregroundStyle(RelayTheme.accent)
-                                Text(result.result?.proposal?.summary ?? "Check the details below.").font(.subheadline)
-                                ForEach(result.result?.review_reasons ?? [], id: \.self) { Text($0).font(.caption).foregroundStyle(.orange) }
-                                Text("Check the AI suggestion before sending.").font(.caption).foregroundStyle(.secondary)
-                            }.padding(14).frame(maxWidth: .infinity, alignment: .leading).background(RelayTheme.accent.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("AI suggestion — check the details below.").font(.caption.weight(.medium))
+                                Text(result.result?.proposal?.summary ?? "Review your request details.").font(.subheadline).foregroundStyle(.secondary)
+                                ForEach(result.result?.review_reasons ?? [], id: \.self) { WorkflowNotice(text: $0) }
+                            }.padding(.vertical, 8)
                         }
                     }
-                    RelayCard {
-                        WorkflowSection(title: "Request details", symbol: "checklist", subtitle: "Edit these yourself, or use the AI suggestion.")
+                    Divider()
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text("Supplies").font(.subheadline.weight(.semibold))
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 135), spacing: 10)], spacing: 10) {
                             ForEach(["water_packs", "food_packs", "blankets", "other"], id: \.self) { item in
                                 Button { cloud.draft.item = item } label: {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: WorkflowPalette.symbol(item)).foregroundStyle(WorkflowPalette.color(item))
-                                        Text(InventoryItem.title(item)).font(.subheadline.weight(.semibold))
-                                        Spacer(minLength: 0)
-                                        if cloud.draft.item == item { Image(systemName: "checkmark.circle.fill").foregroundStyle(RelayTheme.accent) }
-                                    }.padding(12).frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
-                                        .background(cloud.draft.item == item ? RelayTheme.accent.opacity(0.09) : RelayTheme.canvas, in: RoundedRectangle(cornerRadius: 12))
-                                        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(cloud.draft.item == item ? RelayTheme.accent : .clear, lineWidth: 1.5))
+                                    HStack {
+                                        Text(InventoryItem.title(item)).font(.subheadline)
+                                        Spacer(minLength: 4)
+                                        if cloud.draft.item == item { Text("✓").font(.subheadline.weight(.medium)) }
+                                    }.padding(.horizontal, 13).frame(maxWidth: .infinity, minHeight: 47)
+                                        .foregroundStyle(cloud.draft.item == item ? RelayTheme.onAction : .primary)
+                                        .background(cloud.draft.item == item ? RelayTheme.action : .clear, in: RoundedRectangle(cornerRadius: 6))
+                                        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(.primary.opacity(cloud.draft.item == item ? 0 : 0.18)))
                                 }.buttonStyle(.plain).accessibilityAddTraits(cloud.draft.item == item ? .isSelected : [])
                             }
                         }
                         ViewThatFits(in: .horizontal) {
-                            HStack(alignment: .top, spacing: 12) { quantity; people }
-                            VStack(alignment: .leading, spacing: 12) { quantity; people }
+                            HStack(alignment: .top, spacing: 14) { quantity; people }
+                            VStack(alignment: .leading, spacing: 14) { quantity; people }
                         }
-                        Text("Leave amounts blank if you are unsure.").font(.caption).foregroundStyle(.secondary)
                     }
-                    RelayCard {
-                        WorkflowSection(title: "Where do you need help?", symbol: "mappin.and.ellipse", subtitle: "A landmark or optional location snapshot.")
-                        TextField("Landmark, entrance or room", text: $cloud.draft.landmark, axis: .vertical).lineLimit(1...3).textFieldStyle(WorkflowInput()).focused($editing)
-                        Button { editing = false; locator.capture { cloud.draft.location = $0; cloud.persistDraft() } } label: {
-                            Label(locator.busy ? "Finding location…" : cloud.draft.location == nil ? "Use current location" : "Refresh location", systemImage: "location")
-                        }.buttonStyle(WorkflowSecondaryButton()).disabled(locator.busy)
+                    Divider().padding(.top, 4)
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text("Location").font(.subheadline.weight(.semibold))
+                            Spacer()
+                            Button(locator.busy ? "Locating…" : cloud.draft.location == nil ? "Use my location" : "Update") {
+                                editing = false; locator.capture { cloud.draft.location = $0; cloud.persistDraft() }
+                            }.font(.subheadline).frame(minHeight: 44).disabled(locator.busy)
+                        }
+                        TextField("Landmark, entrance or room (optional)", text: $cloud.draft.landmark, axis: .vertical)
+                            .lineLimit(1...3).textFieldStyle(WorkflowInput()).focused($editing)
                         if let location = cloud.draft.location {
                             LocationFacts(location: location)
-                            Button("Remove location") { cloud.draft.location = nil }.font(.subheadline)
+                            Button("Remove location") { cloud.draft.location = nil }.font(.caption)
                         }
                         if !locator.problem.isEmpty { WorkflowNotice(text: locator.problem) }
-                        Text("Shared with your authorized shelter only when you send.").font(.caption).foregroundStyle(.secondary)
                     }
                     if !cloud.problem.isEmpty { WorkflowNotice(text: cloud.problem) }
+                    WorkflowStatus().padding(.vertical, 8)
                 }
-            }.padding(20).frame(maxWidth: 660).frame(maxWidth: .infinity)
-        }.background(RelayTheme.canvas).navigationTitle("Help")
+            }.padding(.horizontal, 24).padding(.vertical, 16).frame(maxWidth: 660).frame(maxWidth: .infinity)
+        }.background(RelayTheme.canvas).navigationTitle("")
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if cloud.profile != nil {
-                    VStack(spacing: 7) {
-                        Button { editing = false; reviewing = true } label: { HStack { Text("Review and send"); Spacer(); Image(systemName: "arrow.right") }.padding(.horizontal, 18) }
-                            .buttonStyle(PrimaryButton()).disabled(cloud.submitting || cloud.interpreting || locator.busy || cloud.draft.shelterID.isEmpty || cloud.draft.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                        Text("Draft saved on this device").font(.caption2).foregroundStyle(.secondary)
-                    }.padding(.horizontal, 20).padding(.vertical, 10).frame(maxWidth: 660).frame(maxWidth: .infinity).background(.bar)
+                    VStack(spacing: 0) {
+                        Divider()
+                        Button { editing = false; reviewing = true } label: {
+                            HStack { Text("Review request"); Spacer(); Text("→") }.padding(.horizontal, 18)
+                        }.buttonStyle(PrimaryButton()).disabled(cloud.submitting || cloud.interpreting || locator.busy || cloud.draft.shelterID.isEmpty || cloud.draft.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                            .padding(.horizontal, 24).padding(.vertical, 12)
+                    }.frame(maxWidth: 660).frame(maxWidth: .infinity).background(RelayTheme.canvas)
                 }
             }
-            .toolbar { ToolbarItem(placement: .primaryAction) { if editing { Button("Done") { editing = false } } else { NavigationLink { WorkflowSettings(model: model) } label: { Image(systemName: "gearshape") }.accessibilityLabel("Settings") } } }
+            .toolbar { ToolbarItem(placement: .primaryAction) { if editing { Button("Done") { editing = false } } else { NavigationLink("Settings") { WorkflowSettings(model: model) }.font(.caption) } } }
             .onChange(of: cloud.draft) { _, _ in cloud.persistDraft() }
             .sheet(isPresented: $reviewing) { WorkflowReview { id in reviewing = false; sent(id) } }
             #if os(iOS)
@@ -162,8 +166,8 @@ struct PublicHelpView: View {
             .scrollDismissesKeyboard(.interactively)
             #endif
     }
-    private var quantity: some View { WorkflowField(title: "Quantity · \(cloud.draft.unit)", placeholder: "Unknown", text: $cloud.draft.quantity, focus: $editing).frame(minWidth: 115) }
-    private var people: some View { WorkflowField(title: "People affected", placeholder: "Unknown", text: $cloud.draft.people, focus: $editing).frame(minWidth: 115) }
+    private var quantity: some View { WorkflowField(title: "Quantity (\(cloud.draft.unit))", placeholder: "Unknown", text: $cloud.draft.quantity, focus: $editing).frame(minWidth: 115) }
+    private var people: some View { WorkflowField(title: "People", placeholder: "Unknown", text: $cloud.draft.people, focus: $editing).frame(minWidth: 115) }
 }
 struct WorkflowReview: View {
     @EnvironmentObject private var cloud: CloudModel
@@ -173,7 +177,7 @@ struct WorkflowReview: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    Text("Check your request").font(.title2.bold())
+                    Text("Before you send.").font(.system(.largeTitle, design: .serif).weight(.medium))
                     Text(cloud.draft.text)
                     LabeledContent("Shelter", value: cloud.directory.first(where: { $0.shelter_id == cloud.draft.shelterID })?.display_name ?? "Unknown")
                     LabeledContent("Item", value: InventoryItem.title(cloud.draft.item))
@@ -210,7 +214,7 @@ struct WorkflowRequestsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                WorkflowHeader(eyebrow: staff ? "Coordinator" : "Your requests", title: staff ? "Shelter inbox" : "You're in the loop", subtitle: staff ? "Review needs. Reserve supplies. Keep people informed." : "Follow your requests and hear back from your shelter.")
+                WorkflowHeader(eyebrow: staff ? "Coordinator" : "Your requests", title: staff ? "Inbox" : "Requests", subtitle: staff ? "Requests awaiting your attention." : "Updates from your shelter.")
                 if cloud.profile == nil { AccountSignInView() }
                 else {
                     HStack {
@@ -222,7 +226,7 @@ struct WorkflowRequestsView: View {
                         Button { Task { await cloud.loadInbox(shelterID: staff ? cloud.staffShelterID : nil) } } label: { Image(systemName: "arrow.clockwise").frame(width: 44, height: 44) }
                             .buttonStyle(.plain).disabled(cloud.busy).accessibilityLabel("Refresh requests")
                     }
-                    Picker("Show requests", selection: $filter) { Text("Open").tag("Open"); Text("All").tag("All"); Text("Closed").tag("Closed") }.pickerStyle(.segmented)
+                    WorkflowFilter(selection: $filter, options: ["Open", "All", "Closed"])
                     if visibleRows.isEmpty { ContentUnavailableView(filter == "Open" ? "No open requests" : "No requests here", systemImage: "tray", description: Text(staff ? "New requests appear here when they reach RELAY." : "Create a request in Help. Your shelter's replies will appear here.")) }
                     ForEach(visibleRows) { record in
                         NavigationLink { WorkflowRequestDetail(id: record.id) } label: {
@@ -232,9 +236,9 @@ struct WorkflowRequestsView: View {
                     WorkflowStatus()
                     if !cloud.problem.isEmpty { WorkflowNotice(text: cloud.problem) }
                 }
-            }.padding(20).frame(maxWidth: 780).frame(maxWidth: .infinity)
-        }.background(RelayTheme.canvas).navigationTitle(staff ? "Inbox" : "Requests")
-            .toolbar { ToolbarItem(placement: .primaryAction) { NavigationLink { WorkflowSettings(model: model) } label: { Image(systemName: "gearshape") }.accessibilityLabel("Settings") } }
+            }.padding(.horizontal, 24).padding(.vertical, 16).frame(maxWidth: 780).frame(maxWidth: .infinity)
+        }.background(RelayTheme.canvas).navigationTitle("")
+            .toolbar { ToolbarItem(placement: .primaryAction) { NavigationLink("Settings") { WorkflowSettings(model: model) }.font(.caption) } }
             .task { if cloud.canUseCloud { await cloud.loadInbox(shelterID: staff ? cloud.staffShelterID : nil) } }
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -276,7 +280,7 @@ struct WorkflowRequestDetail: View {
                         }
                         if let location = record.submission.location { LocationFacts(location: location) }
                         DisclosureGroup("Request reference") { Text(record.id).font(.caption.monospaced()).foregroundStyle(.secondary).textSelection(.enabled) }.font(.caption)
-                        Button { Task { await cloud.retry(id); if cloud.isDispatcher { await cloud.refreshInventory() } } } label: { Label("Refresh / retry", systemImage: "arrow.clockwise") }.buttonStyle(WorkflowSecondaryButton()).disabled(cloud.busy)
+                        Button("Refresh / retry") { Task { await cloud.retry(id); if cloud.isDispatcher { await cloud.refreshInventory() } } }.buttonStyle(WorkflowSecondaryButton()).disabled(cloud.busy)
                     }
                     if let proposal = record.result?.result?.proposal {
                         RelayCard {
@@ -301,7 +305,7 @@ struct WorkflowRequestDetail: View {
                                 Text(event.author_role == "dispatcher" ? "Shelter coordinator" : "Requester").font(.caption.bold())
                                 if !event.text.isEmpty { Text(event.text) }
                                 if let status = event.status { Text(status.replacingOccurrences(of: "_", with: " ")).font(.caption).foregroundStyle(.secondary) }
-                            }.padding(12).frame(maxWidth: .infinity, alignment: .leading).background(event.author_role == "dispatcher" ? RelayTheme.accent.opacity(0.07) : RelayTheme.canvas, in: RoundedRectangle(cornerRadius: 12))
+                            }.padding(.vertical, 10).frame(maxWidth: .infinity, alignment: .leading).overlay(alignment: .bottom) { Divider() }
                         }
                         TextField("Write a reply…", text: $reply, axis: .vertical).lineLimit(2...5).textFieldStyle(WorkflowInput()).focused($editing)
                         Button("Send reply") { let text = reply; editing = false; Task { await cloud.sendEvent(id, text: text, status: nil); if cloud.problem.isEmpty { reply = "" } } }.buttonStyle(WorkflowSecondaryButton()).disabled(cloud.busy || reply.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || record.result == nil || record.pendingEvent != nil)
@@ -364,7 +368,7 @@ struct InventoryView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                WorkflowHeader(eyebrow: "Coordinator", title: "Supplies at a glance", subtitle: "Know what's available before you approve a request.")
+                WorkflowHeader(eyebrow: "Coordinator", title: "Inventory", subtitle: "Available stock at your shelter.")
                 HStack {
                     Picker("Shelter", selection: $cloud.staffShelterID) { ForEach(cloud.directory) { Text($0.display_name).tag($0.shelter_id) } }
                         .onChange(of: cloud.staffShelterID) { _, _ in Task { await cloud.refreshInventory() } }
@@ -374,19 +378,28 @@ struct InventoryView: View {
                 }
                 if cloud.inventory == nil && !cloud.inventoryBusy { ContentUnavailableView("Stock not loaded", systemImage: "shippingbox", description: Text("Refresh when your connection is available.")) }
                 ForEach((cloud.inventory?.items ?? []).sorted { $0.available == $1.available ? $0.id < $1.id : $0.available > $1.available }) { row in
-                    RelayCard {
-                        HStack(spacing: 12) {
-                            SupplyIcon(item: row.id)
-                            VStack(alignment: .leading, spacing: 3) { Text(row.title).font(.headline); Text("Measured in \(row.unit)").font(.caption).foregroundStyle(.secondary) }
+                    VStack(alignment: .leading, spacing: 16) {
+                        HStack(alignment: .firstTextBaseline) {
+                            Text(row.title).font(.title3.weight(.medium))
                             Spacer()
+                            Text(row.unit.uppercased()).font(.system(.caption2, design: .monospaced)).foregroundStyle(.secondary)
                         }
-                        HStack(alignment: .firstTextBaseline, spacing: 8) {
-                            Text("\(row.available)").font(.system(.largeTitle, design: .rounded).weight(.bold)).monospacedDigit()
-                            Text("available").font(.subheadline).foregroundStyle(.secondary)
+                        HStack(alignment: .firstTextBaseline) {
+                            VStack(alignment: .leading, spacing: 5) {
+                                Text("\(row.available)").font(.system(.largeTitle, design: .monospaced).weight(.regular)).monospacedDigit()
+                                Text("Available").font(.caption).foregroundStyle(.secondary)
+                            }.frame(maxWidth: .infinity, alignment: .leading)
+                            VStack(alignment: .leading, spacing: 5) {
+                                Text("\(row.reserved)").font(.system(.title3, design: .monospaced)).monospacedDigit()
+                                Text("Reserved").font(.caption).foregroundStyle(.secondary)
+                            }.frame(maxWidth: .infinity, alignment: .leading)
+                            VStack(alignment: .leading, spacing: 5) {
+                                Text("\(row.on_hand)").font(.system(.title3, design: .monospaced)).monospacedDigit()
+                                Text("On hand").font(.caption).foregroundStyle(.secondary)
+                            }.frame(maxWidth: .infinity, alignment: .leading)
                         }
                         Divider()
-                        HStack { stat("Reserved", value: row.reserved); Spacer(); stat("On hand", value: row.on_hand) }
-                    }
+                    }.padding(.vertical, 12)
                 }
                 Text("Approval reserves supplies. Handover deducts stock.").font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
                 RelayCard {
@@ -400,13 +413,13 @@ struct InventoryView: View {
                             }.buttonStyle(PrimaryButton()).disabled(cloud.inventoryBusy || (!cloud.pendingAdjustment && (Int(amount) ?? 0) == 0))
                             Text("Use synthetic stock for this demonstration.").font(.caption).foregroundStyle(.secondary)
                         }.padding(.top, 12)
-                    } label: { Label("Record a stock change", systemImage: "plus.circle.fill").font(.headline) }
+                    } label: { Text("Adjust stock").font(.headline) }
                 }
                 if cloud.inventoryBusy { ProgressView("Updating stock…").frame(maxWidth: .infinity) }
                 if !cloud.problem.isEmpty { WorkflowNotice(text: cloud.problem) }
-            }.padding(20).frame(maxWidth: 700).frame(maxWidth: .infinity)
-        }.background(RelayTheme.canvas).navigationTitle("Inventory")
-            .toolbar { ToolbarItem(placement: .primaryAction) { if editing { Button("Done") { editing = false } } else { NavigationLink { WorkflowSettings(model: model) } label: { Image(systemName: "gearshape") }.accessibilityLabel("Settings") } } }
+            }.padding(.horizontal, 24).padding(.vertical, 16).frame(maxWidth: 700).frame(maxWidth: .infinity)
+        }.background(RelayTheme.canvas).navigationTitle("")
+            .toolbar { ToolbarItem(placement: .primaryAction) { if editing { Button("Done") { editing = false } } else { NavigationLink("Settings") { WorkflowSettings(model: model) }.font(.caption) } } }
             .task { await cloud.refreshInventory(); if cloud.pendingAdjustment { editingStock = true } }
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)

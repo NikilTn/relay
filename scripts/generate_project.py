@@ -43,7 +43,7 @@ for platform in ['iOS','macOS']:
     resPhase=obj(name+'-resources','PBXResourcesBuildPhase',buildActionMask=2147483647,files=[assetBuild],runOnlyForDeploymentPostprocessing=0)
     settings=dict(PRODUCT_NAME='$(TARGET_NAME)', PRODUCT_BUNDLE_IDENTIFIER=f'org.relay.prototype.{platform.lower()}',
                   INFOPLIST_FILE=f'Config/{platform}-Info.plist',GENERATE_INFOPLIST_FILE='NO',SWIFT_VERSION='5.0',
-                  CODE_SIGN_STYLE='Automatic',DEVELOPMENT_TEAM='',CURRENT_PROJECT_VERSION=14,MARKETING_VERSION='0.1.0',
+                  CODE_SIGN_STYLE='Automatic',DEVELOPMENT_TEAM='',CURRENT_PROJECT_VERSION=15,MARKETING_VERSION='0.1.0',
                   LD_RUNPATH_SEARCH_PATHS='$(inherited) @executable_path/Frameworks', ASSETCATALOG_COMPILER_APPICON_NAME='AppIcon')
     if platform=='iOS': settings.update(PRODUCT_BUNDLE_IDENTIFIER='com.nikilthalapaneni.relay',DEVELOPMENT_TEAM='U4G9LV39GM',SDKROOT='iphoneos',SUPPORTED_PLATFORMS='iphoneos iphonesimulator',IPHONEOS_DEPLOYMENT_TARGET='17.0',TARGETED_DEVICE_FAMILY='1,2',SUPPORTS_MACCATALYST='NO')
     else: settings.update(SDKROOT='macosx',SUPPORTED_PLATFORMS='macosx',MACOSX_DEPLOYMENT_TARGET='14.0',CODE_SIGN_IDENTITY='-',CODE_SIGN_ENTITLEMENTS='Config/macOS.entitlements',ENABLE_HARDENED_RUNTIME='YES',LD_RUNPATH_SEARCH_PATHS='$(inherited) @executable_path/../Frameworks')
