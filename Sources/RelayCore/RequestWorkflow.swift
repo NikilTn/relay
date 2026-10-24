@@ -42,6 +42,7 @@ public struct RequestDraft: Codable, Equatable {
     public var medicineDetails: String?
     public var requestedUnit: String?
     public var location: RequestLocation?
+    public var requesterDetails: SharedResidentDetails?
     public var transcriptionID: String?
     public var interpretationReady: Bool?
     public var interpretationID: String?

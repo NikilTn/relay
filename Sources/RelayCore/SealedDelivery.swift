@@ -94,6 +94,7 @@ public struct SignedNearbyRequest: Codable {
               let senderKey = Data(base64Encoded: value.sender_encryption_key) else { throw RelayError.invalid("Invalid signed request") }
         _ = try Curve25519.KeyAgreement.PublicKey(rawRepresentation: senderKey)
         try value.submission.location?.validate()
+        try value.submission.requester_details?.validate()
         if let fields = value.submission.structured_fields {
             guard fields.item_id == nil || ["water_packs", "food_packs", "blankets", "medicines", "other"].contains(fields.item_id!),
                   fields.quantity.map({ (1...10000).contains($0) }) ?? true,

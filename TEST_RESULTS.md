@@ -1,10 +1,59 @@
 # RELAY test results — updated 24 October 2026
 
-**Current verdict:** build21 is installed and launched on both owned phones and the
+**Current verdict:** build22 is installed and launched on both owned phones and the
 Mac. Incident alerts downloaded and persisted on both physical phones. Native
 software, real AWS services and separate-encounter relay controls pass. Physical
 router-free wireless acceptance is still **NOT TESTED**. The older dated sections
 below are historical; this checkpoint supersedes their feature/release status.
+
+## Build22 — local avatar, selected profile sharing and cleaner home/login
+
+24 October2026, approximately10:00–10:28PDT. Mac M3Pro/macOS26.6.2(25G83),
+Xcode26.1.1(17B100), iOS/macOS26.1 SDKs. Physical iPhone15ProMax/iOS27.0.1(24A446)
+and iPhone16/iOS26.2(23C55) were available, signed, installed and launched. Simulator:
+iPhone17Pro/iOS26.1. Internet remained available; no physical path exclusion.
+
+| Check | Result | Evidence / boundary |
+|---|---|---|
+| Swift tests | PASS |84 tests, zero failures; required basics/legacy profile decoding/photo bounds/GPS metadata removal/selective snapshot/encryption/restart/immutable retry |
+| Backend tests | PASS |111 tests, one testclient deprecation warning; authorized snapshot reads, unrelated requester/staff404, changed retry409, old nil-profile retry, gateway/direct dedup, profile exclusion from model prompt |
+| Builds | PASS | Signed original iOS, paid-bundle Simulator, native Mac and distribution archive |
+| Home layout | PASS (Simulator UI) | Ask for help first, small guide icon, no Your details link or delivery banner; emojis/readable labels retained |
+| Profile/photo | PASS (Simulator UI + Keychain) | Required-language validation, user selected synthetic avatar in native picker, Save→terminate/relaunch→reopen retained photo/language/old fields |
+| Selected sharing | PASS (native live flow) | Review defaults off, basic selection excludes health; selecting health/support shows exact snapshot; photo absent |
+| Shelter receipt | PASS (online software control) | Request `0bf7aaf8-bbc1-4e02-96aa-f088313773c0` displayed selected synthetic profile on Mac; resident showed signed shelter receipt and cloud acceptance separately; one persistent record on each |
+| Login UI | PASS (Simulator) | Sign-out replaced workspace with dedicated email/password screen; same existing account restored through DEBUG importer, profile/photo/history retained. New password/MFA entry not rerun |
+| Phone update | PASS | Both original apps installed/launched22; versions confirmed with devicectl |
+| Upgrade preservation | PASS |15ProMax51→51 messages/51→51 cloud records;16:51→51 messages/46→46 cloud records, sampled before synthetic live request. IDs, keys, message bodies, previous receipts and immutable submissions unchanged; quick_check=ok |
+| TCP control | PASS | Loopback interruption/no false ACK, retry/dedup, carrier restart/separate encounters/return receipt; original ID `4d8b7ed5-b18b-4901-96c4-7f787ef3f30a`, receipt `4ee7a0f2-ae49-48f7-bf9e-338f82507765` |
+| Live service preflight | PASS | Public HTTPS/authorized staff/directory/account guard, anonymous401, no-store, one worker;36/100 request allocations,12/20 transcription allocations |
+| TestFlight | PASS (upload only) | Build22 upload completed10:26:43PDT; Apple reported processing; external approval/availability NOT VERIFIED |
+| Physical radio A–E | NOT TESTED | No new infrastructure-independent/direct/separate-range/return-receipt/failure-reliability measurement |
+| Remaining manual checks | NOT TESTED | Real-phone photo entry, largest text/VoiceOver, clearing a disposable profile, unavailable Keychain/iCloud-only image and same-device account isolation |
+
+Display name and language are required to save a profile; first-run Skip still
+allows urgent help without completing setup. Health/photo remain optional. Photo
+stays local. Explicitly selected text is a frozen request attachment, stored in the
+request database and cloud and encrypted inside the nearby envelope. Attached
+profile fields are excluded from the model prompt; typed/dictated request text
+still goes through the existing AI workflow. Editing local details cannot erase a
+sent snapshot. Update endpoints to22 before sharing; old clients do not preserve
+this new optional field in their typed caches. See [resident contract](docs/RESIDENT_SETUP.md).
+
+The first new Swift persistence test failed because its fixture used an invalid
+scope string; corrected to the required64-character hash and reran all84 successfully.
+Python imports stalled on the file-provider-backed environment. Created a temporary
+venv outside Documents, installed the existing requirements.lock, copied source,
+and ran111 tests there. No dependency list changed. The same locked environment
+now runs API27161/worker27162 against current source; tunnel12053 and private config
+were retained, including all10 account memberships. These processes and Mac internet
+remain dependencies; this is not a managed-compute deployment.
+
+Evidence: [build22 logs and sanitized observations](docs/evidence/build22).
+No credentials, device databases or real medical data are in those artifacts.
+Physical claims remain separate: direct offline P2P, three-device physical carrying,
+bidirectional physical delivery, router-independent path and repeated-failure
+reliability are all **NOT VERIFIED** by this update.
 
 ## Build21 — supply emojis, private resident details and walkthrough
 

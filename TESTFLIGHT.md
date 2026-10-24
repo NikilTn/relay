@@ -1,4 +1,25 @@
-# Current release — build19
+# Current release — build22
+
+Build **0.1.0 (22)** signed, archived and uploaded at **10:26:43PDT,24 October2026**.
+Apple reported processing. External tester availability is **NOT VERIFIED**.
+Both original development apps installed/launched22; native Mac also updated.
+Existing messages, receipts, identities, keys and cloud submissions were preserved.
+Next unused build:23. Builds20/21 also uploaded; their evidence is in TEST_RESULTS.
+
+Build22 adds an optional local avatar, required name/language when saving a profile,
+explicit selected personal-detail sharing at request review, a clean Help header
+with small guide icon and a dedicated signed-out login screen. Medical fields remain
+optional. Photo stays local. Shared text goes to authorized shelter staff and is
+excluded from AI extraction; existing typed/dictated request processing is unchanged.
+Update all endpoints to22 before sharing personal details. See
+[resident feature/test instructions](docs/RESIDENT_SETUP.md).
+
+Upload is not external beta approval. The original USB and paid/TestFlight bundles
+retain separate data/identities. No data migration between them has occurred.
+The records below are historical; this current release supersedes their next-build
+numbers and current-feature descriptions.
+
+# Previous release — build19
 
 Build **0.1.0 (19)** signed, archived and uploaded at **07:56:48PDT,24 October2026**.
 Apple reported processing. External tester availability is **NOT VERIFIED**.

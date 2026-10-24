@@ -1,9 +1,11 @@
-# Mobile testing — build21
+# Mobile testing — build22
 
-New in21: [optional personal details, first-run walkthrough and supply emojis](docs/RESIDENT_SETUP.md).
-On a resident's first launch, save synthetic details or Skip for now, then finish
-or skip the tour. **How RELAY works** at the top of Help reopens it any time.
-Profile fields remain local and are not attached to requests in this version.
+New in22: [profile photo, selected sharing, cleaner Help and dedicated login](docs/RESIDENT_SETUP.md).
+Both original phone apps installed and launched22. Open Settings → Photo & personal
+details, choose a picture, enter a display name and preferred language, then Save.
+Health fields remain optional. In a new request's review, choose whether to attach
+basic/health/support details. The Mac's request detail shows selected text; photo
+stays local. The question-mark icon beside Ask for help reopens the guide.
 
 New in20: [alerts, shelter instructions/distance and location checks](cloud/docs/ANNOUNCEMENTS.md#reproduce).
 Each resident needs a separate organizer-issued account; public self-registration
@@ -25,7 +27,7 @@ Keep it awake and online for AWS services. Before presenting, run the read-only
 AWS credentials. Accounts are organizer-provided synthetic RELAY accounts, separate
 from Apple or AWS-console sign-in. Never put passwords or enrollment files in Git.
 
-Both original physical phone apps were updated to build19 and launched. Physical
+Both original physical phone apps were updated to build22 and launched. Physical
 mic/GPS/radio checks remain operator steps. Update the same
 bundle in place to preserve identity and SQLite data. The paid/TestFlight and original
 USB bundles have separate stores. See [TESTFLIGHT.md](TESTFLIGHT.md) for release status.

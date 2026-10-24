@@ -1,4 +1,4 @@
-# RELAY morning demo — build21
+# RELAY morning demo — build22
 
 The smallest clear demo is **two requester iPhones and this Mac as Shelter A**.
 Use the native apps. There is no separate dispatcher website to configure.
@@ -10,21 +10,21 @@ cloud features. See [hosting](cloud/docs/DEMO_HOSTING.md).
 
 ## Before presenting
 
-1. Check Settings → Demo tools → Build21 on each app. The new TestFlight package
-   was uploaded, but check its availability before assuming your friends have it.
-   On first opening21 as a resident, save synthetic details or Skip for now, then
-   finish/skip the tour. Personal details remain local; do not imply the shelter
-   sees them. How RELAY works at the top of Help reopens the guide.
-   Existing identities, messages and receipts were preserved. Physical wireless
-   acceptance is still a separate test.
+1. Check Settings → Demo tools → Build22 on each app. Check TestFlight availability
+   separately; an uploaded package is not proof of external approval. Profile/photo
+   editing lives in Settings. Name/language are required to save; health/photo are
+   optional. Review lets you opt selected text into a request. The photo stays local.
+   The question-mark icon beside Ask for help opens the guide. Existing identities,
+   messages and receipts were preserved; physical wireless acceptance is separate.
 2. Use **Requester A** on the15 Pro Max, **Requester B** on the iPhone16, and
    **Coordinator A** on the Mac. These are the existing synthetic test accounts.
    Account switching happens in Settings; roles are assigned by the backend.
    The iPhone16 was switched to existing RequesterB during installation; its old coordinator history remains saved under that account.
 3. With internet available, open all three apps. On the Mac, Settings must say
    **This device receives nearby shelter requests**. Otherwise choose **Receive
-   shelter requests here** for Shelter A. On each phone, select Shelter A and wait
-   for **Cloud + nearby delivery**. This caches the receiver address and keys.
+   shelter requests here** for Shelter A. On each phone, select Shelter A and verify its information loads.
+   Settings → Demo tools exposes cloud/directory diagnostics; the home delivery
+   banner has been removed. Online setup caches the receiver address and keys.
 4. Allow Local Network access. Allow microphone/location only when testing those
    features. Keep RELAY in the foreground and devices awake during encounters.
 5. Keep the Mac powered with its lid open. The eight-hour keep-awake session was
@@ -50,8 +50,8 @@ Keep internet available on all devices.
 3. Review/correct the final transcript. Choose Use this text; review the extracted
    item/quantity. Fill unknown fields manually. The model does not approve supplies.
 4. Choose Use my location, or type a landmark. Verify the displayed snapshot and
-   time. Review request → Send request.
-5. On Mac Inbox, open that request. Verify the original text, fields and location.
+   time. Review request → optionally select synthetic personal details → Send request.
+5. On Mac Inbox, open that request. Verify the original text, fields, location and any explicitly shared personal details.
    Choose Approve and reserve for2 water packs. Available stock should fall by2;
    on-hand stock should stay unchanged while reserved.
 6. Record handover only as a **synthetic test**. Confirm. Reserved stock decreases

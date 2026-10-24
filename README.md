@@ -1,10 +1,10 @@
 # RELAY — offline store-carry-forward prototype
 
-Buildable SwiftUI iOS and macOS apps sharing a Swift/Network.framework/SQLite engine. The relay remains local and uses no third-party runtime dependencies or external radio hardware. Build21 adds supply emojis, optional resident personal details and a first-run walkthrough to the existing alerts/live-speech/encrypted-shelter workflow. The HTTPS API still runs on this Mac.
+Buildable SwiftUI iOS and macOS apps sharing a Swift/Network.framework/SQLite engine. The relay remains local and uses no third-party runtime dependencies or external radio hardware. Build22 adds profile photos, explicit per-request personal-detail sharing, a dedicated login screen and cleaner Help navigation to the existing alerts/live-speech/encrypted-shelter workflow. The HTTPS API still runs on this Mac.
 
 **Current verdict:** automated protocol tests, separate-process TCP loopback experiments, and native Mac ↔ iOS Simulator Bonjour control exchanges pass. **Physical iPhone A → iPhone B → Mac C and infrastructure-independent wireless delivery have NOT been verified.** See [TEST_RESULTS.md](TEST_RESULTS.md) for evidence and blockers. A simulator is not a radio test.
 
-## Current workflow — build 21
+## Current workflow — build 22
 
 The interface follows the plain reference: white backgrounds, bold system text,
 large outlined controls, a brown active accent, and functional text-size / contrast
@@ -12,12 +12,14 @@ settings. Public tabs are **Ask for help / Requests / Alerts / Settings**. Coord
 are **Inbox / Inventory / Alerts / Settings**. Nearby chat and engineering tools are inside
 Settings. [Design notes](DESIGN.md).
 
-- **Resident setup:** optional personal/health details and a six-page introduction
-  after first sign-in (or first launch of this upgrade). Details stay in the local
-  account-specific Keychain and are not automatically sent with requests or to AI.
-  Reopen **Your details** and **How RELAY works** at the top of Help or in Settings.
-  Supply buttons have emojis while retaining readable labels and stable IDs.
-  [Storage, behavior and testing](docs/RESIDENT_SETUP.md).
+- **Resident profile:** photo and personal details live in Settings. Display name
+  and preferred language are required when saving; photo and health fields remain
+  optional, with first-run Skip for now. Review offers explicit sharing of selected
+  text with the destination shelter, off by default. Photo stays local; attached
+  fields are excluded from AI extraction. Sent snapshots persist with the request.
+  A small question-mark icon beside Ask for help opens the six-page walkthrough.
+  Signed-out users see a dedicated account login; cached users retain offline access.
+  [Privacy, compatibility and testing](docs/RESIDENT_SETUP.md).
 
 - **Speak or type:** live AWS Transcribe displays partial words. Review the final
   editable transcript, get a Bedrock proposal, correct quantities and send explicitly.

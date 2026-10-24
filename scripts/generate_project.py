@@ -25,7 +25,7 @@ def configs(key, settings):
         ids.append(obj(f'{key}-{name}','XCBuildConfiguration',name=name,buildSettings=bs))
     return obj(f'{key}-configs','XCConfigurationList',buildConfigurations=ids,defaultConfigurationIsVisible=0,defaultConfigurationName='Release')
 source=obj('source','PBXFileReference',lastKnownFileType='sourcecode.swift',path='App/RelayApp.swift',sourceTree='<group>')
-extraSources=[obj('extra-'+name,'PBXFileReference',lastKnownFileType='sourcecode.swift',path='App/'+name+'.swift',sourceTree='<group>') for name in ['CloudAuth','CloudModel','CloudViews','VoiceRecorder','RequestLocationModel','WorkflowViews','WorkflowStyle','LiveSpeechRecorder','AnnouncementViews','ResidentDetailsVault','ResidentViews']]
+extraSources=[obj('extra-'+name,'PBXFileReference',lastKnownFileType='sourcecode.swift',path='App/'+name+'.swift',sourceTree='<group>') for name in ['CloudAuth','CloudModel','CloudViews','VoiceRecorder','RequestLocationModel','WorkflowViews','WorkflowStyle','LiveSpeechRecorder','AnnouncementViews','ResidentDetailsVault','ResidentViews','IdentityViews']]
 shelterSource=obj('shelter-source','PBXFileReference',lastKnownFileType='sourcecode.swift',path='App/ShelterViews.swift',sourceTree='<group>')
 assets=obj('assets','PBXFileReference',lastKnownFileType='folder.assetcatalog',path='App/Assets.xcassets',sourceTree='<group>')
 package=obj('package','XCLocalSwiftPackageReference',relativePath='.')
@@ -43,7 +43,7 @@ for platform in ['iOS','macOS']:
     resPhase=obj(name+'-resources','PBXResourcesBuildPhase',buildActionMask=2147483647,files=[assetBuild],runOnlyForDeploymentPostprocessing=0)
     settings=dict(PRODUCT_NAME='$(TARGET_NAME)', PRODUCT_BUNDLE_IDENTIFIER=f'org.relay.prototype.{platform.lower()}',
                   INFOPLIST_FILE=f'Config/{platform}-Info.plist',GENERATE_INFOPLIST_FILE='NO',SWIFT_VERSION='5.0',
-                  CODE_SIGN_STYLE='Automatic',DEVELOPMENT_TEAM='',CURRENT_PROJECT_VERSION=21,MARKETING_VERSION='0.1.0',
+                  CODE_SIGN_STYLE='Automatic',DEVELOPMENT_TEAM='',CURRENT_PROJECT_VERSION=22,MARKETING_VERSION='0.1.0',
                   LD_RUNPATH_SEARCH_PATHS='$(inherited) @executable_path/Frameworks', ASSETCATALOG_COMPILER_APPICON_NAME='AppIcon')
     if platform=='iOS': settings.update(PRODUCT_BUNDLE_IDENTIFIER='com.nikilthalapaneni.relay',DEVELOPMENT_TEAM='U4G9LV39GM',SDKROOT='iphoneos',SUPPORTED_PLATFORMS='iphoneos iphonesimulator',IPHONEOS_DEPLOYMENT_TARGET='17.0',TARGETED_DEVICE_FAMILY='1,2',SUPPORTS_MACCATALYST='NO')
     else: settings.update(SDKROOT='macosx',SUPPORTED_PLATFORMS='macosx',MACOSX_DEPLOYMENT_TARGET='14.0',CODE_SIGN_IDENTITY='-',CODE_SIGN_ENTITLEMENTS='Config/macOS.entitlements',ENABLE_HARDENED_RUNTIME='YES',LD_RUNPATH_SEARCH_PATHS='$(inherited) @executable_path/../Frameworks')

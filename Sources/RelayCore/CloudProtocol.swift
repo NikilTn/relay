@@ -43,11 +43,14 @@ public struct CloudSubmission: Codable, Equatable {
     public var location: RequestLocation?
     public var structured_fields: RequestFields?
     public var interpretation_id: String?
+    public var requester_details: SharedResidentDetails?
     public init(draft: RequestDraft, shelter: CloudShelter, deviceID: String, now: Date = Date()) throws {
         guard UUID(uuidString: draft.id) != nil, UUID(uuidString: deviceID) != nil,
               draft.shelterID == shelter.shelter_id, !draft.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               draft.text.count <= 4096 else { throw RelayError.invalid("Choose a shelter and describe your request.") }
         try draft.location?.validate()
+        try draft.requesterDetails?.validate()
+        requester_details = draft.requesterDetails
         operation_id = draft.id; request_id = draft.id; incident_id = shelter.incident_id
         destination_shelter_id = shelter.shelter_id; origin_device_id = deviceID
         original_text = draft.text.trimmingCharacters(in: .whitespacesAndNewlines)

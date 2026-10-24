@@ -66,22 +66,19 @@ struct PublicHelpView: View {
     @StateObject private var locator = RequestLocationModel()
     @State private var reviewing = false
     @State private var showingGuide = false
-    @State private var showingDetails = false
     @Environment(\.dynamicTypeSize) private var typeSize
     @FocusState private var editing: Bool
     let sent: (String) -> Void
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                HStack {
-                    if cloud.residentContextID != nil {
-                        Button("Your details") { editing = false; showingDetails = true }.accessibilityIdentifier("homeResidentDetails")
-                    }
+                HStack(alignment: .top) {
+                    Text("Ask for help").font(.largeTitle.weight(.heavy)).fixedSize(horizontal: false, vertical: true)
                     Spacer()
-                    Button { editing = false; showingGuide = true } label: { Label("How RELAY works", systemImage: "questionmark.circle") }
-                        .accessibilityIdentifier("homeResidentGuide")
-                }.font(.subheadline.weight(.medium)).frame(minHeight: 44)
-                WorkflowHeader(eyebrow: "New request", title: "Ask for help", subtitle: "Tell your shelter what you need.")
+                    Button { editing = false; showingGuide = true } label: { Image(systemName: "questionmark.circle").font(.system(size: 21)).frame(width: 44, height: 44) }
+                        .accessibilityLabel("How RELAY works").accessibilityIdentifier("homeResidentGuide").help("How RELAY works")
+                }.padding(.top, 8)
+                Text("Tell your shelter what you need.").foregroundStyle(RelayTheme.secondary).padding(.bottom, 8)
                 if cloud.profile == nil { AccountSignInView() }
                 else {
                     HStack {
@@ -95,8 +92,6 @@ struct PublicHelpView: View {
                     if !cloud.draft.shelterID.isEmpty {
                         NavigationLink("Shelter location & arrival instructions") { CloudShelterDetail(shelterID: cloud.draft.shelterID) }.font(.subheadline)
                     }
-                    Text(cloud.cloudPaused ? "Nearby delivery · cloud paused for demo" : cloud.selectedReceiver == nil ? "Cloud delivery · nearby destination not set up yet" : "Cloud + nearby delivery")
-                        .font(.subheadline).foregroundStyle(RelayTheme.secondary)
                     Divider()
                     VStack(alignment: .leading, spacing: 12) {
                         TextField("What do you need?", text: $cloud.draft.text, axis: .vertical)
@@ -178,7 +173,6 @@ struct PublicHelpView: View {
                         if !locator.problem.isEmpty { WorkflowNotice(text: locator.problem) }
                     }
                     if !cloud.problem.isEmpty { WorkflowNotice(text: cloud.problem) }
-                    WorkflowStatus().padding(.vertical, 8)
                 }
             }.padding(.horizontal, 24).padding(.vertical, 16).frame(maxWidth: 660).frame(maxWidth: .infinity)
         }.background(RelayTheme.canvas).navigationTitle("")
@@ -197,7 +191,6 @@ struct PublicHelpView: View {
             .onChange(of: cloud.draft) { _, _ in cloud.persistDraft() }
             .sheet(isPresented: $reviewing) { WorkflowReview { id in reviewing = false; sent(id) } }
             .sheet(isPresented: $showingGuide) { ResidentGuideView() }
-            .sheet(isPresented: $showingDetails) { ResidentDetailsEditor() }
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             .scrollDismissesKeyboard(.interactively)
@@ -210,6 +203,10 @@ struct WorkflowReview: View {
     @EnvironmentObject private var cloud: CloudModel
     @Environment(\.dismiss) private var dismiss
     let sent: (String) -> Void
+    @State private var sharePersonal = false
+    @State private var shareHealth = false
+    @State private var shareSupport = false
+    @State private var editingProfile = false
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -225,22 +222,44 @@ struct WorkflowReview: View {
                     if !cloud.draft.landmark.isEmpty { Text("Landmark: " + cloud.draft.landmark) }
                     if let location = cloud.draft.location { LocationFacts(location: location) }
                     else { Text("No device location attached").foregroundStyle(RelayTheme.secondary) }
+                    Divider()
+                    VStack(alignment: .leading, spacing: 12) {
+                        Toggle("Share personal details with this shelter", isOn: $sharePersonal).accessibilityIdentifier("sharePersonalDetails")
+                            .disabled(!cloud.residentDetailsAvailable)
+                        Text("Optional. Name and preferred language are included when enabled. Your photo stays on this device.").font(.caption).foregroundStyle(RelayTheme.secondary)
+                        if sharePersonal {
+                            Toggle("Include health details", isOn: $shareHealth).accessibilityIdentifier("shareHealthDetails")
+                            Text("Age, height, weight, blood group, allergies, conditions and medications you saved.").font(.caption).foregroundStyle(RelayTheme.secondary)
+                            Toggle("Include accessibility & support needs", isOn: $shareSupport)
+                            if let details = try? selectedPersonalDetails() { SharedResidentSummary(details: details) }
+                            Text("The details shown above will be saved with this request and visible to authorized shelter staff. They are excluded from AI extraction. Editing your profile later does not change a sent request.").font(.caption).foregroundStyle(RelayTheme.secondary)
+                        }
+                        Button("Edit profile in Settings") { editingProfile = true }.font(.subheadline)
+                    }
                     if let error = validation { Text(error).foregroundStyle(.orange) }
                     Text(cloud.selectedReceiver == nil ? "Your request stays saved until the cloud is reachable. This shelter has no nearby receiver configured yet." : "Your request stays saved. Nearby phones can carry an encrypted copy to this shelter when internet is unavailable.")
                     Text("Shelter receipt and staff approval are separate. Staff review supplies before approving.").font(.subheadline).foregroundStyle(RelayTheme.secondary)
                     Button(cloud.submitting ? "Saving…" : "Send request") {
-                        Task { if let id = await cloud.submitRequest() { sent(id) } }
+                        Task {
+                            do { if let id = await cloud.submitRequest(sharedDetails: try selectedPersonalDetails()) { sent(id) } }
+                            catch { cloud.problem = error.localizedDescription }
+                        }
                     }.buttonStyle(PrimaryButton()).disabled(cloud.submitting || validation != nil).accessibilityIdentifier("sendReviewedRequest")
                     if !cloud.problem.isEmpty { Text(cloud.problem).foregroundStyle(.orange) }
                 }.padding(24).frame(maxWidth: 620).frame(maxWidth: .infinity)
             }.navigationTitle("")
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Edit") { dismiss() }.disabled(cloud.submitting) } }
         }.interactiveDismissDisabled(cloud.submitting)
+            .sheet(isPresented: $editingProfile) { ResidentDetailsEditor() }
             #if os(macOS)
             .frame(minWidth: 550, minHeight: 600)
             #endif
     }
-    private var validation: String? { do { _ = try cloud.draft.fields(); try cloud.draft.validateLocationForNewRequest(); return nil } catch { return error.localizedDescription } }
+    private func selectedPersonalDetails() throws -> SharedResidentDetails? {
+        guard sharePersonal else { return nil }
+        return try SharedResidentDetails(profile: cloud.residentDetails, includeHealth: shareHealth, includeSupport: shareSupport)
+    }
+    private var validation: String? { do { _ = try cloud.draft.fields(); try cloud.draft.validateLocationForNewRequest(); _ = try selectedPersonalDetails(); return nil } catch { return error.localizedDescription } }
 }
 struct WorkflowRequestsView: View {
     @ObservedObject var model: RelayModel
@@ -317,6 +336,7 @@ struct WorkflowRequestDetail: View {
                         WorkflowBadge(text: WorkflowRequestsView.progress(record), symbol: ["accepted", "in_progress", "completed"].contains(record.history?.status ?? "") ? "checkmark.circle" : "clock")
                         Text(InventoryItem.title(record.submission.structured_fields?.item_id ?? record.result?.result?.proposal?.item_id ?? "other")).font(.title2.bold())
                         Text(record.submission.original_text)
+                        if let details = record.submission.requester_details { Divider(); SharedResidentSummary(details: details) }
                         if let fields = record.submission.structured_fields {
                             WorkflowFact("Item", value: InventoryItem.title(fields.item_id ?? "other"))
                             WorkflowFact("Amount", value: fields.quantity.map { "\($0) \(fields.unit ?? "")" } ?? "Unknown")
@@ -527,7 +547,16 @@ struct WorkflowSettings: View {
                     if let profile = cloud.profile {
                         Text(profile.role == "dispatcher" ? "Shelter coordinator" : "Public requester").font(.headline)
                         if profile.role == "requester" {
-                            Button("Personal details") { showingDetails = true }.buttonStyle(WorkflowSecondaryButton()).accessibilityIdentifier("settingsResidentDetails")
+                            Button { showingDetails = true } label: {
+                                HStack(spacing: 14) {
+                                    ResidentAvatar(data: cloud.residentDetails.photoJPEG, size: 48)
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(cloud.residentDetails.name.isEmpty ? "Your profile" : cloud.residentDetails.name).font(.headline)
+                                        Text("Photo & personal details").font(.caption).foregroundStyle(RelayTheme.secondary)
+                                    }
+                                    Spacer(); Image(systemName: "chevron.right").accessibilityHidden(true)
+                                }
+                            }.buttonStyle(WorkflowSecondaryButton()).accessibilityLabel("Edit profile and personal details").accessibilityIdentifier("settingsResidentDetails")
                             Button("How RELAY works") { showingGuide = true }.buttonStyle(WorkflowSecondaryButton()).accessibilityIdentifier("settingsResidentGuide")
                         }
                         Text("Account: " + String(profile.subject.prefix(8)) + "…").font(.caption.monospaced())

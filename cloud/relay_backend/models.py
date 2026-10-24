@@ -45,6 +45,33 @@ class StructuredFields(StrictModel):
         return value
 
 
+class SharedResidentDetails(StrictModel):
+    display_name: str = Field(min_length=1, max_length=80)
+    preferred_language: Literal["English", "Spanish", "Mandarin", "Vietnamese", "Hindi", "Telugu", "Other"]
+    age: int | None = Field(default=None, strict=True, ge=0, le=130)
+    height_cm: float | None = Field(default=None, ge=0, le=300, allow_inf_nan=False)
+    weight_kg: float | None = Field(default=None, ge=0, le=1000, allow_inf_nan=False)
+    blood_group: Literal["A+", "A−", "B+", "B−", "AB+", "AB−", "O+", "O−"] | None = None
+    allergies: str | None = Field(default=None, max_length=400)
+    health_conditions: str | None = Field(default=None, max_length=500)
+    medications: str | None = Field(default=None, max_length=400)
+    accessibility_needs: str | None = Field(default=None, max_length=400)
+
+    @model_validator(mode="after")
+    def valid_details(self):
+        if not self.display_name.strip():
+            raise ValueError("A shared profile needs a display name")
+        if self.height_cm == 0 or self.weight_kg == 0:
+            raise ValueError("Measurements must be positive or omitted")
+        import json
+        if len(json.dumps(self.model_dump(exclude_none=True), ensure_ascii=False, separators=(",", ":")).encode()) > 4096:
+            raise ValueError("Shared personal details exceed 4096 bytes")
+        for value in self.model_dump().values():
+            if isinstance(value, str) and any(ord(c) < 32 and c not in "\n\r\t" for c in value):
+                raise ValueError("Personal details contain invalid control characters")
+        return self
+
+
 class RequestSubmission(StrictModel):
     schema_version: Literal[1] = 1
     operation_id: UUID
@@ -61,6 +88,7 @@ class RequestSubmission(StrictModel):
     location: RequestLocation | None = None
     structured_fields: StructuredFields | None = None
     interpretation_id: UUID | None = None
+    requester_details: SharedResidentDetails | None = None
 
     @field_validator("created_at", "expires_at")
     @classmethod

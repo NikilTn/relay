@@ -354,7 +354,8 @@ struct ContentView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-        workspaceTabs
+        if cloud.profile != nil {
+            workspaceTabs
             #if os(iOS)
             .toolbar(.hidden, for: .tabBar)
             #endif
@@ -367,6 +368,11 @@ struct ContentView: View {
                 }.padding(.top, 12).padding(.bottom, 4).background(.white)
                     .overlay(alignment: .top) { Rectangle().fill(.black).frame(height: 1.5) }
             #endif
+        } else if cloud.accountReady {
+            RelaySignInScreen()
+        } else {
+            ProgressView("Opening RELAY…").frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
         }.tint(RelayTheme.accent)
             .environmentObject(cloud)
         .task(id: model.ready) { if model.ready { model.setNearby(active: true); Task { await cloud.attach(model) } } }

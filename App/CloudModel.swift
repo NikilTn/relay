@@ -4,6 +4,7 @@ import RelayCore
 @MainActor final class CloudModel: ObservableObject {
     @Published var endpoint = UserDefaults.standard.string(forKey: "relay.cloud.endpoint") ?? (Bundle.main.object(forInfoDictionaryKey: "RELAYCloudAPIURL") as? String ?? "")
     @Published var profile: CloudProfile?
+    @Published private(set) var accountReady = false
     @Published var directory: [CloudShelter] = []
     @Published var records: [CloudQueueRecord] = []
     @Published var bindings: [CloudBinding] = []
@@ -58,6 +59,7 @@ import RelayCore
 
     func attach(_ model: RelayModel) async {
         guard self.model == nil else { return }; self.model = model
+        defer { accountReady = true }
         if auth.hasSession, let cached = auth.cachedProfile, let url = try? CloudCodec.apiURL(endpoint) {
             busy = true
             api = try? CloudHTTPClient(baseURL: url); scope = CloudCodec.scope(baseURL: url, subject: cached.subject)
@@ -373,12 +375,14 @@ import RelayCore
         draft.interpretationShelter = nil; draft.interpretationTranscription = nil
         interpreting = false; interpretation = nil; problem = ""; persistDraft()
     }
-    func submitRequest() async -> String? {
+    func submitRequest(sharedDetails: SharedResidentDetails? = nil) async -> String? {
         guard !submitting, let scope, let model, let shelter = directory.first(where: { $0.shelter_id == draft.shelterID }) else { return nil }
         submitting = true; defer { submitting = false }; problem = ""
         do {
             try draft.validateLocationForNewRequest()
-            let snapshot = draft
+            var snapshot = draft
+            try sharedDetails?.validate()
+            snapshot.requesterDetails = sharedDetails
             let subject = profile?.subject
             let record = try await model.withStore { store -> CloudQueueRecord in
                 var record = try store.submitCloudDraft(snapshot, scope: scope, shelter: shelter, receiver: shelter.receiver, senderSubject: subject)
@@ -695,7 +699,7 @@ import RelayCore
         guard !residentDetailsBusy, residentDetailsAvailable, let scope = residentContextID, let model else { return false }
         residentDetailsBusy = true; defer { residentDetailsBusy = false }; residentDetailsProblem = ""
         do {
-            let validated = try ResidentDetailsDraft(value).validated(decimalSeparator: ".")
+            let validated = try ResidentDetailsDraft(value).validated(decimalSeparator: ".", requireBasics: true)
             try residentVault.save(validated, scope: scope)
             var updated = residentSetup; updated.profileOffered = true
             try await model.withStore { try $0.saveResidentSetup(updated, scope: scope) }

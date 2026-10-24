@@ -1,83 +1,102 @@
-# Resident setup and walkthrough — build21
+# Resident profile, sharing and walkthrough — build22
 
-Supply choices now include decorative emojis: 💧water, 🥫food, 🛏️blankets,
-💊medicines and 📦other. Existing text labels, resource IDs and request payloads
-remain unchanged. VoiceOver reads the text label, not a duplicate decorative emoji.
-The grid uses one column at accessibility text sizes. Coordinator stock headings
-use the same resource symbols.
+Residents use **Ask for help / Requests / Alerts / Settings**. The Help page begins
+with its title and a small question-mark guide button. Personal details live in
+Settings; delivery status lives with the request. Supply buttons retain emojis and
+readable accessible labels: 💧 water, 🥫 food, 🛏️ blankets, 💊 medicines, 📦 other.
 
-## First sign-in / first launch after upgrade
+## Login and first use
 
-An enrolled resident sees two optional steps once per account on each device:
+Signed-out users see a dedicated RELAY email/password screen. The existing backend
+account assigns the resident or coordinator workspace; there is no public sign-up
+or client-side role switch. Each resident needs a distinct organizer-issued account.
+Sign in online once and cache shelter receiver setup before testing offline use.
+A returning cached account can open its local workspace without a fresh online login.
 
-1. Personal details: name, age in years, height in cm, weight in kg, blood group
-   (including Not sure / skip), allergies, health conditions, medications, and
-   accessibility/support needs. All fields are optional. Save and continue retains
-   the entered information; Skip for now proceeds without changing saved details.
-2. Six-page walkthrough: requesting help and shelter information, speech/AI review,
-   delivery versus staff approval, nearby/offline operation, alerts/read-aloud, and
-   personal/accessibility settings. Back, Next and Skip tour are explicit controls.
+Residents see optional setup and a six-page walkthrough once per account/device.
+**Display name and preferred language are required when saving a profile.** Photo,
+age, height, weight, blood group, allergies, conditions, medications and support
+needs are optional. Skip for now remains available so setup does not block an urgent
+request. Unknown health information must remain blank. The encouragement text
+explains how selected details help staff understand a request.
 
-Completed/skipped steps are saved locally for that signed-in account. A restarted
-or upgraded app does not repeatedly present completed setup. Coordinator accounts
-do not receive the resident introduction. This is an app introduction after login,
-not public self-registration; users still need an enrolled RELAY account.
+The guide covers speech/AI review, shelter selection, delivery versus staff approval,
+nearby carrying, alerts and accessibility settings. Reopen it from the question-mark
+icon beside Ask for help or from Settings. Editing a profile happens in Settings.
+Completed/skipped setup does not repeat on restart. Existing build21 profiles load
+without the new fields; choose a language when next saving them.
 
-Residents can reopen **Your details** or **How RELAY works** from the top of Help.
-Both are also available from Settings. The walkthrough itself needs no network;
-it accurately identifies the features that still require cloud access.
+## Photo and local profile
 
-## Personal-data boundary
+The system Photos picker grants access to the selected image. The app converts it
+to a JPEG thumbnail of at most256px and24000bytes, re-encoding pixels without original
+EXIF/GPS metadata. A photo stored only in iCloud may need internet to download.
+Change and Remove modify the editor draft; Save persists it, Cancel discards edits.
+**The photo stays local and is never attached to a request or shown to dispatchers.**
 
-`ResidentDetails` is intentionally separate from `CloudSubmission`, resource
-requests, speech jobs, inventory and relay envelopes. It is **not automatically
-included in requests, uploaded to the backend, or sent to Transcribe/Bedrock**.
-The current app does not have a per-request profile-sharing feature. A user can
-choose to type relevant information into their request, under the existing
-request/transcription workflow. Do not infer that staff can see the local profile.
+The profile is a Keychain generic-password item, isolated by app bundle ID and an
+endpoint/account-subject hash, using `WhenUnlockedThisDeviceOnly` with synchronization
+disabled. Profiles do not sync between devices. Signing out hides but retains the
+matching account's profile. Clear saved personal details removes this local item
+after confirmation. OS-controlled Keychain behavior means uninstall is not a reliable
+profile-deletion mechanism. Mac ad-hoc development signing can trigger Keychain
+access prompts after rebuild; production distribution needs stable signing.
 
-The native vault uses a Keychain generic-password item, with service isolated by
-the app bundle ID and account keyed by the endpoint/subject hash. It uses
-`WhenUnlockedThisDeviceOnly`, disables Keychain synchronization, and does not log
-profile values. Profiles do not sync between devices and are separate between the
-original USB-installed app and the paid/TestFlight bundle. The profile remains
-saved locally when signing out; it is loaded only for the matching signed-in
-account. Clear saved personal details removes that local profile after confirmation.
-Uninstall/reinstall Keychain behavior is OS-controlled; do not promise uninstall
-as a reliable way to delete a saved Keychain item. Clearing local details does not
-delete any information a person has separately typed into an existing request.
+## Explicit sharing with a shelter
 
-The SQLite metadata record contains only `profileOffered` and `guideSeen` flags.
-It contains no medical fields. Stored read errors are shown instead of silently
-overwriting a locked/unavailable profile. Editing uses a separate draft: Cancel
-does not save changes. Number fields reject nonfinite, negative, unit-suffixed or
-out-of-range input; blank means unknown. Blood group and all notes are self-reported,
-not verified clinical records. No diagnosis, dosage recommendation, inferred blood
-type, BMI score or automated triage is added.
+Review request has **Share personal details with this shelter**, off by default.
+Turning it on attaches name and preferred language. Two separate switches add
+health details and accessibility/support needs. Review shows the exact selected text
+before Send; a missing name/language blocks sharing until completed or disabled.
 
-The Mac development app is signed ad hoc. A future rebuild may be unable to read
-an existing Mac profile because of Keychain access controls; this is surfaced as
-a read error. The signed iOS profile was tested across an app update. Production
-Mac distribution should use stable signing before promising equivalent behavior.
+Sending freezes the selection into optional `requester_details` in the immutable
+request. It is durably stored with the request, goes to the authenticated HTTPS
+backend and/or inside the existing encrypted nearby envelope, and is readable by
+the requester and authorized destination staff. Carrier phones see ciphertext.
+Editing or clearing the local profile does not change or erase a previously sent
+snapshot. This is a change from build21, whose profile stayed entirely local.
+
+Attached profile fields are **excluded from the Bedrock extraction prompt**. Text
+that the user explicitly types or dictates in the request still follows the existing
+Transcribe/Bedrock workflow. Do not describe that request text as excluded from AI.
+The photo has no wire field and the backend rejects attempts to attach one.
+
+The profile itself stays outside the request SQLite store, but explicitly shared
+snapshots are now part of the durable request records. The first-run metadata still
+contains only setup flags. Old requests without details keep their original payload
+shape/digest. Retries and direct/gateway delivery deduplicate the same frozen body.
+Upgrade sender and receiving endpoints to22 before sharing details: older clients
+do not display/preserve this optional field in typed caches. Existing message-size
+limits remain; unusually long requests plus notes can require shortening before
+an encrypted copy can be sent. There is no silent plaintext fallback.
+
+Values are bounded and self-reported, not verified clinical records. The app does
+not infer blood group, diagnose, prescribe, calculate BMI, or automatically prioritize
+based on health history. Staff approval remains separate from delivery and AI.
 
 ## Test procedure
 
-1. Update the original phone app to21 and open it with its existing resident login.
-   Expect A little about you on the first run of this feature. Use synthetic data
-   for the demonstration, or Skip for now. Unknown blood group remains unknown.
-2. Save a synthetic profile; navigate all six guide pages, go Back once, finish.
-   Help should show the two top links and the supply emojis.
-3. Quit/reopen the app. The introduction should not repeat. Your details should
-   retain the saved fields. Change a field, Cancel, reopen: original value remains.
-4. Reopen How RELAY works from Help, then Settings. It starts at page1 and can be
-   closed without changing a request or inventory.
-5. Optional manual checks: skip both first-run steps on a new resident account;
-   test largest text/VoiceOver, offline profile editing, and Clear on disposable
-   test data. Verify another account cannot see the first account's local profile.
-6. Confirm the coordinator still opens Inbox directly and stock labels have emojis.
+1. On build22, Settings → Photo & personal details. Use synthetic values, select a
+   local test picture, set a display name and language, then Save. Blank required
+   basics should show an error; health and photo can be omitted.
+2. Restart the app. Reopen Settings: picture, language and other saved values remain.
+   Change one value, Cancel, reopen: the original remains. Change/Remove photo and
+   Clear are separate optional manual checks using disposable synthetic data.
+3. Help should begin with Ask for help and the small guide icon. It has no Your
+   details link or Cloud + nearby delivery text. Open the guide with the icon.
+4. Create a short synthetic water request with a typed test landmark. Review:
+   sharing must start off. Enable basic sharing, then health/support selectively;
+   verify the exact preview and absence of a photo. Send once.
+5. On the destination Mac/coordinator Inbox, open the same request ID. Verify only
+   selected fields appear. Verify cloud acceptance and shelter receipt separately.
+   Sending a profile does not approve stock or complete a request.
+6. Sign out of a disposable simulator account: a dedicated login page replaces the
+   workspace. Sign back into the same existing account: profile/history are retained.
+7. Optional remaining checks: physical photo picker, largest text/VoiceOver, account
+   isolation on one device, offline profile editing, unavailable Keychain and
+   iCloud-only photo errors. Test physical radio conditions separately under A–E.
 
-Actual build21 evidence is in `docs/evidence/build21` and `TEST_RESULTS.md`.
-The simulator test used only synthetic profile strings. A read-only check found
-none of those strings in its request database or WAL; the native relaunch recovered
-them from the Keychain. Physical profile entry has been left for the user; no
-personal or medical information was entered into either real phone by the agent.
+Build22 native UI testing used a synthetic avatar selected by the user in Simulator,
+then Save/restart/reopen. A synthetic shared request reached the Mac with the expected
+fields. Automated photo bounds/metadata, immutable snapshot, encryption, authorization,
+legacy retry and AI-exclusion tests pass. See TEST_RESULTS and docs/evidence/build22.

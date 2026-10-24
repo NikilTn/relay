@@ -1,8 +1,9 @@
 # RELAY physical acceptance plan
 
-**Build21 resident setup:** [procedure and privacy boundary](docs/RESIDENT_SETUP.md#test-procedure).
-Record first-run Save/Skip, tour navigation, restart persistence, Cancel behavior,
-account separation, larger text and clearing disposable profile data separately.
+**Build22 resident profile/sharing:** [procedure and privacy boundary](docs/RESIDENT_SETUP.md#test-procedure).
+Record required name/language, photo Save/restart, first-run Skip, guide navigation,
+per-request sharing defaults/selection, coordinator visibility, login, account
+separation, larger text and clearing disposable profile data separately.
 Use synthetic profile values. Installing this UI update is not a wireless test.
 
 **Build20 alerts/location extension:** follow the reproducible steps in

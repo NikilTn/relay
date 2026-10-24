@@ -110,7 +110,7 @@ class Service(InterpretationMixin, InventoryMixin, NearbyMixin, AnnouncementsMix
         self.writable()
         payload = submission.model_dump(mode="json")
         # Preserve immutable digests/replay of submissions from before these optional fields.
-        for field in ("location", "structured_fields", "interpretation_id"):
+        for field in ("location", "structured_fields", "interpretation_id", "requester_details"):
             if payload.get(field) is None:
                 payload.pop(field, None)
         if payload.get("location"):
