@@ -1,6 +1,6 @@
 # Pre-send preview, location and inventory contract
 
-Implemented from native integration commit `8c207e736d269b02d52d888b8de12ac360ed1db7` on `feature/cloud-inventory-preview`. Changes are confined to `cloud/`. This document describes the new source, **not the currently running build-9 server**. No runtime restart, paid AWS call, IAM change or deployment occurred during implementation.
+Implemented from native integration commit `8c207e736d269b02d52d888b8de12ac360ed1db7` on `feature/cloud-inventory-preview`; backend commit `62dcf9035bc0bf02054debe53b08a478e4bf379e`, integrated as `fe7b88dad016c43066a6f272f2a0f6ae94855667`. Changes are confined to `cloud/`. Implementation used fixture tests without runtime changes or paid calls. The native task subsequently coordinated runtime replacement and one bounded live workflow; independent AWS readback passed at 08:12 UTC. See [CLOUD_DEPLOYMENT_HANDOFF.md](CLOUD_DEPLOYMENT_HANDOFF.md) for current evidence and the remaining managed-hosting gate.
 
 ## Request flow
 
@@ -142,6 +142,6 @@ Fixture-only suite: 60 tests pass, including independent SQLite connection races
 
 Before exposing the new API, cherry-pick this backend commit into the native source and validate its DTO/client flow. Stop the old shared worker before a new preview can enter `RELAY_MVP_V1#WORK`: old workers cannot understand interpretation tasks. Start the merged API and worker with the preserved private config/durable data and existing caps. No table migration or new IAM grant is required; new records stay under the existing isolated prefix.
 
-The old 8787 process still has old write logic. New endpoint guards cannot protect requests mutated through that stale API. Route all mutation traffic to the coordinated new 8788 API; upgrade/retire older write-capable listeners before claiming that all writers enforce inventory invariants. The temporary tunnel can continue targeting 8788 after coordinated restart. Do not deploy the older cfcaade ZIP over this new source.
+The old 8787 process had old write logic; new endpoint guards cannot protect requests mutated through a stale API. The native task retired that listener and the old AWS worker during rollout; independent process checks confirmed this at 08:11 UTC. Keep mutation traffic on the coordinated new 8788 API and do not restart the old source. The temporary tunnel continues targeting 8788. Do not deploy the older cfcaade ZIP over this new source.
 
-Only after coordination should the agreed bounded live preview/inventory flow be tested and documented separately. No native login, physical UI, real inventory stock, or AWS hosting deployment is claimed by this source change.
+The agreed bounded live preview/inventory flow passed after coordination and is documented separately in the handoff. Synthetic stock is a ledger test, not real inventory. HTTP/CLI success does not establish physical UI or AWS Lambda hosting deployment.
