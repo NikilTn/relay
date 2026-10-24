@@ -1,0 +1,76 @@
+{
+  "status": "PASS",
+  "observed_at": "2026-10-24T05:43:16.476975+00:00",
+  "client_id": "dfulb5lau8283nlgil7ddu36i",
+  "has_client_secret": false,
+  "oauth_flows": [
+    "code"
+  ],
+  "callback_urls": [
+    "http://localhost:8400/callback",
+    "relay://oauth/callback"
+  ],
+  "client_request_id": "d376297a-8c06-458a-b438-29a323fc9910",
+  "domain_status": "ACTIVE",
+  "domain_request_id": "4f82ae1a-bbca-45fb-82eb-c67f20348165",
+  "mfa_required": true,
+  "users": [
+    {
+      "actor": "test-requester-a",
+      "status": "CONFIRMED",
+      "mfa": [
+        "SOFTWARE_TOKEN_MFA"
+      ],
+      "metadata_request_id": "720b3783-522a-4948-b000-1554c0e62f27",
+      "authentication": {
+        "initial_challenge": "SOFTWARE_TOKEN_MFA",
+        "authentication_request_id": "3a4dfcde-c5f0-4e76-b6eb-7345bef8b505",
+        "mfa_preference_request_id": "efebe218-f245-4522-9d4e-f8c38c38d05e"
+      },
+      "authenticated_api_status": 200
+    },
+    {
+      "actor": "test-requester-b",
+      "status": "CONFIRMED",
+      "mfa": [
+        "SOFTWARE_TOKEN_MFA"
+      ],
+      "metadata_request_id": "77b5f9f0-9996-46ba-9235-60fe119995a7",
+      "authentication": {
+        "initial_challenge": "SOFTWARE_TOKEN_MFA",
+        "authentication_request_id": "63b9f499-99ee-4d72-b2df-dec5ef75691f",
+        "mfa_preference_request_id": "3d62d9ec-e530-444a-bedf-501405215bd7"
+      },
+      "authenticated_api_status": 200
+    },
+    {
+      "actor": "test-dispatcher-a",
+      "status": "CONFIRMED",
+      "mfa": [
+        "SOFTWARE_TOKEN_MFA"
+      ],
+      "metadata_request_id": "4bf8dc92-86c3-4149-a763-fa2d590758d0",
+      "authentication": {
+        "initial_challenge": "SOFTWARE_TOKEN_MFA",
+        "authentication_request_id": "302a8c7e-81ad-443c-b4cf-df846c799395",
+        "mfa_preference_request_id": "ac3b2b49-474d-4c3c-b847-674933488a35"
+      },
+      "authenticated_api_status": 200
+    },
+    {
+      "actor": "test-dispatcher-b",
+      "status": "CONFIRMED",
+      "mfa": [
+        "SOFTWARE_TOKEN_MFA"
+      ],
+      "metadata_request_id": "27769f55-8e98-44a7-b6fc-81610459e17f",
+      "authentication": {
+        "initial_challenge": "SOFTWARE_TOKEN_MFA",
+        "authentication_request_id": "6fde2ea4-78eb-474a-b256-9f6b5a57fb4c",
+        "mfa_preference_request_id": "dc7b4cce-1448-42c5-8a4b-c6723c522cdb"
+      },
+      "authenticated_api_status": 200
+    }
+  ],
+  "native_pkce_browser_flow": "NOT TESTED"
+}

@@ -8,7 +8,7 @@ from pathlib import Path
 from botocore.config import Config
 from botocore.exceptions import BotoCoreError, ClientError
 
-from .analysis import NUMBER_WORDS, prompt
+from .analysis import NUMBER_WORDS, SYSTEM_PROMPT, prompt
 
 
 class ProviderError(Exception):
@@ -126,7 +126,9 @@ class AWSProviders:
     def analyze(self, request, shelters):
         self.allowed()
         try:
-            result = self.bedrock.converse(modelId=self.settings.model_id, messages=prompt(request, shelters),
+            result = self.bedrock.converse(modelId=self.settings.model_id,
+                                          system=[{"text": SYSTEM_PROMPT}],
+                                          messages=prompt(request, shelters),
                                           inferenceConfig={"maxTokens": 512, "temperature": 0})
         except (ClientError, BotoCoreError) as exc:
             raise aws_error(exc) from None

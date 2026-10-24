@@ -1,0 +1,63 @@
+{
+  "mode": "aws",
+  "storage": "dynamodb",
+  "started_at": "2026-10-24T05:39:00.222688+00:00",
+  "request_id": "b75af109-b98a-4dcd-a4e5-15ae3feb84c4",
+  "status": "PASS",
+  "api_process_crash_replay": "PASS",
+  "separate_worker_recovery": "PASS",
+  "logical_request_count": 1,
+  "result": {
+    "request_id": "b75af109-b98a-4dcd-a4e5-15ae3feb84c4",
+    "schema_version": 1,
+    "revision": 1,
+    "submission": {
+      "schema_version": 1,
+      "operation_id": "adef796f-a5ea-4e23-a317-f27df1d9cc46",
+      "request_id": "b75af109-b98a-4dcd-a4e5-15ae3feb84c4",
+      "incident_id": "synthetic-demo-01",
+      "destination_shelter_id": "shelter-a",
+      "origin_device_id": "49e0b950-6ae9-4204-99f2-866db4de47ab",
+      "original_text": "Shelter A needs 7 blankets.",
+      "input_mode": "text",
+      "transcription_id": null,
+      "created_at": "2026-10-24T05:39:01.294085Z",
+      "expires_at": "2026-10-24T06:39:01.294085Z",
+      "revision": 1
+    },
+    "accepted_at": "2026-10-24T05:39:02.126600Z",
+    "cloud_state": "accepted",
+    "analysis_state": "ready_for_review",
+    "result": {
+      "status": "ready_for_review",
+      "proposal": {
+        "item_id": "blankets",
+        "quantity": 7,
+        "unit": "piece",
+        "shelter_id": "shelter-a",
+        "negated": false,
+        "missing_fields": [],
+        "summary": "Shelter A needs 7 blankets."
+      },
+      "review_reasons": [],
+      "allocation_authorized": false
+    },
+    "analysis_attempts": 1,
+    "manual_retry_count": 0,
+    "error": null,
+    "provider_evidence": {
+      "provider": "aws",
+      "model_id": "amazon.nova-lite-v1:0",
+      "request_id": "b127b37e-051c-4265-8362-c60f1853848d",
+      "usage": {
+        "inputTokens": 485,
+        "outputTokens": 45,
+        "totalTokens": 530
+      },
+      "stop_reason": "end_turn"
+    },
+    "assignment_state": "not_implemented",
+    "fulfillment_state": "not_implemented"
+  },
+  "finished_at": "2026-10-24T05:39:08.083402+00:00"
+}

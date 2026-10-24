@@ -1,6 +1,6 @@
 # Local AWS operation and optional HTTPS hosting
 
-Current state: a local fixture API is runnable and verified. `package_lambda.py` produced a Linux arm64 artifact. AWS CloudFormation `ValidateTemplate` accepted the template; request ID `ee3a3887-d8c4-4b4c-9bfe-1bc043499446`. This is **syntax validation only**, not deployment or IAM/runtime proof.
+Current state: the locally hosted API is verified against real Cognito MFA, DynamoDB, S3, Nova Lite and batch Transcribe. `package_lambda.py` produced a Linux arm64 artifact. AWS CloudFormation `ValidateTemplate` accepted the template; request ID `ee3a3887-d8c4-4b4c-9bfe-1bc043499446`. This is **syntax validation only**, not deployment or IAM/runtime proof.
 
 ## Local AWS backend
 

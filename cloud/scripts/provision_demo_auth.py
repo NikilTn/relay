@@ -39,6 +39,7 @@ def totp(secret):
 def authenticate(client, client_id, user, save_private):
     response = client.initiate_auth(ClientId=client_id, AuthFlow="USER_PASSWORD_AUTH",
                                     AuthParameters={"USERNAME": user["username"], "PASSWORD": user["password"]})
+    initial_challenge = response.get("ChallengeName")
     challenge_user = response.get("ChallengeParameters", {}).get("USER_ID_FOR_SRP") or response.get("ChallengeParameters", {}).get("USERNAME") or user["username"]
     if response.get("ChallengeName") == "MFA_SETUP":
         enrolled = client.associate_software_token(Session=response["Session"])
@@ -51,7 +52,7 @@ def authenticate(client, client_id, user, save_private):
         response = client.respond_to_auth_challenge(ClientId=client_id, ChallengeName="MFA_SETUP",
                                                      Session=verified["Session"],
                                                      ChallengeResponses={"USERNAME": challenge_user})
-    elif response.get("ChallengeName") == "SOFTWARE_TOKEN_MFA":
+    if response.get("ChallengeName") == "SOFTWARE_TOKEN_MFA":
         if not user.get("totp_secret"):
             raise RuntimeError("Synthetic user's existing MFA secret is unavailable; no reset attempted")
         response = client.respond_to_auth_challenge(ClientId=client_id, ChallengeName="SOFTWARE_TOKEN_MFA",
@@ -59,7 +60,16 @@ def authenticate(client, client_id, user, save_private):
                                                          "USERNAME": challenge_user, "SOFTWARE_TOKEN_MFA_CODE": totp(user["totp_secret"])})
     if "AuthenticationResult" not in response:
         raise RuntimeError("Unexpected Cognito challenge: " + response.get("ChallengeName", "unknown"))
-    return response["AuthenticationResult"]["AccessToken"]
+    token = response["AuthenticationResult"]["AccessToken"]
+    if not user.get("totp_secret"):
+        raise RuntimeError("A verified TOTP authenticator is required for every synthetic user")
+    preference = client.set_user_mfa_preference(AccessToken=token,
+                                               SoftwareTokenMfaSettings={"Enabled": True, "PreferredMfa": True})
+    user["last_auth_evidence"] = {"initial_challenge": initial_challenge,
+                                  "authentication_request_id": response["ResponseMetadata"]["RequestId"],
+                                  "mfa_preference_request_id": preference["ResponseMetadata"]["RequestId"]}
+    save_private()
+    return token
 
 
 def main():

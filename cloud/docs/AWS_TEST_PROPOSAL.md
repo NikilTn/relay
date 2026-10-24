@@ -1,6 +1,6 @@
 # Approval proposal — first live backend verification
 
-Status: **PENDING APPROVAL**. No paid model/audio test or resource provisioning has run.
+Status: **LIVE TESTING AUTHORIZED — 2026-10-24**. After receiving this proposal, the user explicitly requested the actual service flow with a sample recording, transcript and model result. Proceeding within the previously presented $2 incremental limit and bounded local-hosted scope. Results and created resources are recorded separately.
 
 Account `928489693154`, region `us-east-1`; verified workshop session. Local HTTP smoke tests pass with fixtures, which do not verify AWS inference. Nova Lite availability reports agreement AVAILABLE and authorization AUTHORIZED. Cognito requires MFA and supports authenticator TOTP.
 
@@ -26,3 +26,7 @@ Public hosting, Lambda/API Gateway deployment, organizer IAM changes, native app
 ## Cleanup
 
 Keep an exact manifest of newly created client/domain/users and synthetic resource IDs. Cleanup must target only those manifest resources and the isolated namespaces; do not delete the existing pool, table, bucket, dispatcher group or participant role. Retain the verified backend and evidence for integration until cleanup is requested.
+
+## Recorded outcome
+
+Real Cognito MFA, S3, Transcribe, Nova Lite and DynamoDB verification passed. The run used 12 accepted requests, 16 total model calls including diagnostics, and one recording. See LIVE_AWS_DEMO.md, BACKEND_TEST_RESULTS.md and RESOURCE_MANIFEST.json. Public hosting was not performed.
