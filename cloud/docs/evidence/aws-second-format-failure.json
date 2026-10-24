@@ -1,0 +1,63 @@
+{
+  "started_at": "2026-10-24T05:31:32.119983+00:00",
+  "base_url": "http://127.0.0.1:8787",
+  "checks": {
+    "authentication_and_directory": "PASS",
+    "idempotency_and_authorization": "PASS"
+  },
+  "requests": [
+    {
+      "request_id": "1af39a95-646b-422b-abca-9c5fcc51af01",
+      "schema_version": 1,
+      "revision": 1,
+      "submission": {
+        "schema_version": 1,
+        "operation_id": "f2a56069-1262-4e17-adc4-615372094622",
+        "request_id": "1af39a95-646b-422b-abca-9c5fcc51af01",
+        "incident_id": "synthetic-demo-01",
+        "destination_shelter_id": "shelter-a",
+        "origin_device_id": "e14cbb40-c592-429c-b6eb-96eeec178a87",
+        "original_text": "SYNTHETIC: Shelter A needs 20 water packs.",
+        "input_mode": "text",
+        "transcription_id": null,
+        "created_at": "2026-10-24T05:31:32.149565Z",
+        "expires_at": "2026-10-24T06:31:32.149565Z",
+        "revision": 1
+      },
+      "accepted_at": "2026-10-24T05:31:32.239285Z",
+      "cloud_state": "accepted",
+      "analysis_state": "needs_review",
+      "result": {
+        "status": "needs_review",
+        "proposal": null,
+        "review_reasons": [
+          "invalid_model_output"
+        ],
+        "allocation_authorized": false
+      },
+      "analysis_attempts": 1,
+      "manual_retry_count": 0,
+      "error": null,
+      "provider_evidence": {
+        "provider": "aws",
+        "model_id": "amazon.nova-lite-v1:0",
+        "request_id": "331f0ef6-238e-4d99-a006-7db62b41ec01",
+        "usage": {
+          "inputTokens": 347,
+          "outputTokens": 213,
+          "totalTokens": 560
+        },
+        "stop_reason": "end_turn"
+      },
+      "assignment_state": "not_implemented",
+      "fulfillment_state": "not_implemented"
+    }
+  ],
+  "transcriptions": [],
+  "native_app_integration": "NOT TESTED",
+  "mode": "aws",
+  "storage": "dynamodb",
+  "status": "FAIL",
+  "failure": "",
+  "finished_at": "2026-10-24T05:31:35.688159+00:00"
+}
