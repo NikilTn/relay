@@ -1,28 +1,41 @@
 # RELAY — offline store-carry-forward prototype
 
-Buildable SwiftUI iOS and macOS apps sharing a Swift/Network.framework/SQLite engine. The relay remains local and uses no third-party runtime dependencies or external radio hardware. Build 9 includes an optional authenticated AWS cloud client, with a temporary HTTPS tunnel to the API on this Mac.
+Buildable SwiftUI iOS and macOS apps sharing a Swift/Network.framework/SQLite engine. The relay remains local and uses no third-party runtime dependencies or external radio hardware. Build 13 adds the cloud-first requester/coordinator workflow and inventory, with a temporary HTTPS tunnel to the API on this Mac.
 
 **Current verdict:** automated protocol tests, separate-process TCP loopback experiments, and native Mac ↔ iOS Simulator Bonjour control exchanges pass. **Physical iPhone A → iPhone B → Mac C and infrastructure-independent wireless delivery have NOT been verified.** See [TEST_RESULTS.md](TEST_RESULTS.md) for evidence and blockers. A simulator is not a radio test.
 
-## Build 9: temporary HTTPS demo and reviewed voice
+## Current workflow — build 13
 
-Both original development apps now have build 9. Request details support nearby replies and reported
-progress. The Cloud tab adds secure sign-in, explicit shelter mapping, durable
-outbox, authorized dispatcher inbox, validated Bedrock proposals, reply history,
-and reviewed voice input. Help review can atomically queue the same request for
-cloud; nearby delivery continues independently.
+One native app now opens the workspace authorized by the account:
 
-**Temporary hosting is running:** a Cloudflare Quick Tunnel exposes the Mac API
-over HTTPS, retaining Cognito authorization. Public health, authenticated reads,
-and missing/invalid-token rejection pass. Permanent Lambda/API Gateway deployment
-still needs the organizer execution role/PassRole grant. The real Swift-client-to-AWS
-flow passed through both loopback and public HTTPS, including Transcribe and reviewed text.
-Phone cloud login, microphone capture and end-to-end cloud UI are not yet verified.
-Build 9 also accepts a validated WAV file for reproducible voice testing.
-Carrier-to-cloud ingestion,
-signed origin proof, inventory allocation and automated dispatch are not implemented.
-Read [DEMO_HOSTING.md](DEMO_HOSTING.md) for the live endpoint and presentation setup,
-and [CLOUD_INTEGRATION.md](CLOUD_INTEGRATION.md) for precise boundaries.
+- **Public:** Help / Requests / Messages. Speak or type, review an editable Bedrock
+  preview, attach a one-time location snapshot or landmark, review, and Send.
+- **Coordinator:** Inbox / Inventory / Messages. Review the request, approve and
+  reserve supplies, record handover or release, and reply to the requester.
+- **Automatic cloud:** directory/account caching, local durable draft and outbox,
+  same-ID retries, and clear separation of cloud receipt, staff approval and stock
+  handover. Ordinary users do not configure URLs, map shelter IDs, or toggle cloud.
+- **Inventory:** atomic stock + reservation + history + audit ledger transactions.
+  Available = on hand − reserved. Approval reserves; handover deducts; cancellation
+  or release restores availability. The model never authorizes an allocation.
+- **Location:** coordinates, accuracy, precision and capture time are carried as
+  structured cloud data. Permission is requested only on Use current location;
+  denial/approximate access/landmark-only input are supported. No live tracking.
+- **Nearby messaging:** the original text relay/receipts remain, with automatic
+  foreground discovery. Existing offline shelter requests and diagnostics are in
+  Settings → Developer tools. Existing IDs, messages and receipt state are retained.
+
+Read [MOBILE_TEST.md](MOBILE_TEST.md) for the exact two-phone demonstration.
+The Mac API/worker use real Cognito, S3, Transcribe, Bedrock Nova Lite and DynamoDB
+through the temporary [HTTPS setup](DEMO_HOSTING.md). Permanent AWS Lambda/API
+Gateway hosting remains blocked by the organizer role/PassRole requirement.
+
+The cloud composer keeps precise location out of the current plaintext peer
+transport. Authenticated carrier-to-cloud ingestion and encrypted cross-transport
+location/return replies remain pending; a cloud request currently waits for its
+origin phone to regain internet. Staff handover is a recorded assertion, not
+independently verified physical delivery. Phone microphone/GPS and isolated radio
+acceptance must be verified by the operator; see [TEST_RESULTS.md](TEST_RESULTS.md).
 
 ## Build and install
 
@@ -55,13 +68,13 @@ xcodebuild -project RELAY.xcodeproj -scheme RELAY-iOS \
 
 For **each physical iPhone**, connect it to Xcode, unlock it, trust this Mac, enable Developer Mode when requested, select the `RELAY-iOS` scheme and that device. In Signing & Capabilities choose your Apple development team and a bundle identifier your team can provision. Build and Run. No developer credentials are bundled. The iOS project currently names the enrolled team and its registered bundle ID; use your own team/identifier if building elsewhere. Both original physical phone development installs and the enrolled-team release archive have succeeded. A free Personal Team may suffice for local development, subject to Apple's provisioning limits.
 
-For stable macOS Local Network permission behavior across rebuilds, use your own development signing identity when available. The committed Mac settings use local ad hoc signing and the App Sandbox's network client/server entitlements. No multicast entitlement is requested: the app only browses/advertises its declared Bonjour service and uses unicast TCP. Allow the normal Local Network and firewall prompts for RELAY during your test; record what appears. No Bluetooth, location, hotspot, or Wi-Fi Aware entitlement is used.
+For stable macOS Local Network permission behavior across rebuilds, use your own development signing identity when available. The committed Mac settings use local ad hoc signing and the App Sandbox's network client/server entitlements. No multicast entitlement is requested: the app only browses/advertises its declared Bonjour service and uses unicast TCP. Allow the normal Local Network and firewall prompts for RELAY during your test; record what appears. No Bluetooth, hotspot, or Wi-Fi Aware entitlement is used. Build 13 adds location purpose strings and the macOS sandbox location entitlement for optional one-shot cloud requests.
 
 The project is checked in. `python3 scripts/generate_project.py` deterministically regenerates its two app targets, shared schemes, and plists using only Python's standard library. It resets signing changes to the project defaults: enrolled team U4G9LV39GM / com.nikilthalapaneni.relay for iOS, ad hoc signing for macOS. Override DEVELOPMENT_TEAM and PRODUCT_BUNDLE_IDENTIFIER on the command line when using another team.
 
 ## Shelter requests (build 7)
 
-The current interface has **Help, Requests, Shelters, Messages**. Help's gear opens
+The historical build 7 interface had **Help, Requests, Shelters, Messages**; these offline shelter tools now live under Settings → Developer tools. Help's gear opens
 Settings/Tools; **Help → Nearby devices** opens discovery and peer messaging.
 The existing Chats interface is retained under Messages.
 

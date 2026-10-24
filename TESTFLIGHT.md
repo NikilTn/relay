@@ -1,3 +1,15 @@
+# Current TestFlight status — build 13
+
+Build **0.1.0 (13)** archived and uploaded successfully on 2026-10-24 at 01:47 PDT. App Store Connect subsequently showed **Testing** in the internal **RELAY Development** group (1 tester), and the new testing instructions were saved. The original development app is already installed on both owned phones; use that prepared copy for the requester/coordinator demo.
+
+The latest build adds native account/MFA login, fixed role interfaces, editable AI preview, optional location, and stock reservation/handover/release. Read [MOBILE_TEST.md](MOBILE_TEST.md). Cloud requires an organizer-provided Cognito account; Apple/AWS-console credentials are not app credentials. A login-free nearby demo remains available.
+
+Apple still shows that another build from version 0.1.0 is awaiting beta review, so build 13 cannot be submitted to external beta review yet. An internal Testing status does not mean the public invitation is ready for arbitrary friends or judges. The older submitted review notes describe build 2; update them for account-based cloud testing when submitting build 13 or later, including reviewer access as required.
+
+Release archives contain no one-use debug-session importer or embedded credentials. Cloud HTTPS uses Apple system networking; local P2P remains plaintext. Future archives must use an unused build number (next is **14**). Build 13 is already uploaded and must not be uploaded again.
+
+The entries below are historical setup records; their version numbers and screen descriptions are superseded by this section.
+
 # RELAY teammate beta deployment
 
 **Latest upload: 0.1.0 (9)** bundles the temporary HTTPS demo API address and adds validated WAV import for voice testing. Both original phone apps installed and launched build 9 with all data preserved. Archive/upload passed at 00:32:50 PDT on Oct 24; Apple processing completed and RELAY Development explicitly shows build 9 Testing; build-specific test notes are saved. External build 2 remains Waiting for Review; this upload does not imply external approval. Mobile cloud login/voice is not yet an end-to-end verified feature. [Demo instructions](DEMO_HOSTING.md), [release evidence](evidence/testflight-upload-build-9.json).
@@ -45,8 +57,8 @@ Use the enrolled account already signed into Xcode; agreement acceptance, bundle
 # Set to the identifier actually registered under the enrolled team.
 export RELAY_TEAM_ID=U4G9LV39GM
 export RELAY_BUNDLE_ID=com.nikilthalapaneni.relay
-bash scripts/testflight.sh 9          # next unused build: signed archive only
-bash scripts/testflight.sh 9 --upload # next unused build: archive and upload
+bash scripts/testflight.sh 14          # next unused build: signed archive only
+bash scripts/testflight.sh 14 --upload # next unused build: archive and upload
 ```
 
 The script stores logs/archives in a fresh `/tmp/RELAY-testflight.*` directory, outside the file-provider-backed source directory. It uses automatic signing and never accepts a password/token. The script's signed archive path passed; its export/upload command was executed separately against that archive and passed. Use the next unused build number after each upload; the script does not silently change it. Check Apple's processing/review state after upload.

@@ -1,10 +1,40 @@
-# RELAY test results — 2026-10-23
+# RELAY test results — updated 2026-10-24
 
-**Verdict: implemented and tested as a software prototype; the requested physical offline demonstration remains blocked and unverified.** No physical wireless acceptance test is reported as a pass. Software evidence below does not establish disaster resilience.
+**Verdict: implemented and tested as a software prototype; the controlled physical offline demonstration remains pending and unverified.** No physical wireless acceptance test is reported as a pass. Software evidence below does not establish disaster resilience.
 
-**Latest setup status:** build **0.1.0 (8)** installed and launched on both original phone apps, preserving every prior message/shelter/receipt/identity. **43 Swift tests + 35 backend tests pass.** The shared Swift HTTP client passed real Cognito/DynamoDB/Bedrock/S3/Transcribe and reviewed-text tests through the Mac-hosted API. Public HTTPS deployment, native browser PKCE/microphone/cloud UI, and controlled physical no-router acceptance remain unverified. Detailed build-8 evidence is below; older environment sections are historical.
+## Current release — 0.1.0 (13), 2026-10-24
 
-## Environment and access
+**Implemented and ready for the operator's two-phone cloud test.** Public Help / Requests / Messages and coordinator Inbox / Inventory / Messages now use server-authorized roles. The workflow covers voice upload/transcription, editable AI preview before Send, optional one-shot location or landmark, durable drafts/outbox, coordinator reservation/handover/release, inventory and request history. See [MOBILE_TEST.md](MOBILE_TEST.md).
+
+| Verification | Actual result |
+|---|---|
+| Shared Swift tests | **PASS: 49, 0 failures**, [log](evidence/build13/swift-tests.txt) |
+| Backend tests | **PASS: 67**, including transaction races, durable retries, preview reuse, inventory and bounded batch reads, [log](evidence/build13/backend-tests.txt) |
+| Separate-process TCP control | **PASS**, including interrupted frame and relay process restart; loopback only, [log](evidence/build13/tcp-control.txt) |
+| Build 13 native Mac / signed iOS / release archive | **PASS**, [markers](evidence/build13/build-markers.txt) |
+| Physical 15 Pro Max / iPhone 16 install and launch | **PASS**; each retained all 32 prior messages, identity, shelters and final-receipt state. [15 Pro Max](evidence/build13/iphone15promax-install.json), [16](evidence/build13/iphone16-install.json) |
+| Native Mac password + MFA, Bedrock preview, Review/Send | **PASS** against public HTTPS and actual AWS; request `c24d0173-8d0a-41bf-81f4-63a887d243bc`, [independent readback](evidence/build13/native-mac-ui-request-readback.json) |
+| Native Mac coordinator approve / inventory / release | **PASS**: 20 on hand → 2 reserved / 18 available → release restores 20 available; [independent ledger readback](evidence/build13/native-mac-ui-release-readback.json) |
+| Swift live HTTP preview/location/fulfillment/retry | **PASS** with synthetic location 0,0; request `cf8bf57d-2058-4c4c-87c7-46bde6149a7e`. Reserve/fulfill replays did not duplicate stock movement; synthetic consumption restored. [Live evidence](evidence/build13/swift-live-flow.json) |
+| Fixture audio→preview→location→send→inventory | **PASS**, simulated providers; [separate fixture evidence](evidence/build13/swift-fixture-flow.json) |
+| Build 13 TestFlight | Upload **PASS** at 01:47 PDT; Apple showed **Testing** in internal RELAY Development group, 1 tester. What to Test saved. External build submission remains blocked behind the already submitted beta review. |
+| Phone microphone, real GPS, full phone tap sequence | **NOT TESTED by agent**; operator test now required. Native WAV picker correction compiled, post-fix picker UI not reverified. |
+| Controlled physical no-internet/no-router tests A–E | **NOT TESTED**; user reports nearby messaging worked, but no controlled network-state evidence was captured. |
+
+Current physical devices: iPhone 15 Pro Max, iOS **27.0.1 (24A446)**; iPhone 16, iOS **26.2 (23C55)**. Host remains M3 Pro / macOS 26.6.2, Xcode 26.1.1 / iOS and macOS 26.1 SDKs. Original phone bundle `org.relay.prototype.ios` was signed using development team 3TUBL56UTY; release bundle `com.nikilthalapaneni.relay` used enrolled team U4G9LV39GM. No data migration between these separate installations is claimed.
+
+The owned debug phones were prepared as Requester-A (15 Pro Max) and Dispatcher-A (16) using existing MFA-authenticated sessions verified against `/v1/me`. One-use files were consumed and deleted, and both cached authorized shelter directories. The importer is DEBUG-only; the release binary was checked to exclude its filename. Normal native password/MFA sign-in was separately exercised on Mac; long-duration native Keychain refresh and account-switch race handling need further verification.
+
+The current API and worker run on this Mac with actual Cognito, DynamoDB, S3, Transcribe and Bedrock Nova Lite. Internet remained available. Public inbox reads after the bounded batch-read update returned 19 items in **0.449 s and 0.478 s**, versus an earlier single **7.77 s** observation. These are three individual snapshots, not a load benchmark or wireless metric. [Read evidence](evidence/build13/public-inbox-read.json). The API was restarted alone; no parallel old worker or old API remains.
+
+Native preview `c725d1b2-efd8-4385-85cc-e11de4c2767d` used real Bedrock, then was reused when sent without a second analysis. Native coordinator reserve operation `2115b0f0-4e5a-4275-95f8-daf4480e4804` and release `e151dd25-933e-48d5-97ab-2d9655d39e5f` each appear once in the ledger. Final synthetic water stock at 08:52 UTC was on_hand=20, reserved=0, available=20, revision=6. No physical handover was claimed. Counters then showed **19/30 analysis slots and 4/5 audio allocations**; one audio allocation remained. New tests may change these values.
+
+Remaining boundaries: the cloud composer waits for its origin device to regain internet; authenticated carrier-to-cloud ingestion and encrypted location/reply relay are pending. The existing P2P engine remains plaintext and foreground-only. The Mac must remain online/awake for cloud hosting; permanent AWS deployment still needs the organizer role. No measured radio range, noisy-ASR quality, physical resilience, background mesh or autonomous dispatch claim is made.
+
+## Historical initial environment and access
+
+The table below records the first session before physical phones and signing were available. It is superseded by the current release results above.
+
 
 | Item | Observed result |
 |---|---|

@@ -1,0 +1,23 @@
+{
+  "authentication" : "Fixture tokens",
+  "available_after_reserve" : 18,
+  "durable_outbox" : "PASS",
+  "fulfillment_replay" : "PASS",
+  "interpretation_id" : "6f510f7a-76f4-4abd-8e6a-b306fbe18643",
+  "location_round_trip" : "PASS: synthetic0,0",
+  "mode" : "local-test",
+  "native_UI" : "NOT TESTED",
+  "on_hand_after_fulfill" : 18,
+  "physical_wireless" : "NOT TESTED",
+  "preview_before_send" : "PASS",
+  "preview_reused_on_send" : "PASS",
+  "request_id" : "db2c137a-5c52-48cd-a6e9-b9a18cddbb2d",
+  "request_replay" : "PASS",
+  "requester_status" : "completed",
+  "reservation_replay" : "PASS",
+  "status" : "PASS",
+  "stock_before_reservation" : 20,
+  "synthetic_consumption_returned" : 2,
+  "synthetic_stock_added" : 20,
+  "transcription_id" : "e84660e3-d5ab-4686-b2c0-8f2f4856df3e"
+}

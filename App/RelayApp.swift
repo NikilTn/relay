@@ -92,6 +92,14 @@ final class RelayModel: ObservableObject {
             }
         } catch { report(error) }
     }
+    func setNearby(active: Bool) {
+        queue.async { [weak self] in
+            guard let self, let transport = self.transport else { return }
+            if active && !transport.running { transport.start() }
+            else if !active && transport.running { transport.stop() }
+            self.refresh()
+        }
+    }
     func configure() {
         let role = role, forceRoute = forceRoute
         queue.async { [weak self] in
@@ -336,18 +344,19 @@ struct ContentView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            NavigationStack {
-                HelpHomeView(model: model, openChat: openChat) { id in
-                    selectedTab = 4; requestPath = [id]
-                } chooseShelter: { selectedTab = 5 }
-            }.tabItem { Label("Help", systemImage: "hands.sparkles.fill") }.tag(3)
-            NavigationStack(path: $requestPath) {
-                HelpRequestsView(model: model)
-                    .navigationDestination(for: String.self) { id in HelpRequestDetail(model: model, requestID: id) }
-            }.tabItem { Label("Requests", systemImage: "tray.full.fill") }.tag(4)
-            NavigationStack { ShelterDirectoryView(model: model) { id in
-                model.helpDraft.shelterID = id; model.persistHelpDraft(); selectedTab = 3
-            } }.tabItem { Label("Shelters", systemImage: "house.fill") }.tag(5)
+            if cloud.isDispatcher {
+                NavigationStack { WorkflowRequestsView(model: model, staff: true) }
+                    .tabItem { Label("Inbox", systemImage: "tray.full.fill") }.tag(3)
+                NavigationStack { InventoryView(model: model) }
+                    .tabItem { Label("Inventory", systemImage: "shippingbox.fill") }.tag(4)
+            } else {
+                NavigationStack { PublicHelpView(model: model) { id in selectedTab = 4; requestPath = [id] } }
+                    .tabItem { Label("Help", systemImage: "hands.sparkles.fill") }.tag(3)
+                NavigationStack(path: $requestPath) {
+                    WorkflowRequestsView(model: model, staff: false)
+                        .navigationDestination(for: String.self) { id in WorkflowRequestDetail(id: id) }
+                }.tabItem { Label("Requests", systemImage: "tray.full.fill") }.tag(4)
+            }
             NavigationStack(path: $chatPath) {
                 VStack(spacing: 0) {
                     HStack(alignment: .center) {
@@ -391,10 +400,10 @@ struct ContentView: View {
                         ConversationView(model: model, peerID: peerID) { choosingPeer = true }
                     }
             }.tabItem { Label("Messages", systemImage: "bubble.left.and.bubble.right.fill") }.tag(0)
-            NavigationStack { CloudView(model: model) }.tabItem { Label("Cloud", systemImage: "cloud.fill") }.tag(6)
         }.tint(RelayTheme.accent)
             .environmentObject(cloud)
-        .task(id: model.ready) { if model.ready { await cloud.attach(model) } }
+        .task(id: model.ready) { if model.ready { model.setNearby(active: true); Task { await cloud.attach(model) } } }
+        .onChange(of: cloud.profile?.role) { _, _ in selectedTab = 3; requestPath = [] }
         .sheet(isPresented: $choosingPeer, onDismiss: {
                 if let id = pendingPeer { pendingPeer = nil; openChat(id) }
             }) {
@@ -404,6 +413,8 @@ struct ContentView: View {
                 Button("OK") { model.error = "" }
             } message: { Text(model.error) }
             .onChange(of: scenePhase) { _, phase in
+                if phase == .active { model.setNearby(active: true) }
+                else if phase == .background { model.setNearby(active: false) }
                 #if os(iOS)
                 UIApplication.shared.isIdleTimerDisabled = phase == .active
                 #endif

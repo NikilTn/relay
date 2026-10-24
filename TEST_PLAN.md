@@ -1,5 +1,9 @@
 # RELAY physical acceptance plan
 
+**Current cloud/voice/location/coordinator-inventory procedure:** [MOBILE_TEST.md](MOBILE_TEST.md).
+Use the current role-specific interface. The older Cloud tab references below are
+historical; engineering controls now live in Settings → Developer tools.
+
 For build 9's separate internet/cloud flow, follow [DEMO_HOSTING.md](DEMO_HOSTING.md).
 Cloudflare hosting and AWS results do not satisfy any physical offline criterion
 below. Preserve separate evidence for native login, transcript review, request

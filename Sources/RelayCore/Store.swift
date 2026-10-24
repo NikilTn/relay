@@ -294,6 +294,29 @@ extension RelayStore {
             try CloudCodec.decode(CloudQueueRecord.self, Data($0[0]!.utf8))
         }
     }
+    public func saveRequestDraft(_ draft: RequestDraft, scope: String) throws {
+        guard !(try cloudRecords(scope: scope)).contains(where: { $0.id == draft.id }) else { return }
+        let data = try CloudCodec.encode(draft)
+        guard data.count < 32_000 else { throw RelayError.invalid("Draft too large") }
+        try setSetting("request_compose:" + scope, String(decoding: data, as: UTF8.self))
+    }
+    public func requestDraft(scope: String) throws -> RequestDraft {
+        guard let text = try setting("request_compose:" + scope) else { return RequestDraft() }
+        return try CloudCodec.decode(RequestDraft.self, Data(text.utf8))
+    }
+    public func submitCloudDraft(_ draft: RequestDraft, scope: String, shelter: CloudShelter, now: Date = Date()) throws -> CloudQueueRecord {
+        try transaction {
+            if let existing = try cloudRecords(scope: scope).first(where: { $0.id == draft.id }) {
+                let replay = try CloudSubmission(draft: draft, shelter: shelter, deviceID: deviceID, now: existing.submission.created_at)
+                guard replay == existing.submission else { throw RelayError.invalid("Request ID content conflict") }
+                return existing
+            }
+            let record = CloudQueueRecord(scope: scope, submission: try CloudSubmission(draft: draft, shelter: shelter, deviceID: deviceID, now: now))
+            try saveCloudRecord(record)
+            if try requestDraft(scope: scope).id == draft.id { try execute("DELETE FROM metadata WHERE key=?", ["request_compose:" + scope]) }
+            return record
+        }
+    }
     public func saveCloudRecord(_ record: CloudQueueRecord) throws {
         guard record.scope.count == 64, record.scope.allSatisfy({ $0.isHexDigit }), UUID(uuidString: record.id) != nil else { throw RelayError.invalid("Invalid cloud queue key") }
         let key = "cloud_record:" + record.scope + ":" + record.id

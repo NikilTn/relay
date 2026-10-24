@@ -35,6 +35,24 @@ public struct CloudSubmission: Codable, Equatable {
     public let created_at: Date
     public let expires_at: Date
     public var revision = 1
+    public var location: RequestLocation?
+    public var structured_fields: RequestFields?
+    public var interpretation_id: String?
+    public init(draft: RequestDraft, shelter: CloudShelter, deviceID: String, now: Date = Date()) throws {
+        guard UUID(uuidString: draft.id) != nil, UUID(uuidString: deviceID) != nil,
+              draft.shelterID == shelter.shelter_id, !draft.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              draft.text.count <= 4096 else { throw RelayError.invalid("Choose a shelter and describe your request.") }
+        try draft.location?.validate()
+        operation_id = draft.id; request_id = draft.id; incident_id = shelter.incident_id
+        destination_shelter_id = shelter.shelter_id; origin_device_id = deviceID
+        original_text = draft.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        transcription_id = draft.transcriptionID; input_mode = draft.transcriptionID == nil ? "text" : "reviewed_transcript"
+        created_at = WireCodec.second(now); expires_at = created_at.addingTimeInterval(86400)
+        location = draft.location; structured_fields = try draft.fields()
+        let matchesPreview = draft.interpretationID != nil && draft.interpretationText == original_text && draft.interpretationShelter == shelter.shelter_id && draft.interpretationTranscription == draft.transcriptionID
+        guard !matchesPreview || draft.interpretationReady == true else { throw RelayError.invalid("Finish the AI preview before sending. Retry Prepare structured request to resume.") }
+        interpretation_id = draft.interpretationText == original_text && draft.interpretationShelter == shelter.shelter_id && draft.interpretationTranscription == draft.transcriptionID ? draft.interpretationID : nil
+    }
     public init(message: RelayMessage, binding: CloudBinding, localDeviceID: String,
                 transcriptionID: String? = nil) throws {
         guard message.originID == localDeviceID else { throw RelayError.invalid("Only your own requests can be uploaded with your account. Carrier uploads need separate sender verification.") }
@@ -109,6 +127,8 @@ public struct CloudQueueRecord: Codable, Identifiable {
     public var result: CloudResult?
     public var history: CloudHistory?
     public var pendingEvent: CloudEventCommand?
+    public var pendingInventory: InventoryCommand?
+    public var reservation: RequestReservation?
     public var id: String { submission.request_id }
     public init(scope: String, submission: CloudSubmission) { self.scope = scope; self.submission = submission }
     public mutating func failed(_ message: String, retryable: Bool, now: Date = Date()) {

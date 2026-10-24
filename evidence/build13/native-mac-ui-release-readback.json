@@ -1,0 +1,154 @@
+{
+  "started_at": "2026-10-24T08:52:41.776586+00:00",
+  "account": "928489693154",
+  "region": "us-east-1",
+  "sts_request_id": "b26ba0dc-cc1b-4bf0-8d42-ea52e0c05091",
+  "verification": "Known native Mac UI request, independent strongly consistent AWS reads; UI actions reported by native task",
+  "new_ai_calls": 0,
+  "new_transcription_jobs": 0,
+  "runtime_changes": false,
+  "data_mutations": 0,
+  "request": {
+    "request_id": "c24d0173-8d0a-41bf-81f4-63a887d243bc",
+    "cloud_state": "accepted",
+    "analysis_state": "ready_for_review",
+    "input_mode": "text",
+    "destination_shelter_id": "shelter-a",
+    "location_attached": false,
+    "landmark_attached": true,
+    "structured_item": "water_packs",
+    "structured_quantity": 2,
+    "structured_unit": "pack",
+    "same_preview_result": true,
+    "result": {
+      "status": "ready_for_review",
+      "proposal": {
+        "item_id": "water_packs",
+        "quantity": 2,
+        "unit": "pack",
+        "shelter_id": "shelter-a",
+        "negated": false,
+        "missing_fields": [],
+        "summary": "Shelter A needs 2 water packs."
+      },
+      "review_reasons": [],
+      "allocation_authorized": false
+    },
+    "provider_evidence": {
+      "provider": "aws",
+      "model_id": "amazon.nova-lite-v1:0",
+      "request_id": "65811fa7-8095-404d-85e6-2ca50638eaff",
+      "usage": {
+        "inputTokens": 491,
+        "outputTokens": 48,
+        "totalTokens": 539
+      },
+      "stop_reason": "end_turn"
+    },
+    "ddb_request_id": "QB08CB0OT3PGDL7CTS4FOEA41RVV4KQNSO5AEMVJF66Q9ASUAAJG"
+  },
+  "preview": {
+    "interpretation_id": "c725d1b2-efd8-4385-85cc-e11de4c2767d",
+    "status": "ready_for_review",
+    "bound_request_id": "c24d0173-8d0a-41bf-81f4-63a887d243bc",
+    "analysis_attempts": 1,
+    "ddb_request_id": "1INEC8KNPIG8D3L2H07LS1LSO7VV4KQNSO5AEMVJF66Q9ASUAAJG"
+  },
+  "history": {
+    "exists": true,
+    "ddb_request_id": "TN9Q1Q0J67Q7V9PFGPK5ODDE6RVV4KQNSO5AEMVJF66Q9ASUAAJG",
+    "revision": 2,
+    "status": "rejected",
+    "resource_allocation_verified": false,
+    "physical_delivery_verified": false,
+    "events": [
+      {
+        "event_id": "2115b0f0-4e5a-4275-95f8-daf4480e4804",
+        "revision": 1,
+        "author_role": "dispatcher",
+        "status": "accepted",
+        "created_at": "2026-10-24T08:51:10.865352+00:00"
+      },
+      {
+        "event_id": "e151dd25-933e-48d5-97ab-2d9655d39e5f",
+        "revision": 2,
+        "author_role": "dispatcher",
+        "status": "rejected",
+        "created_at": "2026-10-24T08:52:04.781419+00:00"
+      }
+    ]
+  },
+  "reservation": {
+    "value": {
+      "item_id": "water_packs",
+      "quantity": 2,
+      "unit": "pack",
+      "status": "released"
+    },
+    "ddb_request_id": "J6FO44QGOO6U7LBJB7PPHUQ7CFVV4KQNSO5AEMVJF66Q9ASUAAJG"
+  },
+  "inventory": {
+    "item_id": "water_packs",
+    "unit": "pack",
+    "on_hand": 20,
+    "reserved": 0,
+    "revision": 6,
+    "available": 20,
+    "ddb_request_id": "GVDH1FM23IF2662GCQ8UIEPU57VV4KQNSO5AEMVJF66Q9ASUAAJG"
+  },
+  "counters": {
+    "requests": {
+      "count": 19,
+      "ddb_request_id": "J4MHQ6E16VEPHH3IKQPBKH73LVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+    },
+    "transcriptions": {
+      "count": 4,
+      "ddb_request_id": "CENU558R3DPE56UKFNGM0T4JJ3VV4KQNSO5AEMVJF66Q9ASUAAJG"
+    }
+  },
+  "ledger": [
+    {
+      "operation_id": "2115b0f0-4e5a-4275-95f8-daf4480e4804",
+      "action": "reserve",
+      "request_id": "c24d0173-8d0a-41bf-81f4-63a887d243bc",
+      "before": {
+        "item_id": "water_packs",
+        "unit": "pack",
+        "on_hand": 20,
+        "reserved": 0,
+        "revision": 4
+      },
+      "after": {
+        "item_id": "water_packs",
+        "unit": "pack",
+        "on_hand": 20,
+        "reserved": 2,
+        "revision": 5
+      },
+      "created_at": "2026-10-24T08:51:10.865414+00:00"
+    },
+    {
+      "operation_id": "e151dd25-933e-48d5-97ab-2d9655d39e5f",
+      "action": "release",
+      "request_id": "c24d0173-8d0a-41bf-81f4-63a887d243bc",
+      "before": {
+        "item_id": "water_packs",
+        "unit": "pack",
+        "on_hand": 20,
+        "reserved": 2,
+        "revision": 5
+      },
+      "after": {
+        "item_id": "water_packs",
+        "unit": "pack",
+        "on_hand": 20,
+        "reserved": 0,
+        "revision": 6
+      },
+      "created_at": "2026-10-24T08:52:04.781461+00:00"
+    }
+  ],
+  "release_check": "PASS",
+  "finished_at": "2026-10-24T08:52:42.767395+00:00",
+  "status": "PASS"
+}

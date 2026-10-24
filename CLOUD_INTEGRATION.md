@@ -1,121 +1,86 @@
-# Native cloud integration — build 9
+# Native cloud integration — build 13
 
-Build 8 added the native cloud client and request conversations. Build 9 bundles
-the temporary HTTPS endpoint in [DEMO_HOSTING.md](DEMO_HOSTING.md), forwarding to
-the AWS-mode API on this Mac at `http://127.0.0.1:8788`. Public authenticated reads
-and authorization rejection pass. This is Mac hosting, not Lambda deployment.
-The app refuses HTTP endpoints and never sends AWS credentials. The organizer
-role/PassRole blocker still applies to permanent AWS hosting.
+The native app uses one backend contract with server-authorized requester and
+coordinator workspaces. Help is the default requester screen; coordinator accounts
+open Inbox and Inventory. Settings holds account and engineering tools. The same
+SwiftUI/core sources build for iOS and macOS.
 
-## Implemented
+## Request flow
 
-- Cloud tab: Cognito authorization code + PKCE/state validation with
-  ASWebAuthenticationSession, Keychain token storage/refresh, server-authoritative
-  profile, authorized shelter directory and explicit local-to-cloud shelter links.
-- Help review: optional **Also queue for cloud** when signed in and the destination
-  is linked. The immutable request and cloud outbox intent commit in one SQLite
-  transaction. Existing local requests can be explicitly queued from their detail.
-- Outbox scopes include API URL and account subject. Persisted IDs/content survive
-  retries and restart; timeout never implies acceptance. Cloud acceptance, analysis,
-  destination receipt and human progress remain separate. Cached account/directory
-  data allow previously configured requests to queue while offline. Reauthorization
-  and membership changes are still enforced by the backend when reconnecting.
-- Cloud inbox: own requests or a dispatcher-authorized shelter inbox, validated
-  Bedrock proposal and review reasons, request conversation, reported progress and
-  cancellation. Commands retain operation IDs; revision conflicts require refresh.
-- Backend `/v1/me`, request `/history` and `/events`. Server checks ownership,
-  shelter membership, role, status transitions, revision and duplicate commands.
-  Histories are bounded to 100 events. "Completed" is a human report, not an
-  inventory reservation or independently verified resource delivery.
-- Nearby request threads: replies/progress use durable addressed envelopes through
-  the existing relay. They stay out of personal chats. These are explicitly
-  device-reported/unverified updates, separate from authenticated cloud history.
-- Voice: user-triggered microphone permission, mono PCM16 WAV at 16 kHz (maximum
-  60 seconds), private upload, resumable transcription IDs, editable transcript and
-  explicit **Use reviewed text in Help**. Recording never submits a request.
-  Recording/job reference stays on device for retry. Returned S3 grants never
-  receive the API bearer token. Raw audio is not forwarded by the P2P text engine.
-- Build 9 also imports mono PCM16 WAV at 8/16 kHz, up to 60 seconds/2 MiB,
-  through the system file picker, copying it into app storage before upload.
-- Clear Done controls for new text fields, readable cloud errors, request IDs and
-  retry state. The existing messages, shelters, drafts and receipts are retained.
+1. Sign in with the existing Cognito app account, password and authenticator code.
+   Tokens are held in Keychain and refreshed with the public app client; AWS IAM
+   credentials never enter the app. Roles come from `/v1/me`, not a UI selector.
+2. Choose a shelter from the authorized directory. Speak or type a synthetic
+   request. Voice records mono PCM16 WAV at 16 kHz, at most 60 seconds/2 MiB;
+   supported 8/16 kHz WAV files can also be imported.
+3. Transcribe through AWS, inspect/correct the transcript, then prepare editable
+   structured fields with Bedrock. A preview never creates a shelter request or
+   moves stock. People/quantity remain unknown when not reliably supplied.
+4. Optionally attach one current location snapshot, including accuracy, precision
+   and capture time. Permission is requested on demand. Approximate location,
+   denial, removed location and landmark-only input are supported. Coordinates
+   stay out of model input and the current plaintext nearby transport.
+5. Review and Send. The same immutable request UUID is durably queued locally.
+   Sending a matching preview reuses its result rather than running analysis again.
+6. The coordinator reviews and reserves stock, replies, records handover or releases
+   the reservation. Each command retains a durable operation ID for safe retries.
 
-## Configuration
+Drafts, outbox and pending commands are scoped to account/endpoint and persisted
+in SQLite. Creation/retries do not depend on keeping an HTTP connection alive.
+Existing device identities, nearby messages, shelters and receipt state are retained.
+Foreground networking automatically discovers nearby peers. Background/terminated
+encounters remain unsupported.
 
-1. For the current temporary demo use [DEMO_HOSTING.md](DEMO_HOSTING.md). For
-   permanent AWS hosting, the organizer provisions the dedicated role and scoped PassRole from
-   cloud/docs/ORGANIZER_REQUEST.md. Deploy the tested integration commit, not the
-   older backend PR snapshot. Current API/worker packaging and deployment files are
-   in cloud/infra and cloud/scripts. Validate actual HTTPS/auth/worker behavior.
-2. Set `RELAY_CLOUD_API_URL=https://...` while generating the Xcode project, then
-   archive a new unused build number. For engineering testing, enter that URL in
-   Cloud on an existing build. URLs containing credentials/query/fragment or HTTP
-   are refused. Existing installed configuration overrides the bundled default.
-3. Sign in with an enrolled Cognito account, including its MFA challenge. The
-   workshop AWS console login and Apple/TestFlight account are not this app login.
-   Self sign-up is disabled; no shared password/token is embedded in the app.
-4. Cloud → link a saved local shelter to an authorized cloud inbox. The local
-   shelter's device address and existing messages remain unchanged.
-5. Help → Review → enable Also queue for cloud → Save. Requests → request shows
-   nearby delivery; Cloud → request shows cloud acceptance, AI proposal and replies.
-6. Dispatcher sign-in → Cloud → choose authorized shelter → Load shelter requests.
-   Reply or move new → accepted → in_progress → completed; requester can cancel
-   before a terminal state. Confirm the requester sees the same durable history.
-7. Cloud → Record a request → Record/Stop → Transcribe → correct the text → Use
-   reviewed text in Help. Finish shelter/quantity/location and explicitly submit.
+## Inventory semantics
 
-## Verification and boundaries
+Available = on hand − reserved. Approval reserves stock without changing on hand.
+Handover deducts on hand and clears the reservation. Release or requester cancellation
+returns availability. Stock, reservation, request history and audit entries commit
+atomically with revision checks. Replaying an operation cannot duplicate a stock
+movement; concurrent oversubscription and cancel-versus-handover are tested.
 
-43 Swift tests and 35 backend tests pass. The actual Swift URLSession client passed
-fixture HTTP and real Cognito/DynamoDB/Bedrock/S3/Transcribe checks on the Mac through loopback and public HTTPS:
-text, lost-response replay, duplicate progress commands, WAV transcription, explicit
-corrected-transcript submission and independent DynamoDB readback. See TEST_RESULTS.
-This uses the same DTOs/HTTP client as the app but **does not test native browser
-PKCE, microphone capture, Keychain refresh, or the complete phone UI flow**.
+The model proposes fields; it never authorizes an allocation. A recorded handover
+is a coordinator assertion and does not independently prove physical delivery.
+Supported demo stock is water packs, food packs and blankets. Manual stock adjustments
+retain an operation ID, reason and revision; use synthetic quantities only.
 
-Native Mac UI checks cover endpoint rejection, local reply composition, progress,
-queued state, reusable composer and Done. Both physical iPhones installed/launched
-build 8 and retained all previous data. Physical no-router tests remain unverified.
+## Hosting and credentials
 
-Remaining limits:
+The bundled HTTPS URL points through Cloudflare to the API on this Mac. The API
+and a single worker use real Cognito, S3, Transcribe, Bedrock Nova Lite and DynamoDB.
+See [DEMO_HOSTING.md](DEMO_HOSTING.md) for runtime requirements. Permanent AWS
+Lambda/API Gateway deployment is still blocked on the organizer role/PassRole.
 
-- Native account login/refresh, microphone capture,
-  real phone cloud recovery, account-switch and sign-out race behavior need device
-  verification after hosting. A full hosted failure/recovery test is required.
-- Only an origin's own requests upload under its account. **A carrier cannot upload
-  somebody else's request under its own login.** Signed origin enrollment/envelopes,
-  gateway ingestion and trustworthy cloud results carried back offline are separate
-  pending work. Current P2P forwarding itself continues independently.
-- No synchronized multi-device shelter membership or automatic online shelter
-  enrollment. Directory linking is explicit, scoped to this account/endpoint.
-- No inventory reservation, responder assignment/dispatch optimization, or verified
-  fulfillment. Cloud/nearby histories are separate; no cross-transport conflict merge.
-- New local reply envelopes require build 8 at endpoints for the thread UI; older
-  carriers preserve bytes but older endpoints may present them as plain chat.
-- P2P remains plaintext/unauthenticated. Sign-in secures cloud API authorization,
-  not the existing radio link or local database. Use synthetic data only.
-- Foreground encounters, manual Connect and no background/terminated discovery.
-  Audio retention cleanup, noisy-speech evaluation, Android and disaster-scale
-  reliability remain out of scope for this build.
+The two owned DEBUG phone installations were prepared with existing MFA-authenticated
+sessions over the trusted device connection. A bounded one-use file is imported
+into Keychain and deleted. This code is excluded from Release. TestFlight uses
+normal native account/MFA sign-in; no password, token or private configuration is
+embedded in the distributed binary. Account self-registration is disabled.
 
-## Repeatable software check
+For another endpoint, configure `RELAY_CLOUD_API_URL` when generating the project,
+then build/upload with a new number. HTTP endpoints or URLs containing credentials,
+queries or fragments are rejected. Existing saved endpoint overrides the default;
+engineering configuration is under Settings → Developer tools. Queues are scoped,
+so changing an endpoint is not an automatic migration of its old outbox.
 
-```sh
-xcrun swift test
-python3 scripts/tcp_experiment.py
-# Use the backend virtualenv; no AWS calls in this test suite.
-python -m pytest cloud/tests -q
-python cloud/scripts/bootstrap_local.py --runtime-dir /tmp/relay-fixture --port 18788
-PYTHONPATH=cloud python -m relay_backend serve --config /tmp/relay-fixture/local-config.json --port 18788
-# Separate terminal:
-PYTHONPATH=cloud python -m relay_backend worker --config /tmp/relay-fixture/local-config.json
-.build/debug/RelayCloudCheck --url http://127.0.0.1:18788 \
-  --tokens /tmp/relay-fixture/local-test-tokens.json \
-  --requester test-requester-a --dispatcher test-dispatcher-a \
-  --db /tmp/relay-swift-check.sqlite --audio cloud/fixtures/synthetic-speech.wav
-```
+## Verification and remaining work
 
-The CLI permits loopback only as an explicit control; production app HTTPS rules
-stay intact. Real mode requires `--allow-live` and an already approved bounded test
-budget. Every CLI run creates a fresh synthetic request; retries *within* a run
-replay the same immutable request. Do not mistake separate runs for outbox retries.
+49 Swift and 67 backend tests pass. Shared Swift HTTP tests cover live MFA/refresh,
+preview reuse, synthetic location, stock reserve/fulfill/replay and restored stock.
+Native Mac UI tests cover password/MFA, preview, Review/Send, approval, stock totals
+and release with independent AWS readback. Build 13 is installed and launched on both
+phones with prior stores preserved, and is Testing in the internal TestFlight group.
+See [TEST_RESULTS.md](TEST_RESULTS.md) for exact evidence and [MOBILE_TEST.md](MOBILE_TEST.md)
+for the requested phone test.
+
+Phone microphone capture, actual GPS permissions/accuracy, the full phone sequence,
+long-duration native session refresh and account-switch races need further device
+verification. The WAV picker correction compiled but was not reverified after the fix.
+Noisy-speech quality and multilingual coverage are not measured.
+
+A cloud request currently waits for its originating device to reconnect to internet.
+An authenticated carrier-to-cloud gateway, encrypted cross-transport location and
+trusted offline return replies remain pending. Existing P2P text/receipt forwarding
+continues separately, without organizational authentication or confidentiality.
+Controlled physical no-router A–E tests remain unverified. This is a prototype,
+not a production emergency service or a demonstrated disaster-resilient network.

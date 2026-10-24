@@ -1,125 +1,85 @@
 # RELAY temporary HTTPS demo
 
-As checked on 2026-10-24, the demo API is:
+Current API: **https://resumes-investigated-striking-mba.trycloudflare.com**
 
-**https://resumes-investigated-striking-mba.trycloudflare.com**
-
-This is an API, not a dispatcher website. Open RELAY's Cloud tab to use the native
-requester/dispatcher interface. Build 9 bundles this URL. If a previous endpoint
-was saved, sign out and replace the address before signing in again.
+Build 13 bundles this endpoint. It is an API, not a dispatcher website; use the
+native requester or coordinator workspace. Follow [MOBILE_TEST.md](MOBILE_TEST.md)
+for the prepared two-phone flow.
 
 ## What runs where
 
-Phone/Mac RELAY → HTTPS Cloudflare tunnel → API process on this Mac → actual AWS
-Cognito, S3, Transcribe, Bedrock Nova Lite and DynamoDB. A worker on this Mac
-processes durable AWS jobs. Cloudflare carries API traffic; it does not host the
-Python process. The existing separate offline Apple peer-to-peer engine continues
-to handle addressed text envelopes, storage acknowledgements and final receipts.
+Phone/Mac RELAY → HTTPS Cloudflare tunnel → API on this Mac → actual AWS Cognito,
+S3, Transcribe, Bedrock Nova Lite and DynamoDB. One worker on the Mac processes
+AWS-backed durable jobs. Cloudflare transports HTTPS traffic; it does not host the
+Python API or worker. The separate Apple nearby transport remains available.
 
-Lambda/API Gateway is the preferred permanent target. The required dedicated
-execution role is still absent in the workshop account. App Runner would also
-require deployment/access setup. A named Cloudflare tunnel can provide a stable
-hostname when an account/domain is configured. The current Quick Tunnel has a
-temporary hostname and no uptime guarantee; restarting it normally changes the URL.
-See [Cloudflare documentation](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/)
-and [Lambda execution roles](https://docs.aws.amazon.com/lambda/latest/dg/lambda-intro-execution-role.html).
+The API binds to `127.0.0.1:8788`. The tunnel exposes only that port, never the
+private login helper or local files. The old API on 8787 is stopped because its
+old status routes lack the new inventory checks. Do not restart that old build.
 
-## Current owner setup
+The integrated API/worker include pre-send previews, optional structured location,
+atomic inventory and durable retry handling. The API additionally uses bounded
+batch reads for its inbox. It was restarted after the 67-test backend suite passed.
+Public 19-item inbox snapshots returned in 0.449 and 0.478 seconds after that update;
+these are isolated reads, not a load benchmark. Native Mac approval/release left
+synthetic water stock at 20 on hand, 0 reserved, 20 available at 08:52 UTC.
 
-- API binds only `127.0.0.1:8788`, using AWS mode and Cognito token validation.
-- Tunnel forwards only that port. The API does not serve local files or credentials.
-- Private login helper binds a different loopback port, `127.0.0.1:8891`, for the
-  owner to sign into pre-enrolled synthetic accounts. It expires after two hours.
-  Do not expose this helper, copy credentials into source, or share it with judges.
-- Original-bundle build 9 is installed and launched on both physical phones, with
-  identities, all prior messages/receipts, and shelters preserved.
-- The first live backend source was cfcaade434114; build 9 changes the native WAV
-  importer and endpoint configuration, not the cloud request/worker logic.
-- Existing AWS worker is reused. Do not start another worker while it is running.
-- Synthetic test counters last verified: 17/30 requests and 3/5 audio jobs. The
-  caps are shared across all clients, not reset on restart. Health/read tests do
-  not create requests. These counters are not a dollar-billing statement.
+## Keep the demo available
 
-## Test on the prepared devices
+- Keep the Mac powered, awake, lid open and connected to internet. Keep the API,
+  single worker and current tunnel running. AWS workshop credentials must stay valid.
+- The current four-hour `caffeinate -i` session began around 00:20 PDT on October 24;
+  extend it before a later presentation. The API process has no uptime guarantee.
+- Keep phone internet on for the speech/AI/inventory test. The app prepares local
+  drafts/outbox when offline, but AWS processing needs internet.
+- The temporary tunnel hostname normally changes on restart. Keep this instance
+  alive through the demonstration; do not start a second tunnel unnecessarily.
+- At 08:52 UTC, shared bounds were 19/30 analysis slots and 4/5 audio allocations.
+  One audio allocation remained. Reads and same-operation retries do not create
+  new analysis. These are test caps, not dollar-spending measurements.
+- A private owner-only helper at `127.0.0.1:8891` supplies existing synthetic app
+  login details and expires automatically. It is not tunneled. Never expose it,
+  commit its private inputs, or put its credentials in presentation material.
 
-1. Keep this Mac powered, awake, lid open and online. The active four-hour
-   `caffeinate -i` session began around 00:20 PDT; extend it before judging if needed.
-   Keep the API, worker and tunnel processes running. Workshop AWS credentials
-   must remain valid. iPhones need internet for this cloud test.
-2. Open the original RELAY development app, Cloud → Sign in securely. Use the
-   private owner-only helper to sign in as Requester-A on the 15 Pro Max and
-   Dispatcher-A on the iPhone 16 or Mac, including the current MFA code. This is a
-   Cognito app account, not the AWS console or Apple account. Self-signup is disabled.
-3. On requester, link a saved local shelter to the authorized cloud shelter inbox.
-   This explicit mapping does not change the local shelter's receiving-device UUID.
-4. Help → choose that shelter → synthetic water request → Review → Also queue for
-   cloud → Save. Record the immutable UUID. Cloud should first show accepted, then
-   a reviewable AI proposal. Neither state means supplies were allocated.
-5. On dispatcher, choose the corresponding shelter → Load shelter requests. Open
-   that exact UUID, reply and progress through accepted → in progress → reported
-   completed. Requester sync should show the same history. This does not decrement
-   stock, assign a responder or independently prove delivery.
-6. For voice, Cloud → Record a request. Record a short synthetic phrase, or Import
-   WAV recording with `cloud/fixtures/synthetic-speech.wav`. Transcribe, correct
-   the text, select Use reviewed text in Help, then explicitly review and submit.
-   Expect Bedrock to extract the item/amount from the reviewed text. Recording or
-   transcription alone must not create a help request.
-7. While signed in/configured, remove internet from requester, queue a fresh
-   synthetic request, and relaunch the app. Verify the same queued UUID remains.
-   Restore internet and sync. Require one cloud request and one logical result.
-   Run this only within the shared test caps; record outcomes in TEST_RESULTS.md.
-8. Separately run physical tests A–E in TEST_PLAN.md. Cloud is unavailable with
-   internet disabled. Leave required local radios enabled and detach ordinary
-   Wi-Fi infrastructure. Cloud test success does not prove an offline radio path.
+Lambda/API Gateway remains the preferred permanent target; the dedicated execution
+role and scoped PassRole permission are still missing. See
+[ORGANIZER_REQUEST.md](cloud/docs/ORGANIZER_REQUEST.md). A named tunnel can provide
+a stable hostname when a domain/account is configured, but still needs a live host.
 
-Native login, microphone, WAV import and phone cloud UI are still awaiting operator
-verification. Do not present this procedure as a passed test until actual evidence
-is recorded.
+## Restart after a deliberate shutdown
 
-## Restart and troubleshooting
-
-Check `GET /v1/health` publicly, then a signed-in profile/read. Health alone checks
-API liveness, not AWS credentials, worker progress or model health. Expected: no
-token/invalid token receives 401 for `/v1/me`.
-
-Run from the integration checkout with a Python environment containing
-`cloud/requirements.txt`. Use the existing private AWS configuration; never use
-fixture/local-test authentication on a public tunnel:
+Use the current integration checkout and the already-installed Python environment
+containing `cloud/requirements.txt`. Keep AWS mode and Cognito authentication;
+never expose fixture authentication. Substitute the private config path locally.
 
 ```sh
 PYTHONPATH=cloud /path/to/venv/bin/python -m relay_backend serve \
   --config /private/runtime/aws-config-tunnel.private.json --port 8788
-# Only if the existing worker is stopped:
+# Only if the existing worker has stopped:
 PYTHONPATH=cloud /path/to/venv/bin/python -m relay_backend worker \
   --config /private/runtime/aws-config-tunnel.private.json
-# Only if the existing tunnel is stopped (this normally creates a new hostname):
+# Only if the existing tunnel has stopped; normally changes the hostname:
 cloudflared tunnel --url http://127.0.0.1:8788 --no-autoupdate
 caffeinate -i -t 14400
 ```
 
-For a new hostname, update a private config copy's `public_base_url`, restart the
-API with that copy, and update the app's Cloud address. Saved cloud queues are
-scoped by endpoint/account; do not assume an old-endpoint outbox is automatically
-migrated. Keep the current tunnel running through the demonstration.
+Check `/v1/health`, unauthenticated `/v1/me` rejection, then an authenticated profile
+and inbox read. Health alone does not verify AWS access, model execution or worker
+progress. Do not start duplicate workers. A new hostname requires a private config
+copy's `public_base_url` and app endpoint update; account/endpoint-scoped old queues
+are not automatically migrated.
 
-The private owner helper can be restarted separately:
+When the demonstration is finished, stop the tunnel, then this API/helper and
+keep-awake processes. Coordinate before stopping the worker. Stores persist;
+shutdown does not erase messages or cloud records.
 
-```sh
-python3 cloud/scripts/demo_login_panel.py \
-  --identities /private/runtime/demo-identities.private.json
-```
+## Presentation wording
 
-When done, stop the tunnel first, then only this demo API/helper/keep-awake
-processes. Coordinate before stopping the shared worker. Local app stores and
-AWS records persist; this procedure does not delete them.
+“Our API and worker run on this Mac behind HTTPS. Speech recognition, model
+interpretation and durable cloud storage use real AWS services. Coordinators can
+reserve and record stock handover. The Apple app also has a separate store-and-forward
+text transport.”
 
-## Honest presentation
-
-“Our prototype API and worker run on this Mac behind HTTPS. Speech recognition,
-language-model interpretation and durable cloud storage use real AWS services.
-The Apple devices also have a separate store-and-forward text transport.”
-
-No inventory transaction, autonomous dispatch, authenticated carrier-to-cloud
-gateway, offline speech recognition, Android transport or production disaster
-resilience is claimed. A carried request cannot currently be uploaded under the
-carrier's account, and cloud replies are not yet securely relayed back offline.
+Do not claim managed AWS hosting, autonomous dispatch, physical delivery verification,
+an authenticated offline-to-cloud gateway, Android compatibility, or disaster
+resilience. Cloud processing and controlled offline radio acceptance are distinct tests.

@@ -9,25 +9,53 @@ struct CloudTokens: Codable {
     var refresh: String?
     var expires: Date
     var profile: CloudProfile?
+    var refreshMethod: String?
 }
 @MainActor final class CloudAuth: NSObject, ASWebAuthenticationPresentationContextProviding {
     static let login = URL(string: "https://relay-mvp-928489693154.auth.us-east-1.amazoncognito.com")!
     static let clientID = "dfulb5lau8283nlgil7ddu36i"
     private var tokens: CloudTokens?
     private var session: ASWebAuthenticationSession?
+    private var passwordChallenge: CognitoChallenge?
+    private var challengeUsername = ""
     private var refreshTask: Task<String, Error>?
     var hasSession: Bool { tokens != nil }
     var cachedProfile: CloudProfile? { tokens?.profile }
     func rememberProfile(_ profile: CloudProfile) throws { if var value = tokens { value.profile = profile; try save(value) } }
-    private var key: [String: Any] { [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: (Bundle.main.bundleIdentifier ?? "relay") + ".cloud", kSecAttrAccount as String: "cognito-session"] }
+    private var key: [String: Any] {
+        #if os(macOS) && DEBUG
+        // Ad-hoc Mac binaries have changing code requirements. Keep each build's test session separate.
+        let service = (Bundle.main.bundleIdentifier ?? "relay") + ".cloud.native.debug." + (Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0")
+        #elseif os(macOS)
+        let service = (Bundle.main.bundleIdentifier ?? "relay") + ".cloud.native"
+        #else
+        let service = (Bundle.main.bundleIdentifier ?? "relay") + ".cloud"
+        #endif
+        return [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service, kSecAttrAccount as String: "cognito-session"]
+    }
     override init() {
         super.init()
+        #if DEBUG
+        // USB-only developer setup for owned test phones. Never compiled into distribution builds.
+        // No credentials are embedded; the one-use file is removed after import.
+        if let folder = try? FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true) {
+            let file = folder.appendingPathComponent("RELAY/developer-session.json")
+            if let data = try? Data(contentsOf: file), data.count <= 32_768,
+               let supplied = try? JSONDecoder().decode(CloudTokens.self, from: data),
+               supplied.expires > Date(), supplied.refreshMethod == "sdk", supplied.refresh != nil {
+                do { try save(supplied); try FileManager.default.removeItem(at: file) }
+                catch { tokens = nil }
+            }
+        }
+        #endif
         var query = key; query[kSecReturnData as String] = true; query[kSecMatchLimit as String] = kSecMatchLimitOne
+        query[kSecUseAuthenticationUI as String] = kSecUseAuthenticationUIFail
         var item: CFTypeRef?
         if SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess, let data = item as? Data { tokens = try? JSONDecoder().decode(CloudTokens.self, from: data) }
     }
     func signOut() {
         session?.cancel(); session = nil; refreshTask?.cancel(); refreshTask = nil
+        passwordChallenge = nil; challengeUsername = ""
         tokens = nil; SecItemDelete(key as CFDictionary)
     }
     private func save(_ value: CloudTokens) throws {
@@ -40,6 +68,23 @@ struct CloudTokens: Codable {
         } else if status != errSecSuccess { throw RelayError.invalid("Could not update secure sign-in") }
         tokens = value
     }
+    func passwordSignIn(username: String, password: String) async throws -> Bool {
+        let value = try await CognitoLogin.begin(username: username, password: password)
+        if let token = value.AuthenticationResult { try saveSDK(token); return true }
+        guard value.ChallengeName == "SOFTWARE_TOKEN_MFA" else { throw RelayError.invalid("This account needs setup by the demo organizer before signing in.") }
+        passwordChallenge = value; challengeUsername = username; return false
+    }
+    func confirmCode(_ code: String) async throws {
+        guard let challenge = passwordChallenge else { throw RelayError.invalid("Start sign-in again.") }
+        let response = try await CognitoLogin.confirm(challenge, username: challengeUsername, code: code)
+        guard let token = response.AuthenticationResult else { throw RelayError.invalid("Sign-in requires additional account setup.") }
+        try saveSDK(token); passwordChallenge = nil; challengeUsername = ""
+    }
+    private func saveSDK(_ value: CognitoSessionData) throws {
+        try save(CloudTokens(access: value.AccessToken, refresh: value.RefreshToken ?? tokens?.refresh,
+            expires: Date().addingTimeInterval(value.ExpiresIn), profile: nil, refreshMethod: "sdk"))
+    }
+    func cancelSignIn() { session?.cancel(); session = nil; passwordChallenge = nil; challengeUsername = "" }
     func signIn() async throws {
         let pkce = OAuthPKCE()
         var url = URLComponents(url: Self.login.appendingPathComponent("oauth2/authorize"), resolvingAgainstBaseURL: false)!
@@ -65,7 +110,13 @@ struct CloudTokens: Codable {
         if let task = refreshTask { return try await task.value }
         guard let refresh = tokens.refresh else { throw RelayError.invalid("Sign in again to renew your session") }
         let task = Task { @MainActor in
-            try await self.exchange(["grant_type": "refresh_token", "refresh_token": refresh])
+            if self.tokens?.refreshMethod == "sdk" {
+                let response = try await CognitoLogin.request("InitiateAuth", body: ["ClientId": Self.clientID, "AuthFlow": "REFRESH_TOKEN_AUTH", "AuthParameters": ["REFRESH_TOKEN": refresh]])
+                guard let result = response.AuthenticationResult else { throw RelayError.invalid("Please sign in again.") }
+                let profile = self.tokens?.profile
+                try self.saveSDK(result)
+                if let profile { try self.rememberProfile(profile) }
+            } else { try await self.exchange(["grant_type": "refresh_token", "refresh_token": refresh]) }
             guard let value = self.tokens else { throw RelayError.invalid("Sign in again") }; return value.access
         }
         refreshTask = task; defer { refreshTask = nil }

@@ -166,6 +166,7 @@ struct CloudRequestDetail: View {
     }
 }
 struct VoiceInputView: View {
+    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var cloud: CloudModel
     @FocusState private var editing: Bool
     @StateObject private var recorder = VoiceRecorder()
@@ -189,18 +190,18 @@ struct VoiceInputView: View {
                 Text(cloud.audioStatus).font(.subheadline)
                 if cloud.audioJob?.transcript != nil {
                     TextField("Review transcript", text: $cloud.transcript, axis: .vertical).lineLimit(5...12).textFieldStyle(.roundedBorder).focused($editing)
-                    Button("Use reviewed text in Help") { cloud.applyTranscript() }.buttonStyle(.borderedProminent)
+                    Button("Prepare request from this text") { cloud.applyTranscript(); dismiss(); Task { await cloud.previewRequest() } }.buttonStyle(.borderedProminent)
                 }
                 if !cloud.problem.isEmpty { Text(cloud.problem).foregroundStyle(.orange) }
                 Text("Recording does not submit a request. Saved recordings stay on this device; this build does not forward audio over nearby connections.").font(.caption).foregroundStyle(.secondary)
             }.padding(20).frame(maxWidth: 680).frame(maxWidth: .infinity)
         }.navigationTitle("Voice input")
-            .fileImporter(isPresented: $importingWAV, allowedContentTypes: [.wav]) { result in
+            .fileImporter(isPresented: $importingWAV, allowedContentTypes: [.audio]) { result in
                 do {
                     let source = try result.get()
                     let copy = try VoiceRecorder.importWAV(source)
                     Task { await cloud.saveRecording(url: copy) }
-                } catch { cloud.problem = error.localizedDescription }
+                } catch { if (error as NSError).code != NSUserCancelledError { cloud.problem = error.localizedDescription } }
             }
             .toolbar { ToolbarItem(placement: .primaryAction) { if editing { Button("Done") { editing = false } } } }
             .onDisappear { if recorder.recording { recorder.stop() } }
