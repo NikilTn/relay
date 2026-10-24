@@ -12,6 +12,11 @@ preserving unresolved queued-operation errors. See [morning demo](MORNING_DEMO.m
 The Mac and simulator were updated in place; physical phones were disconnected.
 Upload is not external beta approval or a phone installation.
 
+At07:10PDT, both original development phone apps were updated in place to17 and
+launched successfully, retaining their device identities/messages/receipts. Both
+now have requester setup and cached ShelterA; Mac remains the coordinator. This
+local installation is independent of TestFlight approval. See TEST_RESULTS.md.
+
 # Previous release — build16
 
 Build **0.1.0 (16)** was signed, archived and uploaded successfully at

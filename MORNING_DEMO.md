@@ -12,13 +12,13 @@ cloud features. See [hosting](cloud/docs/DEMO_HOSTING.md).
 
 1. Check Settings → Demo tools → Build17 on each app. The new TestFlight package
    was uploaded, but check its availability before assuming your friends have it.
-   Both physical phones were disconnected during the overnight work, so no new
-   physical installation or wireless acceptance is claimed. A separately signed
-   build for the original USB-installed app is ready for reconnection.
+   At07:10PDT both original development phone apps were updated to17 and launched.
+   Existing identities, messages and receipts were preserved. Physical wireless
+   acceptance is still a separate test.
 2. Use **Requester A** on the15 Pro Max, **Requester B** on the iPhone16, and
    **Coordinator A** on the Mac. These are the existing synthetic test accounts.
    Account switching happens in Settings; roles are assigned by the backend.
-   The iPhone16 was previously a coordinator, so it needs that account change.
+   The iPhone16 was switched to existing RequesterB during installation; its old coordinator history remains saved under that account.
 3. With internet available, open all three apps. On the Mac, Settings must say
    **This device receives nearby shelter requests**. Otherwise choose **Receive
    shelter requests here** for Shelter A. On each phone, select Shelter A and wait

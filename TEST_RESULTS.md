@@ -5,6 +5,29 @@ software, real AWS services and separate-encounter relay controls pass. Physical
 router-free wireless acceptance is still **NOT TESTED**. The older dated sections
 below are historical; this checkpoint supersedes their feature/release status.
 
+## Physical installation follow-up — 07:10 PDT, 24 October
+
+Both original development apps (`org.relay.prototype.ios`) were updated in place
+from15 to17. Device-reported build17 and actual launches **PASS** on both iPhone15
+ProMax and iPhone16. SQLite quick checks passed. Every pre-update message body,
+existing final receipt, device UUID and immutable cloud submission was retained:
+38 prior messages/23 cloud records on15ProMax;39 prior messages/20 cloud records
+on16. The15ProMax later held39 envelopes after normal nearby activity; this is not
+controlled offline evidence. Raw stores and keys remain outside Git.
+
+The15ProMax keeps RequesterA. The16 was prepared as existing RequesterB for the
+user's two-requester/Mac-shelter demo; its former coordinator history remains
+stored in its earlier account scope. A refreshed session was verified against the
+API, imported through the DEBUG-only one-use file into Keychain, and the file's
+removal was confirmed. Both phones cached ShelterA and its enrolled receiving keys.
+No credentials were embedded in the build or committed.
+
+[15ProMax preservation](docs/evidence/phone-build17-20261024/iphone15promax.json),
+[iPhone16 preservation](docs/evidence/phone-build17-20261024/iphone16.json),
+[cloud preflight](docs/evidence/phone-build17-20261024/cloud-preflight.json).
+Phone microphone/GPS, visual acceptance and controlled no-router A–E tests remain
+**NOT TESTED** by this installation step. Cloud counters remained24/100 and8/20.
+
 ## Final overnight checkpoint — builds16/17
 
 - **Builds PASS:** macOS, iOS Simulator, signed iOS archive and Apple upload.
