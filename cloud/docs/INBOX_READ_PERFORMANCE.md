@@ -13,8 +13,14 @@ If BatchGetItem is denied, the store remembers that denial for its lifetime and 
 - **67 backend tests passed**, 5.24 seconds, one existing Starlette TestClient deprecation warning.
 - New SDK-stub cases cover unordered/partial/missing responses, duplicate keys, the 100-key cap, empty input, denial fallback and remembered denial, exhausted unprocessed keys, service errors and namespace checks.
 - The API-level fixture case covers pagination across dangling/foreign references, scoped cursors, stable order and reservation projection while refusing per-record GetItem calls.
-- **Read-only AWS check at 2026-10-24T08:46:13.585803Z:** account928489693154/us-east-1, the same synthetic requester-A membership returned 19 items using **one Query + one BatchGetItem**, no GetItem calls, in **0.597 seconds**. BatchGetItem was allowed.
+- **Read-only AWS check at 2026-10-24T08:46:13.585803Z:** account 928489693154/us-east-1, the same synthetic requester-A membership returned 19 items using **one Query + one BatchGetItem**, no GetItem calls, in **0.597 seconds**. BatchGetItem was allowed.
 
 The AWS timing is one direct backend-service read using existing server-side membership, **not a measured public HTTP/Cognito response time** and not a latency distribution. It is not directly comparable to the native task's 7.77-second full HTTP measurement. No AWS data, permissions or running processes were changed; no model or transcription call was made. The native task must cherry-pick the candidate and coordinate rollout before measuring the public endpoint again. API/model serialization is unchanged; no OpenAPI regeneration is needed.
 
 Evidence: `evidence/inbox-batch-readonly-benchmark.json` and `evidence/inbox-batch-fixture-tests.json`. Focused-request polling and avoiding per-row history/inventory fan-out remain native-client responsibilities.
+
+## Coordinated public rollout
+
+The native task cherry-picked this change as `ad565d429593a51c576522f5c956ed4659962999`, reran all 67 backend tests, and restarted only the API. It reports authenticated public-HTTPS reads of 19 items at **0.449 seconds and 0.478 seconds**, with health 200. The worker remained running. These timings are native-task evidence and are two samples, not a latency distribution.
+
+Independent checks at **2026-10-24T08:56:27.768011Z** confirmed public health 200/aws/dynamodb, API listener PID 61517, and all 14 backend files matching the integrated checkout on disk. This audit did not make another authenticated timing request or infer an in-memory source hash. No new IAM grant, schema mutation, AI/audio call or runtime change was made by this task. See `evidence/inbox-batch-rollout-readonly.json`.

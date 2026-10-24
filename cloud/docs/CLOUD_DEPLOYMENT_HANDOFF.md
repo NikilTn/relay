@@ -1,6 +1,6 @@
 # CLOUD_DEPLOYMENT_HANDOFF — RELAY cloud and native UI
 
-Updated **2026-10-24T08:52:42.767395Z**. **The temporary HTTPS API has passed a real pre-send AI preview → explicit Send → coordinator inventory reservation → fulfillment flow. Managed Lambda/API Gateway hosting remains blocked.** These are separate facts.
+Updated **2026-10-24T08:56:27.768011Z**. **The temporary HTTPS API has passed a real pre-send AI preview → explicit Send → coordinator inventory reservation → fulfillment flow. Managed Lambda/API Gateway hosting remains blocked.** These are separate facts.
 
 ## Endpoint, account and source
 
@@ -11,8 +11,10 @@ Updated **2026-10-24T08:52:42.767395Z**. **The temporary HTTPS API has passed a 
 | AWS account / region | 928489693154 / us-east-1; STS verified 08:12 UTC, request `3710b067-3b50-45e7-a746-4b5e79a40f66` |
 | Participant identity | WSParticipantRole/Participant, verified during the deployment audit |
 | Backend feature commit | `62dcf9035bc0bf02054debe53b08a478e4bf379e` on feature/cloud-inventory-preview |
-| Native integrated backend commit | `fe7b88dad016c43066a6f272f2a0f6ae94855667` on feature/cloud-integration |
-| Source comparison | PASS — all 14 backend modules match the integrated checkout on disk; no in-memory source attestation endpoint exists |
+| Native integrated feature base | `fe7b88dad016c43066a6f272f2a0f6ae94855667` on feature/cloud-integration |
+| Current API source after read optimization | `ad565d429593a51c576522f5c956ed4659962999`, cherry-pick of `dc7ffbf90fc3864ee68121d28b2e6f37d297885b`; native task restarted API only |
+| Existing worker | PID 54245 retained from the feature rollout; no new task/schema changes required by read optimization |
+| Source comparison | PASS at 08:56 UTC — all 14 current backend modules match the integrated checkout on disk; no in-memory source attestation endpoint exists |
 | Managed AWS API base / deployed Lambda source revision | None: no managed API/functions exist in the latest hosting inventory |
 
 At **08:11:32 UTC**, public health returned aws/dynamodb and the public OpenAPI exposed the new interpretation/inventory routes. The old 8787 API listener was absent; new API PID 54243 and AWS worker PID 54245 were running. PID 53866 was an isolated fixture worker, not a second AWS consumer. The native task coordinated replacement of the old API/worker; this AWS audit did not restart anything. At **08:12:06 UTC**, the durable work queue was empty and the real preview/result had completed.
@@ -55,10 +57,10 @@ The native task reports an actual app-form Cognito password/MFA sign-in, a pre-s
 | Native UI request stored | PASS — `c24d0173-8d0a-41bf-81f4-63a887d243bc`, accepted / ready_for_review, text input, shelter-a |
 | Linked pre-send interpretation | PASS — `c725d1b2-efd8-4385-85cc-e11de4c2767d`, one analysis attempt, bound to that request |
 | Real model result reused on Send | PASS — identical preview/request result and provider evidence; Bedrock request `65811fa7-8095-404d-85e6-2ca50638eaff`, 491 input / 48 output tokens |
-| Confirmed structured fields | PASS — water_packs, quantity2, unitpack; landmark present |
+| Confirmed structured fields | PASS — water_packs, quantity 2, unit pack; landmark present |
 | GPS/location attachment | NONE — matches the native task's report; no physical GPS success claimed |
 | Coordinator action on this UI request | PENDING at this snapshot — no history or reservation yet |
-| Inventory at acceptance | 20 on hand, 0 reserved, 20 available, revision4 |
+| Inventory at acceptance | 20 on hand, 0 reserved, 20 available, revision 4 |
 | Shared counters at 08:30 UTC | 19/30 analysis slots, 3/5 recordings; 11 analysis slots and two recordings remain |
 
 This is a separate UI-originated request from the earlier CLI inventory test. Its pending coordinator action must not be inferred from the CLI request's completed reservation. The native task owns the forthcoming coordinator UI, phone, microphone and GPS checks. This readback added no AI/audio call, stock mutation or runtime change. Evidence: `evidence/native-mac-ui-request-readback.json`.
@@ -69,10 +71,10 @@ The native task reported visible approval and then Release reservation in the Ma
 
 | Action/state | Durable result |
 |---|---|
-| Reserve at 08:51:10 UTC | Operation `2115b0f0-4e5a-4275-95f8-daf4480e4804`; on_hand20, reserved2, available18, inventory revision5 |
-| Release at 08:52:04 UTC | Operation `e151dd25-933e-48d5-97ab-2d9655d39e5f`; on_hand20, reserved0, available20, inventory revision6 |
-| Reservation | released, water_packs quantity2 |
-| History | revision2; exactly one accepted event and one rejected event (the documented release status) |
+| Reserve at 08:51:10 UTC | Operation `2115b0f0-4e5a-4275-95f8-daf4480e4804`; on_hand 20, reserved 2, available 18, inventory revision 5 |
+| Release at 08:52:04 UTC | Operation `e151dd25-933e-48d5-97ab-2d9655d39e5f`; on_hand 20, reserved 0, available 20, inventory revision 6 |
+| Reservation | released, water_packs quantity 2 |
+| History | revision 2; exactly one accepted event and one rejected event (the documented release status) |
 | Verification flags | resource_allocation_verified:false after release; physical_delivery_verified:false |
 | Preview/model | Same bound preview and saved Bedrock result; no new model call for coordinator actions |
 | Current budget counters | **19/30 analysis slots and 4/5 audio allocations**; 11 analysis slots and one audio allocation remain |
@@ -94,6 +96,16 @@ Existing health, profile, authorized shelters, request submission/read/history, 
 Exact schema, role rules, nullable fields, idempotency/error semantics and examples: [PREVIEW_INVENTORY_CONTRACT.md](PREVIEW_INVENTORY_CONTRACT.md). Generated OpenAPI is in cloud/openapi/relay-v1.json and .yaml. Native App/Swift changes remain owned by the native task.
 
 **Fixture verification:** 60 backend tests pass, including independent-connection overbooking, cancellation/fulfillment races, one-preview/two-request races, response loss/restart, backward digests/event replay, audio ownership and location bounds. Native reports 49 Swift tests and its complete fixture HTTP flow passing. These are distinct from live AWS and physical-device evidence.
+
+## Inbox performance rollout — PASS
+
+The native task cherry-picked the read optimization as **ad565d4**, reran **67 backend tests**, and restarted only the API from that source. It reports two authenticated public HTTPS reads of the same 19-item inbox at **0.449 seconds and 0.478 seconds**, versus its earlier single 7.77-second observation. These are two measured requests, not a performance distribution or a guarantee. Its native polling changes are separate from this backend optimization.
+
+The backend now performs one index Query plus one strongly consistent BatchGetItem for this page, preserving authorization, index order, cursor behavior and reservation projection. It has a bounded existing-permission fallback when batch reads are denied; no IAM grant or schema change was made. A separate read-only direct-service check had already confirmed 19 records, exactly two DynamoDB calls and batch permission in the current account.
+
+At **08:56:27 UTC**, this task independently confirmed public health 200/aws/dynamodb, current API listener PID 61517, and all 14 backend files matching the integrated checkout. The API-only restart and authenticated timings are attributed to the native task; this audit did not refresh credentials, submit requests or restart processes. The existing AWS worker PID 54245 was left running. Latest independently observed counters remain 19/30 analysis slots and 4/5 audio allocations from 08:52 UTC; health checking does not consume them.
+
+See [INBOX_READ_PERFORMANCE.md](INBOX_READ_PERFORMANCE.md), `evidence/inbox-batch-readonly-benchmark.json` and `evidence/inbox-batch-rollout-readonly.json`. The faster API remains the same temporary Mac-backed HTTPS service; no managed AWS hosting deployment is implied.
 
 ## Managed hosting: precise remaining blocker
 
@@ -146,6 +158,7 @@ Open only the needed actor privately and use its enrolled account and software a
 
 ## Sanitized evidence
 
+- evidence/inbox-batch-rollout-readonly.json: independent health/source-file checks and attributed native authenticated HTTP timings.
 - evidence/native-mac-ui-release-readback.json: independent Mac coordinator reserve/release ledger and updated counter confirmation.
 - evidence/native-mac-ui-request-readback.json: independent acceptance/preview/fields/counter confirmation for the native task's Mac UI request.
 - evidence/preview-inventory-live-readback.json: independent AWS result, reservation, history, inventory and ledger reads.

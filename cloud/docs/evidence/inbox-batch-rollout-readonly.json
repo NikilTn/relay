@@ -1,0 +1,31 @@
+{
+  "observed_at": "2026-10-24T08:56:27.768011+00:00",
+  "api_base_url": "https://resumes-investigated-striking-mba.trycloudflare.com",
+  "health_http": 200,
+  "health": {
+    "status": "ok",
+    "api_version": "1.0.0",
+    "schema_version": 1,
+    "mode": "aws",
+    "storage": "dynamodb",
+    "performs_ai_check": false,
+    "note": "Liveness only; this route never invokes AI and does not certify AWS runtime."
+  },
+  "native_api_commit": "ad565d429593a51c576522f5c956ed4659962999",
+  "backend_files_match_candidate": true,
+  "backend_file_count": 14,
+  "worker_pid_unchanged_as_reported": 54245,
+  "api_listener_pids": [
+    61517
+  ],
+  "authenticated_http_read_seconds_reported_by_native_task": [
+    0.449,
+    0.478
+  ],
+  "authenticated_http_item_count_reported_by_native_task": 19,
+  "native_reported_tests_passed": 67,
+  "verification_scope": "This task independently checked public health and files on disk. Authenticated HTTP timings and API-only restart were reported by the native task; no in-memory source attestation inferred.",
+  "new_ai_calls": 0,
+  "new_audio_allocations": 0,
+  "runtime_changes_by_this_task": false
+}
