@@ -1,0 +1,23 @@
+{
+  "authentication" : "PASS: Swift Cognito password + software MFA + refresh; no browser\/UI or Keychain claim",
+  "available_after_reserve" : 18,
+  "durable_outbox" : "PASS",
+  "fulfillment_replay" : "PASS",
+  "interpretation_id" : "d9361cb2-0201-496b-8c74-690c76b625db",
+  "location_round_trip" : "PASS: synthetic0,0",
+  "mode" : "aws",
+  "native_UI" : "NOT TESTED",
+  "on_hand_after_fulfill" : 18,
+  "physical_wireless" : "NOT TESTED",
+  "preview_before_send" : "PASS",
+  "preview_reused_on_send" : "PASS",
+  "request_id" : "cf8bf57d-2058-4c4c-87c7-46bde6149a7e",
+  "request_replay" : "PASS",
+  "requester_status" : "completed",
+  "reservation_replay" : "PASS",
+  "status" : "PASS",
+  "stock_before_reservation" : 20,
+  "synthetic_consumption_returned" : 2,
+  "synthetic_stock_added" : 20,
+  "transcription_id" : "fea5049d-a3c9-493b-ba7d-8830fbd23d0c"
+}

@@ -1,10 +1,10 @@
 # RELAY cloud MVP
 
-A runnable, separately authenticated backend for immutable resource requests and reviewed short recordings. **New source adds private pre-send previews, optional request location/structured fields, and coordinator inventory reservations/fulfillment. Sixty fixture tests pass; the new code has not yet replaced the running server or been live-tested.** See [the exact new contract and rollout gate](docs/PREVIEW_INVENTORY_CONTRACT.md). The native task owns app integration.
+A runnable, separately authenticated backend for immutable resource requests and reviewed short recordings. **Pre-send previews, optional request location/structured fields, and coordinator inventory reservations/fulfillment now pass the real public-HTTPS Swift HTTP workflow, with independent AWS result/ledger readback. Sixty backend fixture tests also pass.** See [the current deployment handoff](docs/CLOUD_DEPLOYMENT_HANDOFF.md) and [exact API contract](docs/PREVIEW_INVENTORY_CONTRACT.md). The native task owns app integration and separate native UI verification.
 
 The API durably commits work before acknowledging acceptance. A worker proposes structured fields through Bedrock and validates them in code. Pre-send previews stay out of inboxes; explicit Send binds a matching preview to one request without a second model call. Models cannot allocate inventory. Authorized coordinators reserve/fulfill/release stock through atomic, idempotent transactions; cancellation releases reserved stock. Ledger fulfillment records a human action and does not prove physical delivery. Recorded speech is a separate owned upload/job and still requires explicit review.
 
-Earlier build-9 evidence established Cognito MFA, S3, Transcribe, Nova Lite and DynamoDB through the authorized temporary HTTPS tunnel. It does not establish the new preview/inventory flow. Managed Lambda/API Gateway hosting remains blocked by the missing dedicated role/PassRole; prior prepared ZIPs are stale for this feature.
+Build-9 evidence established Cognito MFA, S3, Transcribe, Nova Lite and DynamoDB through the authorized temporary HTTPS tunnel. Build-10 evidence additionally verifies one real pre-send preview reused on Send, synthetic location persistence, and atomic inventory reservation/fulfillment/replay; the existing completed transcription was reused without another ASR job. Managed Lambda/API Gateway hosting remains blocked by the missing dedicated role/PassRole; prior prepared ZIPs are stale for this feature.
 
 ## Run without AWS or charges
 

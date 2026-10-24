@@ -1,176 +1,120 @@
-# CLOUD_DEPLOYMENT_HANDOFF — RELAY
+# CLOUD_DEPLOYMENT_HANDOFF — RELAY build 10
 
-**Current verdict: hosting is blocked; no deployed HTTPS API exists.** This is a fresh AWS inspection, not a restatement of the earlier template or local-flow report. Account **928489693154**, configured/audited region **us-east-1**. Inventory completed **2026-10-24T06:41:33.163381+00:00**; resource readiness and fresh Cognito MFA sign-in completed **2026-10-24T06:42:59.883743+00:00**. Handoff written **2026-10-24T06:48:41.746878+00:00**.
+Updated **2026-10-24T08:12:06.162379Z**. **The temporary HTTPS API has passed a real pre-send AI preview → explicit Send → coordinator inventory reservation → fulfillment flow. Managed Lambda/API Gateway hosting remains blocked.** These are separate facts.
 
-The existing data/auth/model services are ready and the earlier real local API flow remains documented separately. The execution role, scoped PassRole grant and hosted backend are still missing. No IAM permissions, MFA settings, backend implementation or native files were changed in this audit. No new model/audio request was run, and no artifact was packaged or deployed.
+## Endpoint, account and source
 
-
-**Latest follow-up:** independent native-test readback at 2026-10-24T07:02:28.963938+00:00 confirms **15/30 accepted requests and 2/5 transcription records**. A new hosting check at 2026-10-24T07:03:57.850041+00:00 still found the dedicated role absent and zero HTTP APIs. The full stack/Lambda/permission inventory below retains its original timestamps. Native Swift live-flow details and the interrupted-attempt correction are appended below.
-
-## Current deployment state and source
-
-| Item | Timestamped result | Evidence |
-|---|---|---|
-| Active account/session | PASS — 2026-10-24T06:41:33.163381+00:00 | `WSParticipantRole/Participant`, account 928489693154; STS request `1e7e8f8b-3d19-4641-95eb-9cf12453fb33` |
-| Region | PASS — 2026-10-24T06:41:33.163381+00:00 | Both profile and inspected AWS service region are us-east-1 |
-| `relay-cloud-mvp-execution` exists | FAIL — absent at 2026-10-24T06:41:33.163381+00:00 | `NoSuchEntity`; IAM request `537c52c1-faba-41f2-95fc-9e20c0609f19` |
-| Execution-role Lambda trust / scoped policy | NOT TESTED — role absent | There is no role policy/trust to validate; expected reviewed documents are listed below |
-| Required participant PassRole grant | FAIL — current policy inspection | Only WSParticipantRole itself is allowed; dedicated role ARN has no grant |
-| IAM effective-policy simulation | NOT TESTED — simulator access denied | `iam:SimulatePrincipalPolicy` denied, request `b7611dd6-7f2b-48bc-91a7-6054d0b0814b`; this is not a PassRole simulation result |
-| `relay-cloud-mvp` stack | FAIL — absent | DescribeStacks says stack does not exist; request `9467e86a-4549-4db6-a0d2-93b189e3cbf0` |
-| API Gateway | FAIL — no deployed APIs | Fresh paginated inventory: 0 HTTP/WebSocket APIs and 0 REST APIs in us-east-1 |
-| `relay-cloud-mvp-api` Lambda | FAIL — absent | ResourceNotFoundException; request `192112f2-6d30-4cbc-89da-f87bea63e92c` |
-| `relay-cloud-mvp-worker` Lambda | FAIL — absent | ResourceNotFoundException; request `a2aade24-c8d3-4567-8f23-cae3c49130f1` |
-| Recovery schedule | FAIL — absent | `relay-cloud-mvp-recovery` not found; request `02d099fa-12f2-4573-95f5-3f04496b4c16` |
-
-**HTTPS API base URL: none. Deployed source commit: none. Lambda CodeSha256/RevisionId and worker runtime status: unavailable because neither function exists.** No deployment is inferred from a valid template, a Cognito domain, a retained bucket, a CloudWatch dashboard or the localhost service.
-
-Two other RELAY stacks are visible:
-
-- `relay-bedrock-metrics`: CREATE_COMPLETE; contains a CloudWatch dashboard, not a backend API.
-- `relay-public`: ROLLBACK_COMPLETE. Its former HTTP API `t9xj4xi8k4` is DELETE_COMPLETE; do not use that historical ID as a live endpoint. Its web bucket was retained, which does not establish an API deployment. The historical ApiRole and WorkerRole creation failures at 2026-10-24 02:16:46 UTC explicitly say **iam:CreateRole has no identity-based Allow** (IAM requests `9a3ecf95-68b4-4706-b98a-45684ae66b02` and `64b410d6-1c57-4549-8f14-3a2ecb722080`). The error was wrapped as UnauthorizedTaggingOperation; adding only tagging permissions would not resolve the underlying CreateRole denial.
-
-Only one Lambda exists in the region-wide inventory and it is not a RELAY function; it was not modified.
-
-## Exact permission blocker
-
-The participant has no inline policies or permissions boundary. Current attached policies are `ws-default-policy` v1 and `PowerUserAccess` v12.
-
-`ws-default-policy` grants `iam:PassRole` only on:
-
-```text
-arn:aws:iam::928489693154:role/WSParticipantRole
-```
-
-It does not grant passing `arn:aws:iam::928489693154:role/relay-cloud-mvp-execution`. PowerUserAccess excludes general IAM actions and its explicit IAM exceptions do not add that permission. The participant's current trust also has no Lambda service principal. Therefore reusing the participant as a Lambda role does not solve this blocker and must not be done.
-
-The simulator call itself was denied for lack of `iam:SimulatePrincipalPolicy`; no successful effective-policy simulation or deployment/PassRole operation is claimed. The required target-role grant is demonstrably absent from the inspected identity policies. Normal dedicated-role creation is also not allowed by these policies, consistent with the older stack's recorded denial.
-
-The organizer must provide the dedicated role with Lambda-only service trust, reviewed scoped execution permissions, and a participant PassRole grant restricted to that exact ARN with `iam:PassedToService = lambda.amazonaws.com`. Reviewable request and JSON documents already exist:
-
-- `cloud/docs/ORGANIZER_REQUEST.md`
-- `cloud/infra/organizer-role-trust.json`
-- `cloud/infra/organizer-execution-policy.json`
-- `cloud/infra/organizer-participant-passrole.json`
-
-These are requested configurations, not installed policies. This audit did not broaden IAM, weaken MFA, change any trust policy or create a public server.
-
-## Requested HTTPS endpoint tests
-
-| Test against the deployed HTTPS API | Current result |
+| Setting | Verified value |
 |---|---|
-| Health | NOT TESTED — no deployed endpoint |
-| Authorized shelters using real Cognito access token | NOT TESTED — no deployed endpoint |
-| One new synthetic text request | NOT TESTED — no deployed endpoint; no request created |
-| Persisted Bedrock result | NOT TESTED on a hosted endpoint |
-| Replay of the same request ID/content | NOT TESTED on a hosted endpoint |
+| Current demo API base | https://resumes-investigated-striking-mba.trycloudflare.com |
+| Hosting | Authorized Cloudflare quick tunnel → Mac loopback API 127.0.0.1:8788; real AWS data/AI services |
+| AWS account / region | 928489693154 / us-east-1; STS verified 08:12 UTC, request `3710b067-3b50-45e7-a746-4b5e79a40f66` |
+| Participant identity | WSParticipantRole/Participant, verified during the deployment audit |
+| Backend feature commit | `62dcf9035bc0bf02054debe53b08a478e4bf379e` on feature/cloud-inventory-preview |
+| Native integrated backend commit | `fe7b88dad016c43066a6f272f2a0f6ae94855667` on feature/cloud-integration |
+| Source comparison | PASS — all 14 backend modules match the integrated checkout on disk; no in-memory source attestation endpoint exists |
+| Managed AWS API base / deployed Lambda source revision | None: no managed API/functions exist in the latest hosting inventory |
 
-**Fresh Cognito authentication itself: PASS.** Existing actor `test-requester-a` returned SOFTWARE_TOKEN_MFA, completed its current authenticator challenge, and received a one-hour access token. InitiateAuth request `2329c66e-8d08-4679-a926-ef6b8c304cd9`; authentication request `b870a1d4-52b2-4bab-850a-d319065b1d38`. The token stayed in the existing private local store. No password/MFA reset or enrollment was performed.
+At **08:11:32 UTC**, public health returned aws/dynamodb and the public OpenAPI exposed the new interpretation/inventory routes. The old 8787 API listener was absent; new API PID 54243 and AWS worker PID 54245 were running. PID 53866 was an isolated fixture worker, not a second AWS consumer. The native task coordinated replacement of the old API/worker; this AWS audit did not restart anything. At **08:12:06 UTC**, the durable work queue was empty and the real preview/result had completed.
 
-A separate read of `http://127.0.0.1:8787/v1/health` still reports mode `aws`, storage `dynamodb`. That is **Mac-only liveness**, not the requested hosted verification. Its current OpenAPI does not expose `/v1/me`, `/v1/requests/{request_id}/history` or `/v1/requests/{request_id}/events`; the native task's new endpoints must be included in the future package. Earlier local real-AWS inference/transcription successes are historical evidence in BACKEND_TEST_RESULTS.md and are not counted as hosted tests here.
+The quick-tunnel hostname is temporary and can change on restart. Availability depends on the Mac, tunnel, API, worker and valid AWS session. It is not a Lambda deployment.
 
-The initial 06:41 UTC durable counter snapshot was **12/30 request records and 1/5 transcription records**; it is superseded by the native follow-up count of **15/30 and 2/5** below. This audit added zero accepted requests, zero Bedrock calls and zero Transcribe jobs. At this counter snapshot, the one-request HTTPS smoke remains within the earlier limits once a hosted URL exists; 18 request slots and four audio slots remained. The native task is subsequently running its own approved local Swift-client flow, so reread these shared durable counters before any additional test. Billing is not reconciled by these record counts.
+## Timestamped live workflow results
 
-## Confirmed native Cognito configuration
+The native task supplied `relay-build10-live-flow.json` after running its Swift HTTP client against the public HTTPS API. This task independently performed strongly consistent AWS reads during **08:12:04–08:12:06 UTC**. No new request, model call, audio job or data mutation was added by this audit.
 
-| Setting | Current AWS value |
+| Check | Result / safe correlation |
 |---|---|
-| Region | `us-east-1` |
-| User pool | `us-east-1_f7wyKUgiY` |
-| Public client | `RELAY-Cloud-MVP-Native` |
-| Client ID | `dfulb5lau8283nlgil7ddu36i` |
-| Issuer | `https://cognito-idp.us-east-1.amazonaws.com/us-east-1_f7wyKUgiY` |
-| Login base | `https://relay-mvp-928489693154.auth.us-east-1.amazoncognito.com` — ACTIVE |
-| Authorize endpoint | `https://relay-mvp-928489693154.auth.us-east-1.amazoncognito.com/oauth2/authorize` |
-| Token endpoint | `https://relay-mvp-928489693154.auth.us-east-1.amazoncognito.com/oauth2/token` |
-| Native callback | `relay://oauth/callback` |
-| Native logout redirect | `relay://oauth/signout` |
-| Additional configured local callback | `http://localhost:8400/callback` |
-| Scopes | `openid email` |
-| OAuth flow | Authorization code; native client should use PKCE S256 and validate state |
-| Client secret | None |
-| MFA | Required (ON), software authenticator enabled |
-| Self sign-up | Disabled; admin-created/enrolled accounts only |
-| Access / ID token lifetime | 60 minutes |
-| Refresh token lifetime | 1 day; token revocation enabled |
+| Swift Cognito password + software MFA + refresh for requester/dispatcher | PASS — native test evidence; no credential values copied |
+| Authorized profile/shelter directory and missing/invalid-token rejection | PASS — prior public HTTPS checks, with valid-user shelter isolation at 07:34 UTC |
+| Pre-send Bedrock preview | PASS — interpretation `d9361cb2-0201-496b-8c74-690c76b625db`, ready_for_review, one analysis attempt |
+| Real Bedrock result | PASS — Nova Lite `amazon.nova-lite-v1:0`, AWS request `f6bfc07b-353d-4965-86e3-41e69855b13d`, 486 input / 48 output tokens |
+| Explicit Send reuses preview | PASS — request `cf8bf57d-2058-4c4c-87c7-46bde6149a7e`; exact preview binding, same stored provider result, no second analysis slot |
+| Location and edited structured fields | PASS — persisted in the request; coordinate values omitted from this evidence |
+| Reviewed transcript reference | PASS — reused owned transcription `fea5049d-a3c9-493b-ba7d-8830fbd23d0c`; no new live ASR job |
+| Request/repeated reserve/repeated fulfillment | PASS — native replay checks plus independent unique ledger/history records |
+| Coordinator reserve | PASS — 20 on hand, 2 reserved, 18 available; operation `559fbb2f-8c4d-4dd9-a22a-34b8129d2f79` |
+| Coordinator fulfill | PASS — 18 on hand, 0 reserved; operation `ae195218-a196-4385-bbe8-0c0977f8c37f` |
+| Synthetic stock restore | PASS — final 20 on hand, 0 reserved, 20 available, inventory revision 4; operation `135038cc-7ba5-47b8-9459-7be9e6db8549` |
+| Request history | PASS — revision 2, exactly two unique accepted/completed events |
+| Shared counters | PASS — 18/30 request/preview analysis slots and 3/5 recordings at 08:12 UTC |
+| Worker recovery state | PASS — queue empty; stored completed result/reservation/history |
 
-Client configuration request `a9b656c1-ba6a-471a-b3d2-e2678632c3b1`; domain request `7c3dad69-6c98-4a02-b1a6-a6abfbd3ffc6`; MFA configuration request `c493d139-1a22-494a-96a9-74c984aad6d6`. The Cognito domain is a **login service**, not the application's API base URL. Native PKCE callback behavior has not been tested by this AWS audit.
+Stock was explicitly seeded with 20 **synthetic demo** water packs, reserved/fulfilled by the coordinator test, then the two consumed demo units were restored. This is a durable inventory ledger, not a sensor reading or real resource delivery. History has resource_allocation_verified:true and physical_delivery_verified:false. The model proposal still has allocation_authorized:false; the model does not allocate inventory.
 
-All four existing synthetic accounts are enabled, CONFIRMED, and have SOFTWARE_TOKEN_MFA enabled/preferred. Intended server membership remains:
+The last build-9 public flow separately tested real S3 upload → Transcribe → review → Bedrock. Reusing its completed recording here avoids another ASR charge. The remaining two recording slots were preserved. A preview consumes one shared analysis slot; matched Send binds it to one request without another slot. Abandoned/failed previews also count. These are usage bounds, not a reconciled dollar charge.
 
-| Local actor | Synthetic membership |
+Native Mac UI login with password/MFA was subsequently reported successful by the native task. Its full UI preview/send/coordinator test and physical-phone workflow were **pending at this handoff timestamp** and are separate from the CLI evidence above. Do not infer UI, microphone/picker, Keychain recovery or physical wireless success from these HTTP checks.
+
+## Implemented app-facing API
+
+Existing health, profile, authorized shelters, request submission/read/history, and recorded-speech routes remain. The new source adds:
+
+- POST /v1/interpretations and GET /v1/interpretations/{id}: private durable pre-send preview, no inbox/stock effect.
+- Optional request interpretation_id, location and structured_fields; exact preview binding avoids duplicate model work. Location is not added to the model prompt.
+- GET /v1/inventory?shelter_id= and dispatcher POST /v1/inventory/{shelter_id}/adjust.
+- GET/POST /v1/requests/{id}/inventory: coordinator reserve, fulfill, release; owner-readable reservation state.
+- Atomic stock/reservation/history/ledger/idempotency updates. Requester cancellation and staff rejection release stock. Older progress calls cannot bypass the new fulfillment route.
+
+Exact schema, role rules, nullable fields, idempotency/error semantics and examples: [PREVIEW_INVENTORY_CONTRACT.md](PREVIEW_INVENTORY_CONTRACT.md). Generated OpenAPI is in cloud/openapi/relay-v1.json and .yaml. Native App/Swift changes remain owned by the native task.
+
+**Fixture verification:** 60 backend tests pass, including independent-connection overbooking, cancellation/fulfillment races, one-preview/two-request races, response loss/restart, backward digests/event replay, audio ownership and location bounds. Native reports 49 Swift tests and its complete fixture HTTP flow passing. These are distinct from live AWS and physical-device evidence.
+
+## Managed hosting: precise remaining blocker
+
+Latest direct managed-hosting inventory: **2026-10-24T07:44:57.246002Z**; no subsequent managed deployment was performed by this task.
+
+| Managed resource / permission | Result |
 |---|---|
-| `test-requester-a` | Requester, synthetic-demo-01, shelter-a |
-| `test-requester-b` | Requester, synthetic-demo-01, shelter-b |
-| `test-dispatcher-a` | Dispatcher, synthetic-demo-01, shelter-a |
-| `test-dispatcher-b` | Dispatcher, synthetic-demo-01, shelter-b |
+| relay-cloud-mvp-execution | FAIL — absent, IAM NoSuchEntity; request `8f367161-9509-44ed-96ce-c644c1d75d53` |
+| Lambda trust / scoped role permissions | NOT TESTED — role does not exist |
+| Participant PassRole for dedicated role | FAIL in full 06:41 UTC policy audit — no target-role Allow; recheck after organizer provisioning |
+| relay-cloud-mvp stack | FAIL — absent; request `cd8a452e-7f49-4556-a367-46ccd4972752` |
+| relay-cloud-mvp-api Lambda | FAIL — absent; request `033801f7-1b3a-4b5e-83d1-ac09a3ef6534` |
+| relay-cloud-mvp-worker Lambda | FAIL — absent; request `76a7ef76-b3d9-4d7d-aabf-f8fb349d17fa` |
+| HTTP API Gateway inventory | FAIL — zero APIs, no more pages; request `06137d8a-f5d9-470b-a2c5-553604df7811` |
+| Deployed Lambda CodeSha256/RevisionId and worker status | UNAVAILABLE — no functions |
 
-### Private access to an enrolled test account
+At the full policy audit, WSParticipantRole had no inline policies or boundary. ws-default-policy v1 allowed PassRole only on WSParticipantRole itself; PowerUserAccess v12 did not grant the dedicated-role permission. Participant trust had no Lambda service principal. The attempted simulator call was denied for **iam:SimulatePrincipalPolicy** (request `b7611dd6-7f2b-48bc-91a7-6054d0b0814b`), not a successful effective PassRole evaluation.
 
-Use `test-requester-a` for an ordinary requester test, or the matching dispatcher actor for its shelter inbox. The user can privately open the existing owner-only local account store on this Mac:
+The organizer must provision `arn:aws:iam::928489693154:role/relay-cloud-mvp-execution` with Lambda trust and reviewed scoped permissions, then grant participant PassRole only on that ARN with iam:PassedToService=lambda.amazonaws.com. Exact proposals remain in cloud/infra/organizer-*.json and cloud/docs/ORGANIZER_REQUEST.md. Do not reuse or weaken participant trust. No IAM/MFA changes were made here.
+
+Ready existing services: private S3 relay-artifacts-928489693154-use1 under cloud-mvp-v1/, DynamoDB relay-messages under RELAY_MVP_V1#, Cognito and Bedrock Nova Lite. The template was previously syntax-validated, but syntax is not deployment evidence. The earlier relay-public stack rolled back after iam:CreateRole denial; its former API t9xj4xi8k4 was deleted and is not usable.
+
+**Exact remaining managed-deployment step:** obtain the scoped organizer role/PassRole, then agree the final integrated source with the native task, build a fresh artifact, and deploy the reviewed stack under the hosting approval. Record actual Lambda hashes/status and API URL, then repeat authenticated endpoint tests. The old cfcaade ZIP is **superseded for build 10** and must not overwrite this new backend. Nothing in this feature run uploaded or deployed a Lambda artifact.
+
+## Cognito configuration and enrolled test access
+
+Configuration was directly verified at 06:41–06:43 UTC; later password/MFA and refresh tests succeeded. Native now supports direct Cognito sign-in; the registered OAuth settings remain available.
+
+| Setting | Value |
+|---|---|
+| User pool | us-east-1_f7wyKUgiY |
+| Native public client ID | dfulb5lau8283nlgil7ddu36i — RELAY-Cloud-MVP-Native, no client secret |
+| Issuer | https://cognito-idp.us-east-1.amazonaws.com/us-east-1_f7wyKUgiY |
+| Login domain | https://relay-mvp-928489693154.auth.us-east-1.amazoncognito.com |
+| Authorization / token paths | /oauth2/authorize / /oauth2/token |
+| Callback / logout | relay://oauth/callback / relay://oauth/signout |
+| Additional local callback | http://localhost:8400/callback |
+| OAuth scopes / flow | openid email; authorization code with native PKCE S256 |
+| MFA | ON; software TOTP enabled/preferred for all four synthetic users |
+| Self sign-up | Disabled; enrolled accounts only |
+| Token lifetime | Access/ID 60 minutes, refresh 1 day; revocation enabled |
+
+Use test-requester-a / test-dispatcher-a for shelter-a, or the corresponding -b actors for shelter-b isolation. On this Mac, the existing owner-only account store is:
 
 ```text
 /Users/DEVELOPER/Documents/Codex/2026-10-23/b/work/relay-runtime/live/demo-identities.private.json
 ```
 
-Select only the needed actor's record. Use its username/password in the Cognito hosted sign-in opened by the app's PKCE flow. Its already-enrolled TOTP authenticator is required; the corresponding setup material is kept in that same private record and can be imported locally into the user's authenticator. Do not reset MFA or paste that record into chat, issues, source, screenshots or mobile configuration. The file is mode 0600 inside a mode-0700 directory. This handoff does not reproduce any credential or setup material.
+Open only the needed actor privately and use its enrolled account and software authenticator in the app. The file is mode 0600 in a mode-0700 directory. Do not reset MFA, paste the record into chat/source/screenshots, or put private test token files into the mobile app. Synthetic .invalid emails cannot receive recovery mail. No passwords, tokens, AWS credentials, seeds or signed upload URLs appear in this handoff.
 
-For automated backend tests, the existing private `aws-test-tokens.json` in that directory is usable only as a local operator artifact. Tokens expire; requester-A and dispatcher-A were refreshed during this audit. The other actors were not refreshed. Never ship that file, AWS credentials, TOTP material or a shared test token in the app. No secrets are needed in `cloud/examples/public-client-config.json`. The `.invalid` test emails are synthetic and cannot receive recovery mail.
+## Sanitized evidence
 
-## Ready infrastructure and coordinated next step
+- evidence/preview-inventory-live-readback.json: independent AWS result, reservation, history, inventory and ledger reads.
+- evidence/preview-inventory-native-cli.json: native Swift public-URL workflow assertions.
+- evidence/preview-inventory-runtime-readonly.json: public health/new routes and process roles.
+- evidence/preview-inventory-source.json: integrated backend module hashes/source comparison.
+- evidence/preview-inventory-fixture-tests.json and .txt: 60 fixture tests with timestamps.
 
-Fresh reads confirm `relay-messages` is ACTIVE with string pk/sk and on-demand billing; the private artifacts bucket has all four public-access blocks and AES256 default encryption; Cognito is configured as above; Nova Lite availability is AUTHORIZED/AVAILABLE. No new inference was run during this read-only readiness check.
-
-[Backend PR #1](https://github.com/NikilTn/relay/pull/1) currently carries backend implementation commit `db7d03a4fb106969cf7aac9538d68b903dd8f4a5`. That is source provenance only, not a deployment revision.
-
-The native task **Build and Test RELAY Offline P2P** confirmed:
-
-- Integration checkout: `/Users/DEVELOPER/Documents/dreamerv3/RELAY-integration`.
-- Branch: `feature/cloud-integration`; observed HEAD `c19b4358b4fd1d24a25b7ff2becccd0620e110cf` merges native build-7 `f0388913d09a7e4004cb031525d6338a086eda6a` with backend `db7d03a4fb106969cf7aac9538d68b903dd8f4a5`.
-- Profile/history/events backend changes are **uncommitted and not package-ready**. The native task reports 35 fixture tests passing; this audit did not rerun that suite or modify its files.
-- It will provide a tested integration commit when ready. No hosted URL is known to it.
-
-**Do not deploy the cached older cloud-mvp ZIP or package an uncommitted snapshot.** No packaging was performed here.
-
-The exact next sequence is:
-
-1. Organizer supplies the dedicated role and narrow PassRole permission; recheck its real trust/scoped permissions without altering the participant trust.
-2. Native task supplies the tested, committed `feature/cloud-integration` revision containing `/v1/me`, history and request events, along with its current API contract. Confirm that exact commit and clean packaging state with it.
-3. With hosting scope approved separately from the prior local-AWS test allowance, package that agreed revision, record the Git commit and artifact hash/S3 key, and deploy the reviewed template using the supplied role. Do not overwrite native API/service files or reuse stale build artifacts.
-4. Record CloudFormation status, real HTTPS URL, Lambda CodeSha256/RevisionId/source mapping and worker schedule/status. Run the requested authenticated one-request/replay/persistence smoke against that URL, then verify native profile/replies/progress compatibility.
-
-The immediate infrastructure blocker is organizer role/PassRole provisioning; the parallel source gate is the native task's tested commit. This audit reports readiness and blockers without changing either.
-
-## Sanitized audit evidence
-
-`cloud/docs/evidence/cloud-deployment-audit-20261024.json`, `cloud-deployment-readiness-20261024.json` and `cloud-deployment-source-state-20261024.json` retain the fresh resource/policy/configuration observations, safe request IDs and source snapshot. No credentials, bearer tokens, MFA seeds, signed upload URLs or Lambda download URLs are included.
-
-## Native-task coordination follow-up
-
-At 2026-10-24T06:51:50.548526+00:00, the existing requester-A and dispatcher-A both completed fresh SOFTWARE_TOKEN_MFA sign-in. Only the existing owner-only token file was updated atomically; no credential values were sent to the native task or written here. Safe authentication request IDs: requester-A `d2e9f511-8af6-4144-be1f-e16b81d06e08`; dispatcher-A `93a0a5c4-9e84-4d08-a3e5-b0fcb5a0284d`. Evidence: `cloud/docs/evidence/cloud-deployment-session-refresh-20261024.json`.
-
-The native task reports a new-source API on **http://127.0.0.1:8788** for its Swift-client test, preserving the earlier localhost:8787 server/worker. This is a local integration test, not a deployed HTTPS endpoint. It reports 43 Swift and 35 fixture backend tests passing; those were not independently rerun by this audit. Its one-text/one-synthetic-WAV live test will consume the shared approved limits. The hosting findings and no-packaging gate remain unchanged.
-
-## Verified native integration follow-up
-
-The native task reports that its Swift client passed requester profile/directory, stable-ID replay, dispatcher history progression with duplicate operations, real Transcribe upload, explicit transcript correction/submission, and Bedrock proposal retrieval using the new-source **loopback API**. This is not public HTTPS, physical-iPhone PKCE or carrier-to-cloud verification. It reports no additional paid tests planned and will send the tested build-8 commit when committed. At the independent source check, HEAD was still `c19b4358b4fd1d24a25b7ff2becccd0620e110cf` with integration changes uncommitted; package-ready commit confirmation remains pending.
-
-**Correction:** the first expired-token attempt was **not a zero-write failure**. Request `a9622506-46c2-4870-ac10-ee6d90525129` was accepted and processed before a later operation encountered expired authentication. This was independently confirmed with a strongly consistent DynamoDB read, not merely inferred from the native task's message.
-
-At 2026-10-24T07:02:28.963938+00:00, the AWS task independently read these known records:
-
-| Flow | Request UUID | Persisted state | Bedrock request ID |
-|---|---|---|---|
-| Initial attempt interrupted later by expired auth | `a9622506-46c2-4870-ac10-ee6d90525129` | accepted / ready_for_review | `d246ed10-cba6-4d52-983b-1938ef210746` |
-| Completed Swift text flow | `2774002c-8238-4311-871c-cf820d3a2c92` | accepted / ready_for_review | `234dcd94-a24d-4f8f-a579-f3f4afa93126` |
-| Completed Swift reviewed-audio flow | `16764f77-3780-48b6-bd11-8f2a58eb9835` | accepted / ready_for_review | `9a68d225-c592-4e72-9155-5c5b5d431520` |
-
-Transcription `99599e0d-df75-4712-b28c-522bb4be669b` is persisted as completed; the actual Transcribe job `relay-mvp-99599e0d-df75-4712-b28c-522bb4be669b` reports COMPLETED (read request `83ae4819-ac2b-4cc9-93e6-2bc7425eebd6`). The reviewed-audio request references that exact transcription UUID.
-
-Both completed Swift text/audio flows have persisted history revision 3: dispatcher-reported accepted → in_progress → completed, with three events and three unique event IDs each. `resource_allocation_verified` remains false. These are reported workflow states, not proof of physical resource delivery or automatic allocation. Duplicate HTTP behavior is reported by the native client's test; this audit independently confirms the stored event counts/IDs and progress state.
-
-Shared counters are **15 accepted requests of 30** and **2 transcription records of 5**: 15 request slots and three recording slots remained at this readback. This AWS follow-up performed only read operations and created no new request, model invocation or transcription job. Recheck shared counters before further tests. The original 12-request manifest describes the earlier run; the native task owns the new synthetic test evidence.
-
-Hosting recheck at 2026-10-24T07:03:57.850041+00:00: dedicated role still NoSuchEntity (IAM request `2deae4ba-c04a-4f77-84f8-c26cd48a18b9`); HTTP API inventory count 0 with no additional page (request `456c6bce-ff86-4a66-adec-c01bb7d7cf26`). No packaging or deployment occurred.
-
-Sanitized evidence: `cloud/docs/evidence/native-integration-readback-20261024.json` and `native-followup-hosting-20261024.json`.
+The API contract and handoff are also saved in the task's outputs directory. No additional live test or stock mutation is required to reproduce this read-only audit.
