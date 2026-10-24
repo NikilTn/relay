@@ -66,7 +66,7 @@ These are requested configurations, not installed policies. This audit did not b
 
 A separate read of `http://127.0.0.1:8787/v1/health` still reports mode `aws`, storage `dynamodb`. That is **Mac-only liveness**, not the requested hosted verification. Its current OpenAPI does not expose `/v1/me`, `/v1/requests/{request_id}/history` or `/v1/requests/{request_id}/events`; the native task's new endpoints must be included in the future package. Earlier local real-AWS inference/transcription successes are historical evidence in BACKEND_TEST_RESULTS.md and are not counted as hosted tests here.
 
-Fresh durable usage counters remain **12/30 request records and 1/5 transcription records**. This audit added zero accepted requests, zero Bedrock calls and zero Transcribe jobs. The one-request HTTPS smoke remains within the earlier limits once a hosted URL exists; there are 18 request slots and four audio slots remaining. Billing is not reconciled by these record counts.
+Fresh durable usage counters remain **12/30 request records and 1/5 transcription records**. This audit added zero accepted requests, zero Bedrock calls and zero Transcribe jobs. At this counter snapshot, the one-request HTTPS smoke remains within the earlier limits once a hosted URL exists; 18 request slots and four audio slots remained. The native task is subsequently running its own approved local Swift-client flow, so reread these shared durable counters before any additional test. Billing is not reconciled by these record counts.
 
 ## Confirmed native Cognito configuration
 
@@ -112,7 +112,7 @@ Use `test-requester-a` for an ordinary requester test, or the matching dispatche
 
 Select only the needed actor's record. Use its username/password in the Cognito hosted sign-in opened by the app's PKCE flow. Its already-enrolled TOTP authenticator is required; the corresponding setup material is kept in that same private record and can be imported locally into the user's authenticator. Do not reset MFA or paste that record into chat, issues, source, screenshots or mobile configuration. The file is mode 0600 inside a mode-0700 directory. This handoff does not reproduce any credential or setup material.
 
-For automated backend tests, the existing private `aws-test-tokens.json` in that directory is usable only as a local operator artifact. Tokens expire; only requester-A was refreshed during this audit. Never ship that file, AWS credentials, TOTP material or a shared test token in the app. No secrets are needed in `cloud/examples/public-client-config.json`. The `.invalid` test emails are synthetic and cannot receive recovery mail.
+For automated backend tests, the existing private `aws-test-tokens.json` in that directory is usable only as a local operator artifact. Tokens expire; requester-A and dispatcher-A were refreshed during this audit. The other actors were not refreshed. Never ship that file, AWS credentials, TOTP material or a shared test token in the app. No secrets are needed in `cloud/examples/public-client-config.json`. The `.invalid` test emails are synthetic and cannot receive recovery mail.
 
 ## Ready infrastructure and coordinated next step
 
@@ -141,3 +141,9 @@ The immediate infrastructure blocker is organizer role/PassRole provisioning; th
 ## Sanitized audit evidence
 
 `cloud/docs/evidence/cloud-deployment-audit-20261024.json`, `cloud-deployment-readiness-20261024.json` and `cloud-deployment-source-state-20261024.json` retain the fresh resource/policy/configuration observations, safe request IDs and source snapshot. No credentials, bearer tokens, MFA seeds, signed upload URLs or Lambda download URLs are included.
+
+## Native-task coordination follow-up
+
+At 2026-10-24T06:51:50.548526+00:00, the existing requester-A and dispatcher-A both completed fresh SOFTWARE_TOKEN_MFA sign-in. Only the existing owner-only token file was updated atomically; no credential values were sent to the native task or written here. Safe authentication request IDs: requester-A `d2e9f511-8af6-4144-be1f-e16b81d06e08`; dispatcher-A `93a0a5c4-9e84-4d08-a3e5-b0fcb5a0284d`. Evidence: `cloud/docs/evidence/cloud-deployment-session-refresh-20261024.json`.
+
+The native task reports a new-source API on **http://127.0.0.1:8788** for its Swift-client test, preserving the earlier localhost:8787 server/worker. This is a local integration test, not a deployed HTTPS endpoint. It reports 43 Swift and 35 fixture backend tests passing; those were not independently rerun by this audit. Its one-text/one-synthetic-WAV live test will consume the shared approved limits. The hosting findings and no-packaging gate remain unchanged.
