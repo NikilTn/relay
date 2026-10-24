@@ -28,6 +28,54 @@ final class ShelterTests: XCTestCase {
         XCTAssertThrowsError(try ShelterContact.importCode("not a code"))
     }
 
+    func testRemovalIsReversibleAcrossRestartAndPreservesRequestsAndReceipts() throws {
+        let path = temporaryPath(); defer { try? FileManager.default.removeItem(atPath: URL(fileURLWithPath: path).deletingLastPathComponent().path) }
+        var s: RelayStore? = try RelayStore.open(path: path, deviceID: a)
+        try s!.saveShelter(shelter)
+        let request = try s!.submitHelpDraft(draft(), now: now)
+        let receipt = RelayMessage(originID: c, destinationID: a, messageType: .receipt,
+            payload: Payload(text: "Saved", originalMessageID: request.id), createdAt: now, hopCount: 1)
+        _ = try s!.receive(receipt, now: now)
+        var unsent = draft(); unsent.details = "SYNTHETIC draft remains"
+        try s!.saveHelpDraft(unsent)
+        try s!.removeShelter(shelter.id)
+        XCTAssertTrue(try s!.shelters().isEmpty)
+        XCTAssertEqual(try s!.helpDraft()?.shelterID, "")
+        XCTAssertEqual(try s!.helpDraft()?.details, unsent.details)
+        try s!.saveHelpDraft(unsent) // Delayed autosave cannot restore the old selection.
+        XCTAssertEqual(try s!.helpDraft()?.shelterID, "")
+        XCTAssertThrowsError(try s!.submitHelpDraft(unsent, now: now))
+        s = nil; s = try RelayStore.open(path: path)
+        XCTAssertEqual(s!.deviceID, a)
+        XCTAssertTrue(try s!.shelters().isEmpty)
+        XCTAssertEqual(try s!.shelters(includeRemoved: true), [shelter])
+        XCTAssertEqual(try s!.message(request.id), request)
+        XCTAssertEqual(try s!.summaries().first?.finalReceiptID, receipt.id)
+        XCTAssertEqual(HelpRequestItem.project(try s!.summaries(), deviceID: a, inbox: false).map(\.id), [request.id])
+        try s!.saveShelter(ShelterContact.importCode(shelter.shareCode()))
+        XCTAssertEqual(try s!.shelters(), [shelter])
+        XCTAssertEqual(try s!.allMessages().count, 2)
+    }
+
+    func testRemovedShelterCannotBeRedirectedByImport() throws {
+        let s = try store(a); try s.saveShelter(shelter); try s.removeShelter(shelter.id)
+        let redirected = ShelterContact(id: shelter.id, name: shelter.name, area: shelter.area, receivingDeviceID: b, updatedAt: now)
+        XCTAssertThrowsError(try s.saveShelter(redirected))
+        XCTAssertTrue(try s.shelters().isEmpty)
+        XCTAssertEqual(try s.shelters(includeRemoved: true), [shelter])
+        XCTAssertThrowsError(try s.removeShelter(UUID().uuidString.lowercased()))
+    }
+
+    func testWrappedSharedCodeImportsButTruncatedAndForeignTextFail() throws {
+        let code = try shelter.shareCode()
+        let split = code.index(code.startIndex, offsetBy: 60)
+        let wrapped = "  " + code[..<split] + "\n  " + code[split...] + "\n"
+        XCTAssertEqual(try ShelterContact.importCode(wrapped), shelter)
+        XCTAssertThrowsError(try ShelterContact.importCode(String(code.dropLast(17))))
+        XCTAssertThrowsError(try ShelterContact.importCode("Hello " + code))
+        XCTAssertThrowsError(try ShelterContact.importCode("RELAY-SHELTER-1:" + String(repeating: "A", count: 5000)))
+    }
+
     func testDraftRecoveryAndAtomicIdempotentSubmission() throws {
         let path = temporaryPath(); defer { try? FileManager.default.removeItem(atPath: URL(fileURLWithPath: path).deletingLastPathComponent().path) }
         var s: RelayStore? = try RelayStore.open(path: path, deviceID: a)

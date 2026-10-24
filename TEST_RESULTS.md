@@ -2,7 +2,7 @@
 
 **Verdict: implemented and tested as a software prototype; the requested physical offline demonstration remains blocked and unverified.** No physical wireless acceptance test is reported as a pass. Software evidence below does not establish disaster resilience.
 
-**Latest setup status:** build **0.1.0 (4)** provides a conversation list, fixed chat composer, incoming/outgoing bubbles, and persistent New chat access. Both physical iPhones are installed/launched on build 4 with all existing content and identities preserved. iOS/macOS builds and **21 tests** pass; the simulator repeat-send/restart UI regression passes. Internal TestFlight shows **Testing**. Pre-update phone data now contains physical messages/receipts and Wi-Fi path logs, but controlled no-internet/no-router/encounter conditions were not documented, so mandatory offline acceptance remains unverified.
+**Latest setup status:** build **0.1.0 (7)** adds reversible shelter removal and a visible import flow with receiver preview. Both original physical phone apps are installed and launched on build 7. **35 automated tests**, TCP loopback controls, iOS/macOS builds and native Mac Remove/Restore/import UI checks pass. All original phone messages, receipts, shelters and device IDs were preserved. Controlled physical offline/no-router acceptance remains unverified. The initial environment table below is historical; later dated sections record successful signing and connected phones.
 
 ## Environment and access
 
@@ -352,3 +352,53 @@ added to evidence. [Installation record](evidence/physical-build6-install.json),
 [signed device build](evidence/build-shelters-ios-signed.txt),
 [first-phone launch](evidence/physical-build6-a-launch.txt),
 [second-phone launch](evidence/physical-build6-b-launch.txt).
+
+
+## 2026-10-23 23:15 PDT — Build 7 shelter removal and import
+
+- Added reversible local directory removal, a Removed shelters restore list, and
+  protection against a stale draft autosave reselecting a removed destination.
+  Existing request snapshots, queued messages, final receipts and identities remain.
+  Schema stays at 3; the existing metadata table holds removal markers.
+- Import has a visible button, Paste, validation and receiving-device preview.
+  Whitespace-wrapped codes are accepted within the existing size limit. Copy is
+  explicitly local to the source clipboard; Connect is not a prerequisite.
+- **PASS:** 35 unit/integration tests, including restart/removal/history retention,
+  conflict prevention and malformed/wrapped-code cases. **PASS:** separate-process
+  TCP loopback interruption/retry, process restart, duplicates and return receipts.
+- **PASS:** iOS simulator, native macOS and development-signed iOS builds; paid-team
+  archive and strict app/archive signatures. Xcode 26.1.1, SDKs 26.1, M3 Pro.
+- **PASS:** native Mac UI Remove confirmation → hidden entry → Removed shelters →
+  Restore; Import opens directly → valid preview/self warning → identical import
+  without duplicate entry. Screenshot inspected for usable layout. Simulator build,
+  launch and home screenshot passed; simulator action automation failed with
+  `noWindowsAvailable`, so interactive checks used the shared native Mac UI.
+- **PASS:** direct build 7 install and launch on iPhone 15 Pro Max (iOS 27.0.1 /
+  24A446) and iPhone 16 (iOS 26.2 / 23C55), original Personal Team bundle. A used
+  USB; B used its paired local-network development connection. Consistent stopped
+  pre-update backups and post-update copies passed SQLite integrity checks. A
+  retained 24/24 envelopes, 3 final-receipt links and its shelter; B retained 23/23
+  envelopes, 4 final-receipt links and its shelter. Bodies/receipts are unchanged.
+  Raw phone stores/payloads remain outside Git; evidence records counts only.
+- A's saved directory did not contain B's shelter at inspection. No physical user
+  shelter was removed by the agent. The separate paid-bundle copy on A remained
+  build 6; the original bundle was opened on both phones.
+- **NOT TESTED:** physical Remove/Import interaction by the operator; new physical
+  shelter transfer; isolated A–E; out-of-range carry; repeated-failure statistics.
+  Host and phone radios/infrastructure were not isolated during installation.
+  No wireless range, discovery latency or infrastructure independence is claimed.
+
+Evidence: [tests](evidence/automated-tests-build-7.txt),
+[TCP control](evidence/tcp-control-build-7.txt),
+[Mac UI checks](evidence/ui-build7-shelters.json),
+[phone preservation](evidence/physical-build7-install.json),
+[iOS simulator build](evidence/build-shelter-removal-ios-simulator.txt),
+[Mac build](evidence/build-shelter-removal-macos.txt),
+[signed phone build](evidence/build-shelter-removal-ios-signed.txt).
+
+Build 7 paid-team archive/upload also passed: Apple accepted it at 23:12:02 PDT.
+The upload is Processing at the latest browser check; internal Testing and saved
+build-specific notes are not yet verified. External build 2 remains Waiting for
+Review. [Archive](evidence/archive-testflight-build-7.txt),
+[upload log](evidence/testflight-upload-build-7.txt),
+[release record](evidence/testflight-upload-build-7.json).

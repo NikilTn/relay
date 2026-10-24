@@ -128,20 +128,32 @@ public final class RelayStore {
     public func setSetting(_ key: String, _ value: String) throws {
         try execute("INSERT INTO metadata(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", [key, value])
     }
-    public func shelters() throws -> [ShelterContact] {
-        try rows("SELECT body FROM shelters ORDER BY id").map {
+    public func shelters(includeRemoved: Bool = false) throws -> [ShelterContact] {
+        let filter = includeRemoved ? "" : " WHERE NOT EXISTS (SELECT 1 FROM metadata WHERE key='removed_shelter:' || shelters.id AND value='true')"
+        return try rows("SELECT body FROM shelters" + filter + " ORDER BY id").map {
             try WireCodec.decode(ShelterContact.self, from: Data($0[0]!.utf8))
         }.sorted { $0.name == $1.name ? $0.id < $1.id : $0.name < $1.name }
     }
     public func saveShelter(_ entry: ShelterContact) throws {
         try entry.validate()
-        if let existing = try shelters().first(where: { $0.id == entry.id }) {
+        if let existing = try shelters(includeRemoved: true).first(where: { $0.id == entry.id }) {
             // A pasted code must not silently redirect an existing organizational inbox.
             guard existing == entry else { throw RelayError.invalid("This shelter ID already has different details. Device replacement needs an explicit directory migration.") }
+            try execute("DELETE FROM metadata WHERE key=?", ["removed_shelter:" + entry.id])
             return
         }
-        guard try shelters().count < 100 else { throw RelayError.invalid("Prototype directory limit is 100 shelters.") }
+        guard try shelters(includeRemoved: true).count < 100 else { throw RelayError.invalid("Prototype directory limit is 100 shelters, including removed entries.") }
         try execute("INSERT INTO shelters(id,body) VALUES(?,?)", [entry.id, String(decoding: try WireCodec.encode(entry), as: UTF8.self)])
+    }
+    /// Reversible directory removal. Request snapshots, queued envelopes and receipts stay intact.
+    public func removeShelter(_ id: String) throws {
+        guard try shelters(includeRemoved: true).contains(where: { $0.id == id }) else { throw RelayError.invalid("Shelter not found") }
+        try transaction {
+            try setSetting("removed_shelter:" + id, "true")
+            if var draft = try helpDraft(), draft.shelterID == id {
+                draft.shelterID = ""; try saveHelpDraft(draft)
+            }
+        }
     }
     public func helpDraft() throws -> HelpRequestDraft? {
         guard let body = try setting("help_draft") else { return nil }
@@ -151,6 +163,9 @@ public final class RelayStore {
         guard ShelterContact.isID(draft.requestID) else { throw RelayError.invalid("Draft identity") }
         // A queued autosave from the old form cannot resurrect a submitted draft.
         guard try message(draft.requestID) == nil else { return }
+        var draft = draft
+        // An autosave queued before removal must not select the removed entry again.
+        if !draft.shelterID.isEmpty, try !shelters().contains(where: { $0.id == draft.shelterID }) { draft.shelterID = "" }
         let body = try WireCodec.encode(draft)
         guard body.count <= 24_000 else { throw RelayError.invalid("Draft is too large") }
         try setSetting("help_draft", String(decoding: body, as: UTF8.self))

@@ -30,6 +30,7 @@ final class RelayModel: ObservableObject {
     @Published var notice = ""
     @Published var chatDrafts: [String: String] = [:]
     @Published var shelters: [ShelterContact] = []
+    @Published var removedShelters: [ShelterContact] = []
     @Published var helpDraft = HelpRequestDraft()
     @Published var draftSaveState = "Draft stays on this device"
     private let queue = DispatchQueue(label: "org.relay.engine")
@@ -80,12 +81,14 @@ final class RelayModel: ObservableObject {
         do {
             let messages = try e.store.summaries(), known = try e.store.knownPeers(), logs = try e.store.logs(limit: 300)
             let shelters = try e.store.shelters()
+            let removed = try e.store.shelters(includeRemoved: true).filter { entry in !shelters.contains(where: { $0.id == entry.id }) }
             let connected = Array(Set(e.connectedPeers.values.map(\.deviceID))).sorted().compactMap { id in e.connectedPeers.values.first { $0.deviceID == id } }
             let paths = t.paths.values.sorted(), running = t.running, armed = t.interruptNextMessage
             DispatchQueue.main.async {
                 self.messages = messages; self.known = known; self.logs = logs; self.connected = connected
                 self.paths = paths; self.active = running; self.armed = armed
                 self.shelters = shelters
+                self.removedShelters = removed
             }
         } catch { report(error) }
     }
@@ -166,6 +169,20 @@ final class RelayModel: ObservableObject {
                 try engine.store.saveShelter(shelter)
                 engine.event("SHELTER_SAVED id=\(shelter.id) receiver=\(shelter.receivingDeviceID) identity=UNVERIFIED")
                 self.refresh(); DispatchQueue.main.async { done() }
+            } catch { self.report(error) }
+        }
+    }
+    func removeShelter(_ id: String, done: @escaping () -> Void) {
+        queue.async { [weak self] in
+            guard let self, let engine = self.engine else { return }
+            do {
+                try engine.store.removeShelter(id)
+                engine.event("SHELTER_REMOVED_FROM_DIRECTORY id=\(id) history_preserved=true")
+                self.refresh()
+                DispatchQueue.main.async {
+                    if self.helpDraft.shelterID == id { self.helpDraft.shelterID = "" }
+                    done()
+                }
             } catch { self.report(error) }
         }
     }

@@ -5,7 +5,7 @@ discovery. References to Chats mean the Messages tab. All original A–E criteri
 
 ## Shelter request extension for build 6
 
-1. On receiver C, open Shelters → Add shelter → Receive here. Save a synthetic name
+1. On receiver C, open Shelters → Create shelter on this device. Save a synthetic name
    and area. Open its entry, copy/share the code and import that exact code on A.
    Confirm the shelter ID and receiving UUID match; B needs neither directory entry
    nor staff permission to carry the envelope. These labels are not authenticated.
@@ -125,3 +125,28 @@ Run at least 30 independent **physical** interrupted encounters per link directi
 3. Give two devices the same name. Verify their short IDs differ and selecting one still addresses only its UUID.
 4. Send A → C through B. A should show a sent bubble; C should show a received bubble. B should have no personal chat for that message. In B’s Tools → Open durable queue, verify “Forwarding copy · not addressed to you,” destination metadata, and no payload preview even when expanded.
 5. Distinguish UI separation from security: this prototype still carries plaintext and does not authenticate names. Never use private or emergency data for this test.
+
+
+## Shelter removal and code import (build 7)
+
+1. With connections paused, create a synthetic shelter on B. Open it and Share
+   shelter code to A before the offline encounter. Copy alone changes only B's
+   clipboard. On A, tap Import shelter and paste the full `RELAY-SHELTER-1:` code.
+2. Require the expected name, area and receiving-device preview, then Import.
+   Verify one entry appears. Reimport the same code and require one logical entry.
+   Wrapped code with whitespace should work; truncated/foreign codes must show an
+   error and disable Import. Connect is unnecessary for these local operations.
+3. Import a shelter received by A itself. Require the self-receiver explanation;
+   it remains in Shelters but is excluded from Help's outgoing destination list.
+4. Create an unsent draft addressed to B's saved shelter. Remove that shelter via
+   its detail and confirmation. Verify it disappears from active destinations,
+   draft text remains, and its destination clears. Restart and repeat inspection.
+5. Expand Removed shelters and Restore. Verify the same shelter ID/details return.
+   Restore by identical code import as a separate test. A conflicting code with the
+   same ID must not change the receiving device, even while the entry is removed.
+6. Remove a shelter after submitting a request. Verify its request and final
+   receipt history remain. Queued messages continue delivery: directory removal is
+   not request cancellation and does not revoke shelter copies on other devices.
+
+Run on both physical phones in addition to automated/native Mac UI controls.
+Record per-platform results; installation alone is not a physical UI test.

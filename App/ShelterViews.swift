@@ -233,15 +233,22 @@ struct HelpRequestDetail: View {
 struct ShelterDirectoryView: View {
     @ObservedObject var model: RelayModel
     let choose: (String) -> Void
-    @State private var adding = false
+    private enum Setup: String, Identifiable { case local, code; var id: String { rawValue } }
+    @State private var setup: Setup?
+    @State private var savedName = ""
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 Text("Saved destinations").font(.title2.bold())
                 Text("A shelter keeps its own ID. For this prototype, one phone or Mac receives its requests. Add or import it before going offline.")
                     .font(.subheadline).foregroundStyle(.secondary)
-                Button { adding = true } label: { Label("Add shelter", systemImage: "plus") }
-                    .buttonStyle(PrimaryButton()).disabled(!model.ready).accessibilityIdentifier("addShelter")
+                Button { setup = .code } label: { Label("Import shelter", systemImage: "square.and.arrow.down") }
+                    .buttonStyle(PrimaryButton()).disabled(!model.ready).accessibilityIdentifier("importShelter")
+                Button { setup = .local } label: { Label("Create shelter on this device", systemImage: "plus") }
+                    .buttonStyle(.bordered).controlSize(.large).disabled(!model.ready).accessibilityIdentifier("addShelter")
+                Text("Connect is not needed to save shelters. Copy stays on the source phone: share its code to this phone, then import it here.")
+                    .font(.caption).foregroundStyle(.secondary)
+                if !savedName.isEmpty { Label("\(savedName) saved on this device", systemImage: "checkmark.circle.fill").font(.subheadline).foregroundStyle(RelayTheme.accent) }
                 if model.shelters.isEmpty {
                     ContentUnavailableView("No shelters saved", systemImage: "house", description: Text("Create a test shelter on its receiving device, then share its code with the sender."))
                 }
@@ -258,9 +265,22 @@ struct ShelterDirectoryView: View {
                         }.multilineTextAlignment(.leading)
                     }.buttonStyle(.plain)
                 }
+                if !model.removedShelters.isEmpty {
+                    DisclosureGroup("Removed shelters (\(model.removedShelters.count))") {
+                        ForEach(model.removedShelters) { shelter in
+                            HStack {
+                                VStack(alignment: .leading) { Text(shelter.name); Text(shelter.area).font(.caption).foregroundStyle(.secondary) }
+                                Spacer()
+                                Button("Restore") { model.saveShelter(shelter) { savedName = shelter.name } }
+                            }.padding(.vertical, 10)
+                        }
+                    }.font(.subheadline)
+                }
             }.padding(20).frame(maxWidth: 700).frame(maxWidth: .infinity)
         }.background(RelayTheme.canvas).navigationTitle("Shelters")
-            .sheet(isPresented: $adding) { AddShelterView(model: model) }
+            .sheet(item: $setup) { choice in
+                AddShelterView(model: model, initialMode: choice == .code ? "import" : "local") { savedName = $0 }
+            }
     }
 }
 
@@ -269,6 +289,8 @@ private struct ShelterDetailView: View {
     let shelter: ShelterContact
     let choose: (String) -> Void
     @State private var copied = false
+    @State private var confirmingRemoval = false
+    @Environment(\.dismiss) private var dismiss
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
@@ -285,22 +307,31 @@ private struct ShelterDetailView: View {
                 if let code = try? shelter.shareCode() {
                     Button(copied ? "Shelter code copied" : "Copy shelter code") { copyText(code); copied = true }.buttonStyle(.bordered)
                     ShareLink("Share shelter code", item: code)
-                    Text("Import this same code on the sender to keep the shelter ID and receiving device consistent.")
+                    Text("Copy only affects this phone’s clipboard. Use Share to send the code to the other phone (for example through Messages), then Shelters → Import shelter there. Do this setup before your offline test.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Text("Shelter ID\n\(shelter.id)\n\nReceiving device\n\(shelter.receivingDeviceID)")
                     .font(.system(.caption, design: .monospaced)).textSelection(.enabled)
                 Text("Local test configuration only. Creating or importing this entry does not grant staff permissions.")
                     .font(.caption).foregroundStyle(.secondary)
+                Button("Remove shelter", role: .destructive) { confirmingRemoval = true }
+                    .buttonStyle(.bordered).controlSize(.large).accessibilityIdentifier("removeShelter")
             }.padding(24).frame(maxWidth: 620).frame(maxWidth: .infinity)
         }.navigationTitle("Shelter")
+            .confirmationDialog("Remove \(shelter.name) from this device?", isPresented: $confirmingRemoval, titleVisibility: .visible) {
+                Button("Remove shelter", role: .destructive) { model.removeShelter(shelter.id) { dismiss() } }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Existing requests, messages and receipts stay saved and queued delivery continues. Restore this entry from Removed shelters at any time.")
+            }
     }
 }
 
 private struct AddShelterView: View {
     @ObservedObject var model: RelayModel
     @Environment(\.dismiss) private var dismiss
-    @State private var mode = "local"
+    @State private var mode: String
+    let onSaved: (String) -> Void
     @State private var name = ""
     @State private var area = ""
     @State private var deviceID = ""
@@ -308,6 +339,10 @@ private struct AddShelterView: View {
     @State private var shelterID = UUID().uuidString.lowercased()
     @State private var saving = false
     @FocusState private var editing: Bool
+    init(model: RelayModel, initialMode: String, onSaved: @escaping (String) -> Void) {
+        self.model = model; _mode = State(initialValue: initialMode); self.onSaved = onSaved
+    }
+    private var imported: ShelterContact? { try? ShelterContact.importCode(code) }
     var body: some View {
         NavigationStack {
             Form {
@@ -317,8 +352,28 @@ private struct AddShelterView: View {
                     Text("Import code").tag("import")
                 }.pickerStyle(.menu)
                 if mode == "import" {
+                    Text("On the other phone, open its shelter and use Share shelter code. Paste that code below; Connect is not required.")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                    PasteButton(payloadType: String.self) { strings in if let text = strings.first { code = text } }
                     TextField("Paste RELAY shelter code", text: $code, axis: .vertical).lineLimit(4...8).focused($editing)
                         .autocorrectionDisabled().accessibilityIdentifier("shelterCode")
+                        #if os(iOS)
+                        .textInputAutocapitalization(.never)
+                        #endif
+                    if let imported {
+                        Section("Shelter to import") {
+                            Text(imported.name).font(.headline)
+                            Text(imported.area)
+                            Text("Receiving device: \(imported.receivingDeviceID.prefix(8))").font(.caption)
+                            if imported.receivingDeviceID == model.deviceID {
+                                Text("This code belongs to this phone. It will appear in Shelters, but Help only offers destinations on another device.")
+                                    .font(.caption).foregroundStyle(.orange)
+                            }
+                        }
+                    } else if !code.isEmpty {
+                        Text("Code not recognized. Paste the complete code starting with RELAY-SHELTER-1:.")
+                            .font(.caption).foregroundStyle(.orange)
+                    }
                 } else {
                     TextField("Shelter name", text: $name).focused($editing).accessibilityIdentifier("shelterName")
                     TextField("Area or address", text: $area).focused($editing).accessibilityIdentifier("shelterArea")
@@ -339,9 +394,10 @@ private struct AddShelterView: View {
                 }
                 Text("Use a synthetic shelter. This local setup is not identity verification or staff enrollment.")
                     .font(.caption).foregroundStyle(.secondary)
-                Button(saving ? "Saving…" : "Save shelter", action: save).disabled(saving || !model.ready)
+                Button(saving ? "Saving…" : mode == "import" ? "Import shelter" : "Save shelter", action: save)
+                    .disabled(saving || !model.ready || (mode == "import" && imported == nil))
                     .accessibilityIdentifier("saveShelter")
-            }.navigationTitle("Add shelter")
+            }.navigationTitle(mode == "import" ? "Import shelter" : "Create shelter")
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(saving) }
                     ToolbarItem(placement: .primaryAction) { if editing { Button("Done") { editing = false } } }
@@ -360,7 +416,7 @@ private struct AddShelterView: View {
                 name: name.trimmingCharacters(in: .whitespacesAndNewlines), area: area.trimmingCharacters(in: .whitespacesAndNewlines),
                 receivingDeviceID: mode == "local" ? model.deviceID : deviceID.trimmingCharacters(in: .whitespacesAndNewlines).lowercased())
             try shelter.validate(); saving = true
-            model.saveShelter(shelter) { saving = false; dismiss() }
+            model.saveShelter(shelter) { saving = false; onSaved(shelter.name); dismiss() }
         } catch { model.error = String(describing: error) }
     }
 }

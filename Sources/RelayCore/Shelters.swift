@@ -32,7 +32,8 @@ public struct ShelterContact: Codable, Equatable, Identifiable {
         let text = code.trimmingCharacters(in: .whitespacesAndNewlines)
         let prefix = "RELAY-SHELTER-1:"
         guard text.hasPrefix(prefix), text.utf8.count <= 4096 else { throw RelayError.invalid("Paste a RELAY shelter code.") }
-        guard let data = Data(base64Encoded: String(text.dropFirst(prefix.count))) else { throw RelayError.invalid("Invalid shelter code. Copy the full shared code.") }
+        let encoded = text.dropFirst(prefix.count).filter { !$0.isWhitespace }
+        guard let data = Data(base64Encoded: String(encoded)) else { throw RelayError.invalid("Invalid shelter code. Share it from the other phone and paste the full code here.") }
         let entry = try WireCodec.decode(Self.self, from: data)
         try entry.validate(); return entry
     }

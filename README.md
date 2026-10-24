@@ -39,7 +39,7 @@ For stable macOS Local Network permission behavior across rebuilds, use your own
 
 The project is checked in. `python3 scripts/generate_project.py` deterministically regenerates its two app targets, shared schemes, and plists using only Python's standard library. It resets signing changes to the project defaults: enrolled team U4G9LV39GM / com.nikilthalapaneni.relay for iOS, ad hoc signing for macOS. Override DEVELOPMENT_TEAM and PRODUCT_BUNDLE_IDENTIFIER on the command line when using another team.
 
-## Shelter requests (build 6)
+## Shelter requests (build 7)
 
 The current interface has **Help, Requests, Shelters, Messages**. Help's gear opens
 Settings/Tools; **Help → Nearby devices** opens discovery and peer messaging.
@@ -63,16 +63,29 @@ The existing Chats interface is retained under Messages.
 - Structured help content is versioned JSON inside a reserved `payload.text` prefix
   (`RELAY-HELP-1` followed by a newline), preserving the v1 transport envelope and
   byte-for-byte forwarding through older relay codecs. Older apps can carry it but
-  do not provide the new request UI. All participating demo endpoints should use build 6.
+  do not provide the new request UI. All participating demo endpoints should use build 7.
 - SQLite schema 3 adds a shelter directory and durable draft metadata. Existing
   device identities, message bodies, peers and receipt state are preserved.
 
-To try it: on C, **Shelters → Add shelter → Receive here**. Save a synthetic name/area,
-open the entry and share/copy its code. On A, **Shelters → Add shelter → Import code**,
-then open the entry and tap **Request help here**. Review/save while connections are
-paused. Start nearby connections for A/B, then B/C in separate encounters as described
-in TEST_PLAN.md. On C, open **Requests → Device inbox**. Return B to A for the receipt.
-Shelter setup is local and unverified; use synthetic data only.
+To try it: on C, **Shelters → Create shelter on this device**. Save a synthetic
+name/area, then open the entry and use **Share shelter code** to transfer the full
+code to A (for example via AirDrop or Messages before your isolated radio test).
+**Copy code only copies on C**, and does not transfer anything automatically.
+On A, **Shelters → Import shelter**, paste the full code, check the name and
+receiving-device preview, then import. Connect is not needed for directory setup.
+Open the imported entry and tap **Request help here**. Help only offers shelters
+received by another device; a shelter received here is still visible in Shelters.
+Review/save while connections are paused. Start A/B, then B/C in separate encounters
+as described in TEST_PLAN.md. On C, open **Requests → Device inbox**. Return B to A
+for the receipt. Shelter setup is local and unverified; use synthetic data only.
+
+Open a mistaken entry and use **Remove shelter**. This hides the local directory
+entry and clears that destination from an unsent draft. It preserves draft text,
+request history, queued messages and receipts; queued delivery continues. Restore
+it from **Removed shelters**, or import its identical code again. Removal does not
+revoke a shelter on other devices. Removed entries still count toward the prototype
+limit of 100 saved entries.
+
 
 ## Chat interface (retained from build 5)
 
@@ -102,9 +115,9 @@ Apps must remain **foreground and awake** during encounters. Network services st
 
 ## Teammate beta distribution
 
-TestFlight preparation, a repeatable archive/upload script, draft beta metadata, and the enrolled-account status are in [TESTFLIGHT.md](TESTFLIGHT.md). Builds 0.1.0 (2), (3), (4), (5), and (6) have been signed and uploaded to App Store Connect as RELAY Offline Lab. Build 2 remains the external beta submission. Build 6 adds the shelter workflow and is verified Testing in the internal RELAY Development group. The [TestFlight invitation](https://testflight.apple.com/join/paGggTvE) is configured but cannot accept testers until Apple approves a build. After TestFlight setup, new builds can reach teammates without USB; source edits still require another build/upload.
+TestFlight preparation, a repeatable archive/upload script, draft beta metadata, and the enrolled-account status are in [TESTFLIGHT.md](TESTFLIGHT.md). Builds 0.1.0 (2), (3), (4), (5), (6), and (7) have been signed and uploaded to App Store Connect as RELAY Offline Lab. Build 2 remains the external beta submission. Build 7 adds shelter removal and clearer import; Apple processing is pending. Build 6 remains available in the internal RELAY Development group. The [TestFlight invitation](https://testflight.apple.com/join/paGggTvE) is configured but cannot accept testers until Apple approves a build. After TestFlight setup, new builds can reach teammates without USB; source edits still require another build/upload.
 
-Build 6 is directly installed and launched on both physical phones under the original development identifier, preserving both UUIDs, stores and final receipts (19 stored envelopes on iPhone 15 Pro Max; 16 on iPhone 16). The first phone also has the paid-bundle build 6 installed. TestFlight uses that separate paid-team identifier and therefore a separate local store; use one installation consistently during a demonstration.
+Build 7 is directly installed and launched on both physical phones under the original development identifier, preserving both UUIDs, stores and final receipts (24 stored envelopes on iPhone 15 Pro Max; 23 on iPhone 16). The first phone also has the paid-bundle build 6 installed. TestFlight uses that separate paid-team identifier and therefore a separate local store; use one installation consistently during a demonstration.
 
 ## Automated checks
 
