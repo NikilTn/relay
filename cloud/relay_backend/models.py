@@ -9,6 +9,37 @@ class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+class RequestLocation(StrictModel):
+    latitude: float = Field(strict=True, ge=-90, le=90, allow_inf_nan=False)
+    longitude: float = Field(strict=True, ge=-180, le=180, allow_inf_nan=False)
+    horizontal_accuracy: float = Field(strict=True, ge=0, le=20_000_000, allow_inf_nan=False)
+    captured_at: datetime
+    precision: Literal["precise", "approximate"]
+    source: Literal["device", "manual"]
+
+    @field_validator("captured_at")
+    @classmethod
+    def aware(cls, value):
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("An explicit UTC offset is required")
+        return value
+
+
+class StructuredFields(StrictModel):
+    item_id: Literal["water_packs", "blankets", "food_packs", "other"] | None = None
+    quantity: int | None = Field(default=None, strict=True, ge=1, le=10000)
+    unit: Literal["pack", "piece", "bottle"] | None = None
+    people: int | None = Field(default=None, strict=True, ge=1, le=1000000)
+    landmark: str | None = Field(default=None, max_length=500)
+
+    @model_validator(mode="after")
+    def consistent_unit(self):
+        units = {"water_packs": "pack", "food_packs": "pack", "blankets": "piece"}
+        if self.item_id in units and self.unit is not None and self.unit != units[self.item_id]:
+            raise ValueError("Unit does not match the supported item")
+        return self
+
+
 class RequestSubmission(StrictModel):
     schema_version: Literal[1] = 1
     operation_id: UUID
@@ -22,6 +53,9 @@ class RequestSubmission(StrictModel):
     created_at: datetime
     expires_at: datetime
     revision: Literal[1] = 1
+    location: RequestLocation | None = None
+    structured_fields: StructuredFields | None = None
+    interpretation_id: UUID | None = None
 
     @field_validator("created_at", "expires_at")
     @classmethod
@@ -99,8 +133,8 @@ class RequestResult(StrictModel):
     manual_retry_count: int = 0
     error: ErrorDetail | None
     provider_evidence: dict | None
-    assignment_state: Literal["not_implemented"]
-    fulfillment_state: Literal["not_implemented"]
+    assignment_state: Literal["not_implemented", "unassigned", "reserved", "released", "fulfilled"]
+    fulfillment_state: Literal["not_implemented", "not_fulfilled", "fulfilled"]
 
 
 class RequestPage(StrictModel):
@@ -194,5 +228,77 @@ class RequestHistory(StrictModel):
     revision: int
     status: str
     events: list[RequestEvent]
-    # Reported progress only: does not reserve stock or verify fulfillment.
-    resource_allocation_verified: Literal[False] = False
+    # True means the inventory transaction was verified, never physical delivery.
+    resource_allocation_verified: bool = False
+    physical_delivery_verified: Literal[False] = False
+
+
+class InterpretationSubmission(StrictModel):
+    operation_id: UUID
+    interpretation_id: UUID
+    incident_id: str = Field(min_length=1, max_length=80, pattern=r"^[a-zA-Z0-9_-]+$")
+    destination_shelter_id: str = Field(min_length=1, max_length=80, pattern=r"^[a-zA-Z0-9_-]+$")
+    original_text: str = Field(min_length=1, max_length=4096)
+    transcription_id: UUID | None = None
+
+    @field_validator("original_text")
+    @classmethod
+    def nonblank(cls, value):
+        return RequestSubmission.nonblank(value)
+
+
+class InterpretationResult(StrictModel):
+    interpretation_id: UUID
+    status: Literal["pending", "ready_for_review", "needs_review", "failed"]
+    result: ValidatedResult | None = None
+    error: ErrorDetail | None = None
+
+
+class InventoryItem(StrictModel):
+    item_id: Literal["water_packs", "food_packs", "blankets"]
+    unit: Literal["pack", "piece"]
+    on_hand: int = Field(ge=0)
+    reserved: int = Field(ge=0)
+    available: int = Field(ge=0)
+    revision: int = Field(ge=0)
+
+
+class Inventory(StrictModel):
+    shelter_id: str
+    items: list[InventoryItem]
+
+
+class InventoryAdjustment(StrictModel):
+    operation_id: UUID
+    item_id: Literal["water_packs", "food_packs", "blankets"]
+    quantity_delta: int = Field(strict=True, ge=-1000000, le=1000000)
+    expected_revision: int = Field(strict=True, ge=0)
+    note: str = Field(min_length=1, max_length=500)
+
+    @model_validator(mode="after")
+    def meaningful(self):
+        self.note = self.note.strip()
+        if not self.note or self.quantity_delta == 0:
+            raise ValueError("A nonzero change and audit note are required")
+        return self
+
+
+class InventoryCommand(StrictModel):
+    operation_id: UUID
+    action: Literal["reserve", "fulfill", "release"]
+    item_id: Literal["water_packs", "food_packs", "blankets"] | None = None
+    quantity: int | None = Field(default=None, strict=True, ge=1, le=10000)
+    expected_inventory_revision: int | None = Field(default=None, strict=True, ge=0)
+
+
+class Reservation(StrictModel):
+    item_id: Literal["water_packs", "food_packs", "blankets"]
+    quantity: int = Field(ge=1)
+    unit: Literal["pack", "piece"]
+    status: Literal["reserved", "fulfilled", "released"]
+
+
+class RequestInventory(StrictModel):
+    request_id: UUID
+    reservation: Reservation | None
+    history: RequestHistory

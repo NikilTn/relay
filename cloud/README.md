@@ -1,8 +1,10 @@
 # RELAY cloud MVP
 
-A runnable, separately authenticated backend for immutable resource requests and reviewed short recordings. On the integration branch, build 8 adds the native client and request conversations; see [native integration](../CLOUD_INTEGRATION.md). **Current verification: real Cognito MFA, S3 upload, Amazon Transcribe, Nova Lite and DynamoDB pass through the running local API. Thirty-five automated tests and real AWS restart recovery pass. Public hosting remains blocked by the missing dedicated Lambda role.** See `docs/BACKEND_TEST_RESULTS.md` for evidence.
+A runnable, separately authenticated backend for immutable resource requests and reviewed short recordings. **New source adds private pre-send previews, optional request location/structured fields, and coordinator inventory reservations/fulfillment. Sixty fixture tests pass; the new code has not yet replaced the running server or been live-tested.** See [the exact new contract and rollout gate](docs/PREVIEW_INVENTORY_CONTRACT.md). The native task owns app integration.
 
-The API durably commits a request and its work record before acknowledging acceptance. A separate worker proposes structured fields through Bedrock and validates them in code. Nothing allocates inventory or marks fulfillment. Recorded speech is a separate owned upload/job; its transcript must be reviewed and submitted explicitly through the same request endpoint.
+The API durably commits work before acknowledging acceptance. A worker proposes structured fields through Bedrock and validates them in code. Pre-send previews stay out of inboxes; explicit Send binds a matching preview to one request without a second model call. Models cannot allocate inventory. Authorized coordinators reserve/fulfill/release stock through atomic, idempotent transactions; cancellation releases reserved stock. Ledger fulfillment records a human action and does not prove physical delivery. Recorded speech is a separate owned upload/job and still requires explicit review.
+
+Earlier build-9 evidence established Cognito MFA, S3, Transcribe, Nova Lite and DynamoDB through the authorized temporary HTTPS tunnel. It does not establish the new preview/inventory flow. Managed Lambda/API Gateway hosting remains blocked by the missing dedicated role/PassRole; prior prepared ZIPs are stale for this feature.
 
 ## Run without AWS or charges
 

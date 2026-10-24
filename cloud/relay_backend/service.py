@@ -1,5 +1,4 @@
 import base64
-import hashlib
 import json
 import time
 from datetime import datetime, timezone
@@ -9,33 +8,12 @@ from .analysis import validate_model_result
 from .providers import ProviderError
 from .store import Conflict, Delete, Put
 
-PREFIX = "RELAY_MVP_V1#"
-WORK = PREFIX + "WORK"
+from .common import APIError, PREFIX, WORK, canonical, digest, key, work_key
+from .interpretations import InterpretationMixin
+from .inventory import InventoryMixin
 
 
-def key(kind, identifier):
-    return PREFIX + kind.upper() + "#" + str(identifier), "META"
-
-
-def work_key(kind, identifier):
-    return WORK, kind + "#" + str(identifier)
-
-
-def canonical(value):
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
-
-
-def digest(value):
-    return hashlib.sha256(canonical(value).encode()).hexdigest()
-
-
-class APIError(Exception):
-    def __init__(self, status, code, message, retryable=False):
-        self.status, self.code, self.message, self.retryable = status, code, message, retryable
-        super().__init__(code)
-
-
-class Service:
+class Service(InterpretationMixin, InventoryMixin):
     def __init__(self, settings, store, providers, clock=time.time):
         self.settings, self.store, self.providers, self.clock = settings, store, providers, clock
 
@@ -69,9 +47,12 @@ class Service:
             principal.membership.incident_id == record["submission"]["incident_id"] and
             record["submission"]["destination_shelter_id"] in principal.membership.shelter_ids)
 
-    @staticmethod
-    def public_request(record):
-        return {k: v for k, v in record.items() if k not in {"payload_hash", "owner_subject"}}
+    def public_request(self, record):
+        result = {k: v for k, v in record.items() if k not in {"payload_hash", "owner_subject"}}
+        reservation = self.store.get(*key("reservation", record["request_id"]))
+        status = reservation[0]["status"] if reservation else "unassigned"
+        result.update(assignment_state=status, fulfillment_state="fulfilled" if status == "fulfilled" else "not_fulfilled")
+        return result
 
     @staticmethod
     def public_transcription(record, now):
@@ -94,51 +75,6 @@ class Service:
         return row[0] if row else {"request_id": str(identifier), "revision": 0,
                                   "status": "new", "events": [], "resource_allocation_verified": False}
 
-    def append_request_event(self, principal, identifier, command):
-        self.writable()
-        record = self.get_request(principal, identifier)
-        payload = command.model_dump(mode="json")
-        operation_key = (PREFIX + "OP#" + principal.subject, str(command.operation_id))
-        operation = {"event_request_id": str(identifier), "hash": digest(payload)}
-        existing = self.store.get(*operation_key)
-        if existing:
-            if existing[0] != operation:
-                raise APIError(409, "idempotency_conflict", "Operation ID was used with different content")
-            return self.request_history(principal, identifier)
-        row = self.store.get(*key("history", identifier))
-        history = row[0] if row else self.request_history(principal, identifier)
-        if command.expected_revision != history["revision"]:
-            raise APIError(409, "revision_conflict", "Refresh request history before submitting this update")
-        if len(history["events"]) >= 100:
-            raise APIError(429, "history_limit", "Demo request history limit reached")
-        status = command.status
-        if status:
-            is_dispatcher = principal.membership.role == "dispatcher"
-            if is_dispatcher:
-                self.authorize_shelter(principal, record["submission"]["incident_id"], record["submission"]["destination_shelter_id"])
-            if (is_dispatcher and status == "cancelled") or (not is_dispatcher and status != "cancelled"):
-                raise APIError(403, "status_forbidden", "This role cannot make that status update")
-            transitions = {"new": {"accepted", "rejected", "cancelled"},
-                           "accepted": {"in_progress", "rejected", "cancelled"},
-                           "in_progress": {"completed", "cancelled"},
-                           "completed": set(), "rejected": set(), "cancelled": set()}
-            if status not in transitions.get(history["status"], set()):
-                raise APIError(409, "invalid_transition", "That status transition is not allowed")
-        event = {"event_id": str(command.operation_id), "revision": history["revision"] + 1,
-                 "author_role": principal.membership.role, "text": command.text, "status": status,
-                 "created_at": datetime.fromtimestamp(self.clock(), timezone.utc).isoformat()}
-        updated = {**history, "revision": event["revision"], "status": status or history["status"],
-                   "events": [*history["events"], event]}
-        try:
-            self.store.transact(puts=[Put(*key("history", identifier), updated, row[1] if row else None),
-                                      Put(*operation_key, operation)])
-        except Conflict:
-            existing = self.store.get(*operation_key)
-            if existing and existing[0] == operation:
-                return self.request_history(principal, identifier)
-            raise APIError(409, "revision_conflict", "Refresh history; another update was saved") from None
-        return updated
-
     def _duplicate_request(self, principal, payload, hash_value):
         row = self.store.get(*key("request", payload["request_id"]))
         if row and row[0]["owner_subject"] == principal.subject and row[0]["payload_hash"] == hash_value:
@@ -148,6 +84,12 @@ class Service:
     def submit(self, principal, submission):
         self.writable()
         payload = submission.model_dump(mode="json")
+        # Preserve immutable digests/replay of submissions from before these optional fields.
+        for field in ("location", "structured_fields", "interpretation_id"):
+            if payload.get(field) is None:
+                payload.pop(field, None)
+        if payload.get("location"):
+            payload["location"]["captured_at"] = submission.location.captured_at.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
         for field in ("created_at", "expires_at"):
             payload[field] = getattr(submission, field).astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
         hash_value = digest(payload)
@@ -166,12 +108,16 @@ class Service:
                 raise APIError(404, "transcription_not_found", "Transcription not found")
             if audio[0]["status"] != "completed":
                 raise APIError(409, "transcription_not_complete", "Review the completed transcript before submitting")
+        preview = self.preview_for_submission(principal, payload) if payload.get("interpretation_id") else None
         record = {"request_id": payload["request_id"], "schema_version": 1, "revision": 1,
                   "owner_subject": principal.subject, "payload_hash": hash_value, "submission": payload,
                   "accepted_at": datetime.fromtimestamp(now, timezone.utc).isoformat(),
                   "cloud_state": "accepted", "analysis_state": "pending", "result": None,
                   "analysis_attempts": 0, "error": None, "provider_evidence": None,
                   "assignment_state": "not_implemented", "fulfillment_state": "not_implemented"}
+        if preview:
+            record.update(analysis_state=preview[0]["status"], result=preview[0]["result"],
+                          provider_evidence=preview[0]["provider_evidence"], analysis_attempts=preview[0]["analysis_attempts"])
         reference = {"request_id": payload["request_id"]}
         index_sk = f"{now:020.6f}#{payload['request_id']}"
         task = {"kind": "request", "id": payload["request_id"], "attempts": 0,
@@ -179,16 +125,20 @@ class Service:
         changes = [Put(*key("request", payload["request_id"]), record),
                    Put(PREFIX + "USER#" + principal.subject, index_sk, reference),
                    Put(PREFIX + "SHELTER#" + payload["incident_id"] + "#" + payload["destination_shelter_id"], index_sk, reference),
-                   Put(*work_key("request", payload["request_id"]), task),
-                   Put(PREFIX + "OP#" + principal.subject, payload["operation_id"], reference),
-                   self.budget_put("requests")]
+                   Put(PREFIX + "OP#" + principal.subject, payload["operation_id"], reference)]
+        changes.extend([preview[1]] if preview else [Put(*work_key("request", payload["request_id"]), task), self.budget_put("requests")])
         try:
             self.store.transact(puts=changes)
         except Conflict:
             if self.store.get(*key("request", payload["request_id"])) or self.store.get(PREFIX + "OP#" + principal.subject, payload["operation_id"]):
                 return self._duplicate_request(principal, payload, hash_value)
+            if preview:
+                current = self.owned_interpretation(principal, payload["interpretation_id"])[0]
+                if current.get("submitted_request_id"):
+                    raise APIError(409, "interpretation_already_used", "A preview can be sent as only one request") from None
             raise APIError(503, "concurrent_acceptance", "Retry the identical request after a short delay", True) from None
-        self._wake("request", payload["request_id"])
+        if not preview:
+            self._wake("request", payload["request_id"])
         return self.public_request(record), True
 
     def _wake(self, kind, identifier):
@@ -360,7 +310,7 @@ class Worker:
             if task["next_attempt_at"] > now or task["lease_until"] > now:
                 continue
             claimed = {**task, "lease_until": now + s.settings.lease_seconds, "lease_id": str(uuid4())}
-            if task["kind"] == "request":
+            if task["kind"] in {"request", "interpretation"}:
                 # Persist BEFORE invocation: crashes after a paid call cannot cause
                 # unlimited re-invocation when the lease is reclaimed.
                 claimed["dispatches"] = task.get("dispatches", 0) + 1
@@ -383,16 +333,19 @@ class Worker:
         now = s.clock()
         retry_task = None
         try:
-            if task["kind"] == "request":
+            if task["kind"] in {"request", "interpretation"}:
                 if task.get("dispatches", 1) > s.settings.max_attempts:
                     raise ProviderError("analysis_attempt_limit")
-                if datetime.fromisoformat(record["submission"]["expires_at"].replace("Z", "+00:00")).timestamp() <= now:
+                expires = (record["expires_at"] if task["kind"] == "interpretation" else
+                           datetime.fromisoformat(record["submission"]["expires_at"].replace("Z", "+00:00")).timestamp())
+                if expires <= now:
                     raise ProviderError("request_expired")
                 shelters = [x.model_dump() for x in s.settings.shelters if x.incident_id == record["submission"]["incident_id"]]
                 raw, evidence = s.providers.analyze(record["submission"], shelters)
                 result = validate_model_result(raw, record["submission"], shelters)
-                record.update(analysis_state=result["status"], result=result, provider_evidence=evidence,
-                              analysis_attempts=task.get("dispatches", task["attempts"] + 1), error=None)
+                state_field = "status" if task["kind"] == "interpretation" else "analysis_state"
+                record.update({state_field: result["status"], "result": result, "provider_evidence": evidence,
+                               "analysis_attempts": task.get("dispatches", task["attempts"] + 1), "error": None})
             else:
                 if now - record["started_at"] > s.settings.transcription_timeout_seconds:
                     raise ProviderError("transcription_poll_timeout", True)
@@ -410,9 +363,10 @@ class Worker:
             attempts = task["attempts"] + 1
             retrying = exc.retryable and attempts < s.settings.max_attempts and exc.code != "transcription_poll_timeout"
             record["error"] = {"code": exc.code, "message": "Provider operation failed; accepted data remains durable", "retryable": exc.retryable}
-            if task["kind"] == "request":
-                record.update(analysis_state="retrying" if retrying else "failed",
-                              analysis_attempts=min(task.get("dispatches", attempts), s.settings.max_attempts))
+            if task["kind"] in {"request", "interpretation"}:
+                state_field = "status" if task["kind"] == "interpretation" else "analysis_state"
+                state = ("pending" if task["kind"] == "interpretation" else "retrying") if retrying else "failed"
+                record.update({state_field: state, "analysis_attempts": min(task.get("dispatches", attempts), s.settings.max_attempts)})
             else:
                 record["status"] = "queued" if retrying and record["status"] == "queued" else "processing" if retrying else "failed"
             if retrying:

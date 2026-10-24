@@ -36,11 +36,11 @@ def test_status_permissions_and_transitions(env):
     c=env['client']; path=setup_request(env)
     assert c.post(path+'/events',json=command(status='accepted'),headers=auth(env)).status_code==403
     assert c.post(path+'/events',json=command(status='completed'),headers=auth(env,'test-dispatcher-a')).status_code==409
-    for rev,status in enumerate(['accepted','in_progress','completed']):
-        r=c.post(path+'/events',json=command(rev,status=status),headers=auth(env,'test-dispatcher-a'))
-        assert r.status_code==200
-        assert r.json()['resource_allocation_verified'] is False
-    assert c.post(path+'/events',json=command(3,status='cancelled'),headers=auth(env)).status_code==409
+    # Build 10 prevents legacy progress commands from bypassing the stock ledger.
+    for status in ['accepted','in_progress','completed']:
+        r=c.post(path+'/events',json=command(status=status),headers=auth(env,'test-dispatcher-a'))
+        assert r.status_code==409 and r.json()['error']['code']=='inventory_action_required'
+    assert c.get(path+'/history',headers=auth(env)).json()['revision']==0
 
 
 def test_owner_cancel_and_restart(env):

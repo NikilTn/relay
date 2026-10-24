@@ -78,3 +78,13 @@ Usage observed: **12 accepted synthetic requests, 16 real model calls including 
 - Earlier failure/diagnostic evidence is retained as `aws-*-diagnostic*.json` and `aws-*-format-failure.json`; it is not presented as final success.
 
 All implementation/evidence changes are under cloud/**. The mobile checkout and original untracked reports remain preserved.
+
+## 2026-10-24 — pre-send preview and inventory source validation
+
+Source based on native integration `8c207e736d269b02d52d888b8de12ac360ed1db7`, isolated branch `feature/cloud-inventory-preview`; changes confined to cloud/**. **60 fixture tests PASS**, including the prior suite and new pre-send, location and inventory cases. Timestamp/output are recorded in `evidence/preview-inventory-fixture-tests.json` and `.txt`.
+
+Verified durable preview acceptance/replay with no request inbox side effect; completed-transcription ownership; bounded transient/crash retry; reuse of one analysis budget slot on explicit Send; concurrent preview-consumption protection; backward immutable request digests and committed event replay; strict coordinates/unit/count validation and omission of structured location from model prompts.
+
+Inventory checks cover authorization, stock revisions, underflow, independent-connection overbooking races, atomic reserve/fulfill/release, requester cancellation, cancellation racing fulfillment, recovery after a lost response and restart, three immutable ledger changes for stock/reserve/fulfill, and preventing old progress endpoints from bypassing fulfillment. A full ordinary reply history cannot trap reserved stock. Reported ledger fulfillment remains distinct from physical delivery.
+
+No new AWS calls, paid inference, transcription jobs, shared-runtime changes or deployment were performed for this implementation. The last separately verified live counts were 17/30 slots and 3/5 recordings. Native physical UI and the new live AWS inventory flow are not established by fixture tests. There is one existing Starlette TestClient deprecation warning. The native task will inspect/cherry-pick, rerun the suite, then coordinate retirement of stale API/worker processes before bounded live validation; the older cfcaade deployment ZIP must not be used for this source.
