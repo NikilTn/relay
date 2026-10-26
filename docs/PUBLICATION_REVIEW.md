@@ -58,7 +58,7 @@ credentials were detected in the original branch-history scan either.
 | Python correctness | Ruff checks passed |
 | Formatting | Swift formatting and Ruff formatting applied and checked |
 | Secrets | No findings after reviewed checksum exceptions; known-credential comparison clean |
-| Hosted CI | Workflow added; its GitHub run is separate from these local results |
+| Hosted CI | [GitHub Actions run 1](https://github.com/NikilTn/relay/actions/runs/40359707144) passed for publication commit `ac35ad8` |
 
 Tests used synthetic fixture data and same-host transport controls. No real AWS
 calls were needed. Temporary TCP test processes exited. The original demo API,
