@@ -1,0 +1,10 @@
+title = "RELAY reviewed checksum exceptions"
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Recorded SHA-256 source-file checksums, not credentials"
+condition = "AND"
+paths = ['(?:^|/)(?:docs/evidence/.*/(?:build[0-9]+-)?source-manifest\.json|cloud/docs/evidence/(?:preview-inventory-source|packaging-[a-f0-9]+)\.json)$']
+regexTarget = "line"
+regexes = ['^\s*"[^"\n]+\.(?:swift|py)"\s*:\s*"[0-9a-f]{64}"\s*,?\s*$']

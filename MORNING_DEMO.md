@@ -1,5 +1,11 @@
 # RELAY morning demo — build22
 
+> **Publication status — October 26, 2026:** the temporary Mac API, worker and
+> tunnel are stopped. Addresses, PIDs, accounts and release observations below
+> describe the hackathon deployment, not a currently available service. Configure
+> your own deployment using the root README.
+
+
 The smallest clear demo is **two requester iPhones and this Mac as Shelter A**.
 Use the native apps. There is no separate dispatcher website to configure.
 

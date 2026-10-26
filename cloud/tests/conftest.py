@@ -10,7 +10,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from relay_backend.api import build_service, create_app
 from relay_backend.config import Settings
 
-spec = importlib.util.spec_from_file_location("bootstrap", Path(__file__).resolve().parents[1] / "scripts/bootstrap_local.py")
+spec = importlib.util.spec_from_file_location(
+    "bootstrap", Path(__file__).resolve().parents[1] / "scripts/bootstrap_local.py"
+)
 bootstrap_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(bootstrap_module)
 
@@ -26,8 +28,13 @@ def env(tmp_path):
     settings = Settings.load(config)
     service = build_service(settings)
     client = TestClient(create_app(settings, service))
-    return PrivateTestEnvironment(settings=settings, service=service, client=client,
-                                  tokens=json.loads(tokens.read_text()), config=config)
+    return PrivateTestEnvironment(
+        settings=settings,
+        service=service,
+        client=client,
+        tokens=json.loads(tokens.read_text()),
+        config=config,
+    )
 
 
 def auth(env, name="test-requester-a"):

@@ -57,8 +57,12 @@ class Settings(BaseModel):
     def valid_mode(self):
         self.runtime_dir = self.runtime_dir.expanduser().resolve()
         if self.mode == "aws":
-            if self.local_public_key is not None or not self.issuer.startswith("https://cognito-idp.us-east-1.amazonaws.com/"):
-                raise ValueError("AWS mode requires a real Cognito issuer and forbids test signing keys")
+            if self.local_public_key is not None or not self.issuer.startswith(
+                "https://cognito-idp.us-east-1.amazonaws.com/"
+            ):
+                raise ValueError(
+                    "AWS mode requires a real Cognito issuer and forbids test signing keys"
+                )
             if not self.client_id or self.client_id == "relay-local-test":
                 raise ValueError("Configure the verified Cognito public app client")
         elif self.storage != "sqlite" or not self.local_public_key:
@@ -75,6 +79,7 @@ class Settings(BaseModel):
 
     def aws_session(self):
         import boto3
+
         if self.aws_credentials_file:
             os.environ["AWS_SHARED_CREDENTIALS_FILE"] = str(self.aws_credentials_file)
         if self.aws_config_file:
@@ -84,6 +89,11 @@ class Settings(BaseModel):
         return boto3.Session(profile_name=self.aws_profile, region_name=self.aws_region)
 
     def safe_client_config(self):
-        return {"api_base_url": self.public_base_url, "issuer": self.issuer,
-                "client_id": self.client_id, "region": self.aws_region,
-                "schema_version": 1, "hosting_mode": self.mode}
+        return {
+            "api_base_url": self.public_base_url,
+            "issuer": self.issuer,
+            "client_id": self.client_id,
+            "region": self.aws_region,
+            "schema_version": 1,
+            "hosting_mode": self.mode,
+        }

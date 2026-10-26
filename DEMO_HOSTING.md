@@ -1,5 +1,11 @@
 # RELAY demo hosting
 
+> **Publication status — October 26, 2026:** the temporary Mac API, worker and
+> tunnel are stopped. Addresses, PIDs, accounts and release observations below
+> describe the hackathon deployment, not a currently available service. Configure
+> your own deployment using the root README.
+
+
 Current API: **https://relay.stepcheck.app**.
 
 The API and worker run on this Mac. Namecheap DNS points to CloudFront, which

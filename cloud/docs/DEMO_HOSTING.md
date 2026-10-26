@@ -1,5 +1,11 @@
 # Demo hosting — 24 October 2026
 
+> **Publication status — October 26, 2026:** the temporary Mac API, worker and
+> tunnel are stopped. Addresses, PIDs, accounts and release observations below
+> describe the hackathon deployment, not a currently available service. Configure
+> your own deployment using the root README.
+
+
 The current HTTPS API is **https://relay.stepcheck.app**. It uses:
 
 Namecheap DNS → AWS CloudFront → HTTPS Cloudflare Quick Tunnel → this Mac's API

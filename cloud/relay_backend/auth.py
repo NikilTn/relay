@@ -18,10 +18,19 @@ class Principal:
 class Authenticator:
     def __init__(self, settings: Settings):
         self.settings = settings
-        self.local_key = settings.local_public_key.read_text() if settings.local_public_key else None
-        self.jwks = None if self.local_key else jwt.PyJWKClient(
-            settings.issuer.rstrip("/") + "/.well-known/jwks.json", cache_keys=True, lifespan=300,
-            timeout=5)
+        self.local_key = (
+            settings.local_public_key.read_text() if settings.local_public_key else None
+        )
+        self.jwks = (
+            None
+            if self.local_key
+            else jwt.PyJWKClient(
+                settings.issuer.rstrip("/") + "/.well-known/jwks.json",
+                cache_keys=True,
+                lifespan=300,
+                timeout=5,
+            )
+        )
 
     def verify(self, authorization: str | None) -> Principal:
         if not authorization or not authorization.startswith("Bearer "):
@@ -31,10 +40,17 @@ class Authenticator:
             raise AuthError("Invalid access token")
         try:
             key = self.local_key or self.jwks.get_signing_key_from_jwt(token).key
-            claims = jwt.decode(token, key, algorithms=["RS256"], issuer=self.settings.issuer,
-                                options={"verify_aud": False,
-                                         "require": ["exp", "iat", "sub", "iss", "token_use", "client_id"]},
-                                leeway=5)
+            claims = jwt.decode(
+                token,
+                key,
+                algorithms=["RS256"],
+                issuer=self.settings.issuer,
+                options={
+                    "verify_aud": False,
+                    "require": ["exp", "iat", "sub", "iss", "token_use", "client_id"],
+                },
+                leeway=5,
+            )
             if claims["token_use"] != "access" or claims["client_id"] != self.settings.client_id:
                 raise AuthError("Use an access token for the configured public app client")
             if not isinstance(claims["sub"], str) or claims["sub"] not in self.settings.memberships:

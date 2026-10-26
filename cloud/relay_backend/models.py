@@ -2,7 +2,14 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator, model_serializer
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+    model_serializer,
+)
 
 
 class StrictModel(BaseModel):
@@ -47,7 +54,9 @@ class StructuredFields(StrictModel):
 
 class SharedResidentDetails(StrictModel):
     display_name: str = Field(min_length=1, max_length=80)
-    preferred_language: Literal["English", "Spanish", "Mandarin", "Vietnamese", "Hindi", "Telugu", "Other"]
+    preferred_language: Literal[
+        "English", "Spanish", "Mandarin", "Vietnamese", "Hindi", "Telugu", "Other"
+    ]
     age: int | None = Field(default=None, strict=True, ge=0, le=130)
     height_cm: float | None = Field(default=None, ge=0, le=300, allow_inf_nan=False)
     weight_kg: float | None = Field(default=None, ge=0, le=1000, allow_inf_nan=False)
@@ -64,7 +73,17 @@ class SharedResidentDetails(StrictModel):
         if self.height_cm == 0 or self.weight_kg == 0:
             raise ValueError("Measurements must be positive or omitted")
         import json
-        if len(json.dumps(self.model_dump(exclude_none=True), ensure_ascii=False, separators=(",", ":")).encode()) > 4096:
+
+        if (
+            len(
+                json.dumps(
+                    self.model_dump(exclude_none=True),
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                ).encode()
+            )
+            > 4096
+        ):
             raise ValueError("Shared personal details exceed 4096 bytes")
         for value in self.model_dump().values():
             if isinstance(value, str) and any(ord(c) < 32 and c not in "\n\r\t" for c in value):
@@ -193,7 +212,14 @@ class TranscriptionResult(StrictModel):
     byte_length: int
     sha256: str
     language_code: Literal["en-US"]
-    status: Literal["awaiting_upload", "upload_expired", "queued", "processing", "completed", "failed"]
+    status: Literal[
+        "awaiting_upload",
+        "upload_expired",
+        "queued",
+        "processing",
+        "completed",
+        "failed",
+    ]
     created_at: float
     upload_expires_at: float
     transcript: str | None
@@ -248,7 +274,7 @@ class Health(StrictModel):
 
 class Profile(StrictModel):
     subject: str
-    role: Literal['requester', 'dispatcher']
+    role: Literal["requester", "dispatcher"]
     incident_id: str
     shelter_ids: list[str]
 
@@ -256,21 +282,23 @@ class Profile(StrictModel):
 class RequestEventCommand(StrictModel):
     operation_id: UUID
     expected_revision: int = Field(ge=0)
-    text: str = Field(default='', max_length=2000)
-    status: Literal['accepted', 'in_progress', 'completed', 'rejected', 'cancelled'] | None = None
+    text: str = Field(default="", max_length=2000)
+    status: Literal["accepted", "in_progress", "completed", "rejected", "cancelled"] | None = None
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def has_content(self):
         self.text = self.text.strip()
-        if (not self.text and self.status is None) or any(ord(c) < 32 and c not in '\n\r\t' for c in self.text):
-            raise ValueError('Add a reply or status')
+        if (not self.text and self.status is None) or any(
+            ord(c) < 32 and c not in "\n\r\t" for c in self.text
+        ):
+            raise ValueError("Add a reply or status")
         return self
 
 
 class RequestEvent(StrictModel):
     event_id: UUID
     revision: int
-    author_role: Literal['requester', 'dispatcher']
+    author_role: Literal["requester", "dispatcher"]
     text: str
     status: str | None
     created_at: datetime

@@ -1,6 +1,8 @@
 # RELAY cloud MVP
 
-A runnable, separately authenticated backend for immutable resource requests and reviewed short recordings. **Pre-send previews, optional request location/structured fields, and coordinator inventory reservations/fulfillment now pass the real public-HTTPS Swift HTTP workflow, with independent AWS result/ledger readback. Sixty backend fixture tests also pass.** See [the current deployment handoff](docs/CLOUD_DEPLOYMENT_HANDOFF.md) and [exact API contract](docs/PREVIEW_INVENTORY_CONTRACT.md). The native task owns app integration and separate native UI verification.
+**Status — October 26, 2026:** the hackathon server is stopped. Use the local fixture instructions below, or configure your own authorized AWS account. Historical workshop IDs and evidence are not shared credentials or a live service.
+
+A runnable, separately authenticated backend for immutable resource requests and reviewed short recordings. **Pre-send previews, optional request location/structured fields, and coordinator inventory reservations/fulfillment now pass the real public-HTTPS Swift HTTP workflow, with independent AWS result/ledger readback. The current backend tests cover speech, extraction, authorization, nearby ingestion, inventory and profile sharing.** See [the current deployment handoff](docs/CLOUD_DEPLOYMENT_HANDOFF.md) and [exact API contract](docs/PREVIEW_INVENTORY_CONTRACT.md). The native task owns app integration and separate native UI verification.
 
 The API durably commits work before acknowledging acceptance. A worker proposes structured fields through Bedrock and validates them in code. Pre-send previews stay out of inboxes; explicit Send binds a matching preview to one request without a second model call. Models cannot allocate inventory. Authorized coordinators reserve/fulfill/release stock through atomic, idempotent transactions; cancellation releases reserved stock. Ledger fulfillment records a human action and does not prove physical delivery. Recorded speech is a separate owned upload/job and still requires explicit review.
 
@@ -54,4 +56,4 @@ Contract and examples: `openapi/relay-v1.yaml`, `fixtures/`, `docs/INTEGRATION_H
 PYTHONPATH=cloud cloud/.venv/bin/python cloud/scripts/export_contract.py
 ```
 
-Live evidence and the exact sample transcript/model output are in `docs/LIVE_AWS_DEMO.md`. The running service on this Mac currently uses real AWS; the fixture commands above remain available for offline contract testing.
+Live evidence and the exact sample transcript/model output are in `docs/LIVE_AWS_DEMO.md`. The historical Mac service used real AWS and is now stopped. The fixture commands above remain available for local contract testing.

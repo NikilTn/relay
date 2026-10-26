@@ -1,5 +1,35 @@
 # RELAY test results — updated 24 October 2026
 
+## Public repository review — October 26, 2026
+
+The temporary API, worker, tunnel and Mac relay listener were stopped. This
+publication is source code, not an active hosted demo. The reviewed head adds
+portable Cognito/signing configuration and a signed-out nearby lab entry point.
+No physical phone upgrade, TestFlight upload, live AWS inference or new radio
+acceptance test was performed during this cleanup.
+
+| Check | Result |
+| --- | --- |
+| Swift package tests | PASS: 88 tests, zero failures |
+| Python backend tests | PASS: 111 tests; existing TestClient deprecation warning |
+| macOS Debug build | PASS |
+| iOS Simulator Debug build | PASS: arm64 and x86_64, signing disabled |
+| TCP process controls | PASS: interruption, retry/dedup, carrier restart, separate encounters and reverse receipt |
+| Python correctness and formatting | PASS: Ruff checks; AST comparison confirms only project-generator configuration changes beyond formatting |
+| Secret scan | PASS: current tree and all rewritten branch history; reviewed checksum-only exceptions |
+| Known-credential comparison | PASS: 30 private credential values checked against 738 historical blobs and current files, zero matches |
+| Physical router-free wireless | NOT TESTED |
+
+An initial formatted app build exposed a multiline trailing-closure parse issue
+in the sync loop. Splitting the eligible-record expression from the loop fixed it;
+both app builds passed afterward. Existing non-Sendable capture and deprecated
+Keychain API warnings remain; they are recorded in the publication review.
+
+The sections below are historical. Paths/emails/hardware IDs were sanitized and
+old screenshots omitted, so their recorded source hashes refer to earlier builds.
+See [publication review](docs/PUBLICATION_REVIEW.md) for scope and limitations.
+
+
 **Current verdict:** the15ProMax now has development build23 for first-run replay;
 the iPhone16 and running Mac remain on build22. All three retain the build22 feature set. Incident alerts downloaded and persisted on both physical phones. Native
 software, real AWS services and separate-encounter relay controls pass. Physical
@@ -566,7 +596,7 @@ Native Mac device UUID: `fabb432e-244d-4be8-86eb-eb9ac6982d0f`. iOS Simulator UU
 - Both apps started Bonjour. Mac discovery at 22:29:31 UTC listed the simulator, and the connection became ready at 22:29:32 UTC. Timestamps have second-level precision; no controlled discovery-latency measurement was made.
 - Discovery included `awdl0`, **but the actual connection log showed `interfaces=[en0:wifi,lo0:loopback]` with both endpoints on `10.251.234.66`** (same host). This is expressly not evidence of an AWDL wireless data path or two physical radios.
 - The Mac UI sent synthetic request `68027e07-97de-41c7-8e3b-0db0ebaadb83` to the simulator. At 22:29:43 UTC the Mac logged a destination storage ACK with **one observed 9 ms ACK interval**, followed by recognition of separate receipt `e5cf530b-1a29-4004-9d2f-85732363d62b`. This is one same-host control observation, not a wireless latency estimate.
-- Both apps showed the distinct receipt state. Networking was then stopped on both apps. After installing/relaunching the latest simulator build, the simulator still displayed the original message and receipt; its role selector was exercised successfully. The [actual simulator screenshot](evidence/ios-simulator.png) shows stored synthetic data and receipt status. It is labeled simulator evidence only.
+- Both apps showed the distinct receipt state. Networking was then stopped on both apps. After installing/relaunching the latest simulator build, the simulator still displayed the original message and receipt; its role selector was exercised successfully. The actual simulator screenshot (historical screenshot omitted from the public repository) shows stored synthetic data and receipt status. It is labeled simulator evidence only.
 - No physical-device Local Network prompt was tested. Mac/simulator listener/browser reached ready with available local access; the session did not require an interactive permission approval. This does not establish physical iOS permission behavior.
 
 Read-only storage exports: [native Mac messages](evidence/native-mac-stored-messages.json), [simulator messages](evidence/ios-simulator-stored-messages.json). Raw logs and synthetic snapshots are retained; no private keys, passwords, or provisioning profiles are included. The source/config hashes in [source-sha256.txt](evidence/source-sha256.txt) identify the delivered implementation.
@@ -625,7 +655,7 @@ Added opaque app-icon assets for iOS/macOS and deterministic generation. Both [i
 
 ## Keyboard fix and TestFlight account setup — 2026-10-23 PDT
 
-Version **0.1.0 (2)** adds explicit focus state and a navigation Done button, interactive scroll dismissal, and focus clearing on destination selection/send. In the iPhone 17 Pro / iOS 26.1 simulator, software keyboards for both destination and multiline message fields disappeared after tapping navigation Done, with text preserved. [Observed UI checks](evidence/keyboard-ui-check.txt), [actual post-dismissal simulator screenshot](evidence/keyboard-dismissed-simulator.png). The keyboard accessory toolbar did not expose its own Done control in this simulator, so the navigation Done button is the verified path.
+Version **0.1.0 (2)** adds explicit focus state and a navigation Done button, interactive scroll dismissal, and focus clearing on destination selection/send. In the iPhone 17 Pro / iOS 26.1 simulator, software keyboards for both destination and multiline message fields disappeared after tapping navigation Done, with text preserved. [Observed UI checks](evidence/keyboard-ui-check.txt), actual post-dismissal simulator screenshot (historical screenshot omitted from the public repository). The keyboard accessory toolbar did not expose its own Done control in this simulator, so the navigation Done button is the verified path.
 
 [Simulator build](evidence/build-keyboard-ios-simulator.txt), [macOS build](evidence/build-keyboard-macos.txt), and [unsigned iOS Release archive](evidence/archive-keyboard-ios-unsigned.txt) all **PASS**. The final archive's plist confirms version 0.1.0, build 2, and `ITSAppUsesNonExemptEncryption=false`; source review found no application encryption or third-party crypto. These are local compile/UI results, not App Store validation or physical keyboard verification. Shared engine sources were unchanged; the earlier 17-test results remain applicable and were not rerun solely for this UI/metadata change. [Current source/config hashes](evidence/source-sha256-keyboard-testflight.txt).
 
@@ -668,7 +698,7 @@ User requested a usable, attractive app for immediate testing on two phones. Rep
 
 The new same-host UI request ID is `01a93319-01a6-42b1-a666-bc42c13b7784`, simulator origin `e816be05-b366-4b44-a5dd-8b56ef7e5884`, Mac destination `fabb432e-244d-4be8-86eb-eb9ac6982d0f`, final receipt `ecb318f9-bd7b-478c-a1a9-61a6a0f85b8b`. The simulator first saved it with networking paused; process terminate/relaunch retained it. After discovery, Mac persisted it and returned a separate receipt. The Mac Reply action prefilled the simulator address and sent a synthetic reply, which also obtained a final receipt. Both stores were checked. Mac and simulator networking were paused afterward for the physical phone test. Final presentation refinements changed sorting/colors only; final builds and visual checks passed afterward.
 
-Evidence: [17 tests](evidence/automated-tests-build-3.txt), [TCP control](evidence/tcp-control-build-3.txt), [UI request/reply record](evidence/ui-build3-control.json), [Mac events](evidence/ui-build3-mac-events.txt), [simulator events](evidence/ui-build3-simulator-events.txt), [actual final simulator screenshot](evidence/ui-build3-final-simulator.png), [queued screenshot](evidence/ui-build3-messages-simulator.png), [physical install record](evidence/physical-build3-install.json), [physical launch](evidence/physical-build3-a-launch.txt), [release record](evidence/testflight-upload-build-3.json), [upload output](evidence/testflight-upload-build-3.txt), [source hashes](evidence/source-sha256-ui-build3.txt).
+Evidence: [17 tests](evidence/automated-tests-build-3.txt), [TCP control](evidence/tcp-control-build-3.txt), [UI request/reply record](evidence/ui-build3-control.json), [Mac events](evidence/ui-build3-mac-events.txt), [simulator events](evidence/ui-build3-simulator-events.txt), actual final simulator screenshot (historical screenshot omitted from the public repository), queued screenshot (historical screenshot omitted from the public repository), [physical install record](evidence/physical-build3-install.json), [physical launch](evidence/physical-build3-a-launch.txt), [release record](evidence/testflight-upload-build-3.json), [upload output](evidence/testflight-upload-build-3.txt), [source hashes](evidence/source-sha256-ui-build3.txt).
 
 Both physical installations are now complete. Required next physical steps: execute Test A with both phones unplugged and documented radio isolation. In Tools, turn off Force A → B → C on both for the direct test; start connections; choose the other phone in Nearby; send synthetic data and capture the actual request/receipt logs. Follow B–E afterward; the five final claim verdicts remain unchanged until those physical results exist.
 
@@ -682,7 +712,7 @@ User reported no accessible new-message action after sending and requested a nor
 
 Added `Conversations.swift`, a presentation-only projection, and four regression tests covering incoming/outgoing grouping, carried-traffic exclusion, receipt-envelope suppression with retained delivery state, and separate-peer/latest-chat ordering. Wire protocol, networking and durable schema are unchanged. **21 tests pass** (17 existing plus 4 new). Final iOS Simulator, signed iOS, macOS and paid-team release archive builds pass.
 
-Observed simulator UI regression: sent `SYNTHETIC CHAT-004: First consecutive message.` with the software keyboard visible; the conversation, keyboard and empty composer remained. Typed and sent `SYNTHETIC CHAT-004: Second message, same chat.` without reopening a composer. Done dismissed editing. Both messages survived process terminate/relaunch. New chat remained available and selected the existing peer's thread; no duplicate thread/bubble was created. macOS chat/back navigation also returned to the persistent New chat control. These are software UI tests, not physical radio tests. [Repeat-send record](evidence/ui-build4-repeat-send.json), [actual simulator chat screenshot](evidence/ui-build4-chat-simulator.png), [21-test output](evidence/automated-tests-build-4.txt).
+Observed simulator UI regression: sent `SYNTHETIC CHAT-004: First consecutive message.` with the software keyboard visible; the conversation, keyboard and empty composer remained. Typed and sent `SYNTHETIC CHAT-004: Second message, same chat.` without reopening a composer. Done dismissed editing. Both messages survived process terminate/relaunch. New chat remained available and selected the existing peer's thread; no duplicate thread/bubble was created. macOS chat/back navigation also returned to the persistent New chat control. These are software UI tests, not physical radio tests. [Repeat-send record](evidence/ui-build4-repeat-send.json), actual simulator chat screenshot (historical screenshot omitted from the public repository), [21-test output](evidence/automated-tests-build-4.txt).
 
 Physical deployment: both iPhones successfully installed and launched build 4 at **19:19:13 PDT** under the original bundle ID. A kept its UUID and **9 stored items**; B kept its UUID and **10 stored items**. All pre-update message IDs and immutable contents were compared and preserved; counts include receipt envelopes. [Verification](evidence/physical-build4-install.json), [A launch](evidence/physical-build4-a-launch.txt), [B launch](evidence/physical-build4-b-launch.txt).
 
@@ -712,7 +742,7 @@ Build 5 adds persistent editable device names, optional backwards-compatible hel
 
 Mac and simulator are paused after the control. Neither the unit tests, loopback control, nor same-host name exchange verifies an offline wireless path. Final claims remain separate: direct offline P2P **unverified**; physical three-device store/carry/forward **unverified**; physical bidirectional receipt route **unverified**; infrastructure-independent path **unverified**; repeated failures **measured in software controls only**, not physical radios.
 
-Evidence: [25 tests](evidence/automated-tests-build-5.txt), [TCP control](evidence/tcp-control-build-5.txt), [UI checks](evidence/ui-build5-names.json), [actual simulator screenshot](evidence/ui-build5-names-simulator.png), [physical deployment/preservation](evidence/physical-build5-install.json), [iOS build](evidence/build-names-ios-signed.txt), [Mac build](evidence/build-names-macos.txt), [archive](evidence/archive-testflight-build-5.txt), [upload output](evidence/testflight-upload-build-5.txt).
+Evidence: [25 tests](evidence/automated-tests-build-5.txt), [TCP control](evidence/tcp-control-build-5.txt), [UI checks](evidence/ui-build5-names.json), actual simulator screenshot (historical screenshot omitted from the public repository), [physical deployment/preservation](evidence/physical-build5-install.json), [iOS build](evidence/build-names-ios-signed.txt), [Mac build](evidence/build-names-macos.txt), [archive](evidence/archive-testflight-build-5.txt), [upload output](evidence/testflight-upload-build-5.txt).
 
 
 ## Private repository packaging — 2026-10-23 PDT
@@ -774,7 +804,7 @@ Evidence: [32 tests](evidence/automated-tests-build-6.txt),
 [UI control record](evidence/ui-build6-shelters.json),
 [sender events](evidence/ui-build6-simulator-events.txt),
 [receiver events](evidence/ui-build6-mac-events.txt),
-[actual simulator receipt screen](evidence/ui-build6-request-receipt.png),
+actual simulator receipt screen (historical screenshot omitted from the public repository),
 [simulator build](evidence/build-shelters-ios-simulator.txt),
 [Mac build](evidence/build-shelters-macos.txt),
 [unsigned device build](evidence/build-shelters-ios-unsigned.txt).

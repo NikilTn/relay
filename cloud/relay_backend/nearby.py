@@ -3,6 +3,7 @@
 Carriers never receive a Cognito token. Only an authorized shelter coordinator can
 upload the decrypted signed body, and the registered sender remains its owner.
 """
+
 import base64
 import json
 from uuid import UUID
@@ -71,48 +72,90 @@ class NearbyMixin:
         value = {**body.model_dump(mode="json"), "owner_subject": principal.subject}
         if row:
             if row[0] != value:
-                raise APIError(409, "device_identity_conflict", "This device ID already has a different enrolled identity")
+                raise APIError(
+                    409,
+                    "device_identity_conflict",
+                    "This device ID already has a different enrolled identity",
+                )
             return body.model_dump(mode="json")
         owner_key = key("device_count", principal.subject)
         owner = self.store.get(*owner_key)
         count = owner[0]["count"] if owner else 0
         if count >= 8:
-            raise APIError(429, "device_limit", "This demo account already has eight enrolled devices")
+            raise APIError(
+                429,
+                "device_limit",
+                "This demo account already has eight enrolled devices",
+            )
         try:
-            self.store.transact(puts=[Put(*k, value), Put(*owner_key, {"count": count + 1}, owner[1] if owner else None)])
+            self.store.transact(
+                puts=[
+                    Put(*k, value),
+                    Put(*owner_key, {"count": count + 1}, owner[1] if owner else None),
+                ]
+            )
         except Conflict:
-            raise APIError(409, "concurrent_device_enrollment", "Retry the identical device enrollment", True) from None
+            raise APIError(
+                409,
+                "concurrent_device_enrollment",
+                "Retry the identical device enrollment",
+                True,
+            ) from None
         return body.model_dump(mode="json")
 
     def assign_receiver(self, principal, shelter_id, body):
         self.writable()
         if principal.membership.role != "dispatcher":
-            raise APIError(403, "dispatcher_required", "Only shelter staff can select a receiving device")
+            raise APIError(
+                403,
+                "dispatcher_required",
+                "Only shelter staff can select a receiving device",
+            )
         incident = principal.membership.incident_id
         self.authorize_shelter(principal, incident, shelter_id)
         device = self.store.get(*key("device", principal.subject + ":" + str(body.device_id)))
         if not device or device[0]["owner_subject"] != principal.subject:
-            raise APIError(403, "device_not_owned", "Enroll this coordinator's own receiving device first")
+            raise APIError(
+                403,
+                "device_not_owned",
+                "Enroll this coordinator's own receiving device first",
+            )
         k = key("receiver", incident + ":" + shelter_id)
         row = self.store.get(*k)
-        if row and row[0]["device_id"] == str(body.device_id) and row[0]["account_subject"] == principal.subject:
+        if (
+            row
+            and row[0]["device_id"] == str(body.device_id)
+            and row[0]["account_subject"] == principal.subject
+        ):
             return row[0]
         revision = row[0]["revision"] if row else 0
         if body.expected_revision != revision:
-            raise APIError(409, "receiver_revision_conflict", "Refresh the shelter before changing its receiver")
+            raise APIError(
+                409,
+                "receiver_revision_conflict",
+                "Refresh the shelter before changing its receiver",
+            )
         receiver = {x: device[0][x] for x in ("device_id", "signing_key", "encryption_key")}
         receiver["revision"] = revision + 1
         receiver["account_subject"] = principal.subject
         try:
             self.store.transact(puts=[Put(*k, receiver, row[1] if row else None)])
         except Conflict:
-            raise APIError(409, "receiver_revision_conflict", "Refresh the shelter before changing its receiver") from None
+            raise APIError(
+                409,
+                "receiver_revision_conflict",
+                "Refresh the shelter before changing its receiver",
+            ) from None
         return receiver
 
     def ingest_nearby(self, coordinator, signed):
         self.writable()
         if coordinator.membership.role != "dispatcher":
-            raise APIError(403, "dispatcher_required", "Only the receiving shelter can ingest a carried request")
+            raise APIError(
+                403,
+                "dispatcher_required",
+                "Only the receiving shelter can ingest a carried request",
+            )
         try:
             raw = base64.b64decode(signed.body, validate=True)
             if len(raw) > 24000:
@@ -122,25 +165,66 @@ class NearbyMixin:
             signature = base64.b64decode(signed.signature, validate=True)
             if len(signature) > 80:
                 raise ValueError()
-            ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256R1(), base64.b64decode(signed.signing_key)).verify(signature, raw, ec.ECDSA(hashes.SHA256()))
+            ec.EllipticCurvePublicKey.from_encoded_point(
+                ec.SECP256R1(), base64.b64decode(signed.signing_key)
+            ).verify(signature, raw, ec.ECDSA(hashes.SHA256()))
         except (ValueError, ValidationError, InvalidSignature):
-            raise APIError(422, "invalid_sender_signature", "The carried request could not be verified") from None
+            raise APIError(
+                422,
+                "invalid_sender_signature",
+                "The carried request could not be verified",
+            ) from None
         submission = value.submission
-        self.authorize_shelter(coordinator, submission.incident_id, submission.destination_shelter_id)
-        receiver = self.store.get(*key("receiver", submission.incident_id + ":" + submission.destination_shelter_id))
-        target = self.store.get(*key("device", coordinator.subject + ":" + str(value.receiving_device_id)))
-        if (not receiver or receiver[0]["device_id"] != str(value.receiving_device_id) or
-                receiver[0]["signing_key"] != value.receiver_signing_key or
-                value.receiver_subject != coordinator.subject or receiver[0]["account_subject"] != coordinator.subject or not target or
-                target[0]["owner_subject"] != coordinator.subject):
-            raise APIError(403, "wrong_receiving_device", "This request was addressed to another shelter receiver")
-        origin = self.store.get(*key("device", value.sender_subject + ":" + str(submission.origin_device_id)))
-        if (not origin or origin[0]["signing_key"] != signed.signing_key or
-                origin[0]["encryption_key"] != value.sender_encryption_key):
-            raise APIError(403, "sender_not_enrolled", "The sender device has not been enrolled with this identity")
+        self.authorize_shelter(
+            coordinator, submission.incident_id, submission.destination_shelter_id
+        )
+        receiver = self.store.get(
+            *key(
+                "receiver",
+                submission.incident_id + ":" + submission.destination_shelter_id,
+            )
+        )
+        target = self.store.get(
+            *key("device", coordinator.subject + ":" + str(value.receiving_device_id))
+        )
+        if (
+            not receiver
+            or receiver[0]["device_id"] != str(value.receiving_device_id)
+            or receiver[0]["signing_key"] != value.receiver_signing_key
+            or value.receiver_subject != coordinator.subject
+            or receiver[0]["account_subject"] != coordinator.subject
+            or not target
+            or target[0]["owner_subject"] != coordinator.subject
+        ):
+            raise APIError(
+                403,
+                "wrong_receiving_device",
+                "This request was addressed to another shelter receiver",
+            )
+        origin = self.store.get(
+            *key("device", value.sender_subject + ":" + str(submission.origin_device_id))
+        )
+        if (
+            not origin
+            or origin[0]["signing_key"] != signed.signing_key
+            or origin[0]["encryption_key"] != value.sender_encryption_key
+        ):
+            raise APIError(
+                403,
+                "sender_not_enrolled",
+                "The sender device has not been enrolled with this identity",
+            )
         membership = self.settings.memberships.get(origin[0]["owner_subject"])
         if not membership or membership.role != "requester":
-            raise APIError(403, "sender_not_authorized", "The sender no longer has requester access")
+            raise APIError(
+                403,
+                "sender_not_authorized",
+                "The sender no longer has requester access",
+            )
         if submission.operation_id != submission.request_id:
-            raise APIError(422, "request_id_mismatch", "Carried requests must retain one immutable submission ID")
+            raise APIError(
+                422,
+                "request_id_mismatch",
+                "Carried requests must retain one immutable submission ID",
+            )
         return self.submit(Principal(origin[0]["owner_subject"], membership), submission)

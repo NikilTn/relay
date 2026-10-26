@@ -1,5 +1,11 @@
 # Current release — build22
 
+> **Publication status — October 26, 2026:** the temporary Mac API, worker and
+> tunnel are stopped. Addresses, PIDs, accounts and release observations below
+> describe the hackathon deployment, not a currently available service. Configure
+> your own deployment using the root README.
+
+
 Build **0.1.0 (22)** signed, archived and uploaded at **10:26:43PDT,24 October2026**.
 Apple reported processing. External tester availability is **NOT VERIFIED**.
 Both original development apps installed/launched22; native Mac also updated.

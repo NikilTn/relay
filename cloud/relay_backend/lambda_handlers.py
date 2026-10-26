@@ -1,4 +1,5 @@
 """Optional hosting entrypoints. Deployment is separate from local AWS tests."""
+
 import json
 import os
 import time
@@ -29,7 +30,10 @@ def worker(event, context):
     processor = runtime()[1]
     # Durable work is authoritative; event carries only an optional lookup hint.
     target = event.get("task_key")
-    if target and (not isinstance(target, str) or not target.startswith(("request#", "transcription#", "interpretation#"))):
+    if target and (
+        not isinstance(target, str)
+        or not target.startswith(("request#", "transcription#", "interpretation#"))
+    ):
         target = None
     deadline = time.monotonic() + 25
     count = 0

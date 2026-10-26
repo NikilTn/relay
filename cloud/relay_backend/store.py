@@ -1,4 +1,5 @@
 """Versioned key/value store. Both adapters provide atomic conditional transactions."""
+
 import copy
 import json
 import sqlite3
@@ -45,12 +46,16 @@ class SQLiteStore:
                     raise
                 time.sleep(min(0.5, 0.05 * (attempt + 1)))
         self.db.execute("PRAGMA synchronous=FULL")
-        self.db.execute("CREATE TABLE IF NOT EXISTS records (pk TEXT, sk TEXT, v INTEGER NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(pk,sk))")
+        self.db.execute(
+            "CREATE TABLE IF NOT EXISTS records (pk TEXT, sk TEXT, v INTEGER NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(pk,sk))"
+        )
         self.lock = threading.RLock()
 
     def get(self, pk, sk):
         with self.lock:
-            row = self.db.execute("SELECT payload,v FROM records WHERE pk=? AND sk=?", (pk, sk)).fetchone()
+            row = self.db.execute(
+                "SELECT payload,v FROM records WHERE pk=? AND sk=?", (pk, sk)
+            ).fetchone()
             return (json.loads(row[0]), row[1]) if row else None
 
     def get_many(self, keys):
@@ -58,18 +63,25 @@ class SQLiteStore:
         results = dict.fromkeys(keys)
         with self.lock:
             for offset in range(0, len(keys), 100):
-                batch = keys[offset:offset + 100]
+                batch = keys[offset : offset + 100]
                 placeholders = ",".join("(?,?)" for _ in batch)
                 rows = self.db.execute(
-                    "SELECT pk,sk,payload,v FROM records WHERE (pk,sk) IN (VALUES " + placeholders + ")",
-                    [part for pair in batch for part in pair]).fetchall()
-                results.update({(pk, sk): (json.loads(payload), version) for pk, sk, payload, version in rows})
+                    "SELECT pk,sk,payload,v FROM records WHERE (pk,sk) IN (VALUES "
+                    + placeholders
+                    + ")",
+                    [part for pair in batch for part in pair],
+                ).fetchall()
+                results.update(
+                    {(pk, sk): (json.loads(payload), version) for pk, sk, payload, version in rows}
+                )
         return results
 
     def query(self, pk, after=None, limit=25):
         with self.lock:
-            rows = self.db.execute("SELECT sk,payload,v FROM records WHERE pk=? AND sk>? ORDER BY sk LIMIT ?",
-                                   (pk, after or "", limit + 1)).fetchall()
+            rows = self.db.execute(
+                "SELECT sk,payload,v FROM records WHERE pk=? AND sk>? ORDER BY sk LIMIT ?",
+                (pk, after or "", limit + 1),
+            ).fetchall()
         page = [(sk, json.loads(payload), version) for sk, payload, version in rows[:limit]]
         return page, page[-1][0] if len(rows) > limit else None
 
@@ -78,15 +90,27 @@ class SQLiteStore:
             self.db.execute("BEGIN IMMEDIATE")
             try:
                 for change in [*puts, *deletes]:
-                    row = self.db.execute("SELECT v FROM records WHERE pk=? AND sk=?", (change.pk, change.sk)).fetchone()
+                    row = self.db.execute(
+                        "SELECT v FROM records WHERE pk=? AND sk=?",
+                        (change.pk, change.sk),
+                    ).fetchone()
                     if (row[0] if row else None) != change.expected:
                         raise Conflict()
                 for change in puts:
-                    self.db.execute("INSERT OR REPLACE INTO records VALUES (?,?,?,?)",
-                                    (change.pk, change.sk, (change.expected or 0) + 1,
-                                     json.dumps(change.data, allow_nan=False, separators=(",", ":"))))
+                    self.db.execute(
+                        "INSERT OR REPLACE INTO records VALUES (?,?,?,?)",
+                        (
+                            change.pk,
+                            change.sk,
+                            (change.expected or 0) + 1,
+                            json.dumps(change.data, allow_nan=False, separators=(",", ":")),
+                        ),
+                    )
                 for change in deletes:
-                    self.db.execute("DELETE FROM records WHERE pk=? AND sk=?", (change.pk, change.sk))
+                    self.db.execute(
+                        "DELETE FROM records WHERE pk=? AND sk=?",
+                        (change.pk, change.sk),
+                    )
                 self.db.execute("COMMIT")
             except Exception:
                 self.db.execute("ROLLBACK")
@@ -108,7 +132,9 @@ class DynamoStore:
         return {"pk": {"S": pk}, "sk": {"S": sk}}
 
     def get(self, pk, sk):
-        item = self.client.get_item(TableName=self.table, Key=self.key(pk, sk), ConsistentRead=True).get("Item")
+        item = self.client.get_item(
+            TableName=self.table, Key=self.key(pk, sk), ConsistentRead=True
+        ).get("Item")
         return (json.loads(item["payload"]["S"]), int(item["v"]["N"])) if item else None
 
     def _point_reads(self, keys):
@@ -131,16 +157,26 @@ class DynamoStore:
         encoded = {pair: self.key(*pair) for pair in keys}
         results = dict.fromkeys(keys)
         for offset in range(0, len(keys), 100):
-            pending = keys[offset:offset + 100]
+            pending = keys[offset : offset + 100]
             if self._batch_get_denied:
                 results.update(self._point_reads(pending))
                 continue
             for attempt in range(3):
                 try:
-                    response = self.client.batch_get_item(RequestItems={self.table: {
-                        "Keys": [encoded[pair] for pair in pending], "ConsistentRead": True}})
+                    response = self.client.batch_get_item(
+                        RequestItems={
+                            self.table: {
+                                "Keys": [encoded[pair] for pair in pending],
+                                "ConsistentRead": True,
+                            }
+                        }
+                    )
                 except ClientError as exc:
-                    if exc.response["Error"]["Code"] not in {"AccessDeniedException", "AccessDenied", "UnauthorizedOperation"}:
+                    if exc.response["Error"]["Code"] not in {
+                        "AccessDeniedException",
+                        "AccessDenied",
+                        "UnauthorizedOperation",
+                    }:
                         raise
                     # Do not require a new IAM grant or repeat a denied call each poll.
                     self._batch_get_denied = True
@@ -148,14 +184,19 @@ class DynamoStore:
                 for item in response.get("Responses", {}).get(self.table, []):
                     pair = (item["pk"]["S"], item["sk"]["S"])
                     if pair in encoded:
-                        results[pair] = (json.loads(item["payload"]["S"]), int(item["v"]["N"]))
-                unprocessed = response.get("UnprocessedKeys", {}).get(self.table, {}).get("Keys", [])
+                        results[pair] = (
+                            json.loads(item["payload"]["S"]),
+                            int(item["v"]["N"]),
+                        )
+                unprocessed = (
+                    response.get("UnprocessedKeys", {}).get(self.table, {}).get("Keys", [])
+                )
                 remaining = {(item["pk"]["S"], item["sk"]["S"]) for item in unprocessed}
                 pending = [pair for pair in pending if pair in remaining]
                 if not pending:
                     break
                 if attempt < 2:
-                    time.sleep(0.05 * (2 ** attempt))
+                    time.sleep(0.05 * (2**attempt))
             # Never silently treat unprocessed keys as missing records.
             if pending:
                 results.update(self._point_reads(pending))
@@ -163,30 +204,51 @@ class DynamoStore:
 
     def query(self, pk, after=None, limit=25):
         self.key(pk, after or "")
-        args = dict(TableName=self.table, KeyConditionExpression="pk = :pk",
-                    ExpressionAttributeValues={":pk": {"S": pk}}, Limit=limit, ConsistentRead=True)
+        args = dict(
+            TableName=self.table,
+            KeyConditionExpression="pk = :pk",
+            ExpressionAttributeValues={":pk": {"S": pk}},
+            Limit=limit,
+            ConsistentRead=True,
+        )
         if after:
             args["ExclusiveStartKey"] = self.key(pk, after)
         response = self.client.query(**args)
-        page = [(x["sk"]["S"], json.loads(x["payload"]["S"]), int(x["v"]["N"])) for x in response.get("Items", [])]
+        page = [
+            (x["sk"]["S"], json.loads(x["payload"]["S"]), int(x["v"]["N"]))
+            for x in response.get("Items", [])
+        ]
         last = response.get("LastEvaluatedKey")
         return page, last["sk"]["S"] if last else None
 
     def transact(self, puts=(), deletes=()):
         transactions = []
         for change in puts:
-            item = {**self.key(change.pk, change.sk), "v": {"N": str((change.expected or 0) + 1)},
-                    "payload": {"S": json.dumps(change.data, allow_nan=False, separators=(",", ":"))}}
+            item = {
+                **self.key(change.pk, change.sk),
+                "v": {"N": str((change.expected or 0) + 1)},
+                "payload": {"S": json.dumps(change.data, allow_nan=False, separators=(",", ":"))},
+            }
             action = {"TableName": self.table, "Item": item}
             if change.expected is None:
                 action["ConditionExpression"] = "attribute_not_exists(pk)"
             else:
-                action.update(ConditionExpression="v = :v", ExpressionAttributeValues={":v": {"N": str(change.expected)}})
+                action.update(
+                    ConditionExpression="v = :v",
+                    ExpressionAttributeValues={":v": {"N": str(change.expected)}},
+                )
             transactions.append({"Put": action})
         for change in deletes:
-            transactions.append({"Delete": {"TableName": self.table, "Key": self.key(change.pk, change.sk),
-                                             "ConditionExpression": "v = :v",
-                                             "ExpressionAttributeValues": {":v": {"N": str(change.expected)}}}})
+            transactions.append(
+                {
+                    "Delete": {
+                        "TableName": self.table,
+                        "Key": self.key(change.pk, change.sk),
+                        "ConditionExpression": "v = :v",
+                        "ExpressionAttributeValues": {":v": {"N": str(change.expected)}},
+                    }
+                }
+            )
         try:
             self.client.transact_write_items(TransactItems=transactions)
         except ClientError as exc:

@@ -50,6 +50,10 @@
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>RELAYCloudAPIURL</key>
-	<string>https://relay.stepcheck.app</string>
+	<string></string>
+	<key>RELAYCognitoClientID</key>
+	<string></string>
+	<key>RELAYCognitoLoginURL</key>
+	<string></string>
 </dict>
 </plist>

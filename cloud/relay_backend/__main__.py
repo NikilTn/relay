@@ -17,11 +17,22 @@ def main():
     parser.add_argument("--once", action="store_true")
     args = parser.parse_args()
     settings = Settings.load(args.config)
-    if settings.mode == "local-test" and args.host not in {"127.0.0.1", "::1", "localhost"}:
+    if settings.mode == "local-test" and args.host not in {
+        "127.0.0.1",
+        "::1",
+        "localhost",
+    }:
         raise SystemExit("Local-test authentication is restricted to loopback.")
     service = build_service(settings)
     if args.command == "serve":
-        uvicorn.run(create_app(settings, service), host=args.host, port=args.port, access_log=False, ws_max_size=16384, ws_max_queue=4)
+        uvicorn.run(
+            create_app(settings, service),
+            host=args.host,
+            port=args.port,
+            access_log=False,
+            ws_max_size=16384,
+            ws_max_queue=4,
+        )
     else:
         worker = Worker(service)
         while True:
